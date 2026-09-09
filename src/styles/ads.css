@@ -1,0 +1,46 @@
+.displayAd {
+  position: relative;
+  min-height: 92px;
+  margin: 18px 0;
+  padding-top: 12px;
+  overflow: hidden;
+  border: 1px solid #ffffff12;
+  border-radius: 18px;
+  background: #0d1028;
+}
+
+.displayAdLabel {
+  position: absolute;
+  top: 5px;
+  right: 9px;
+  color: #777c9e;
+  font: 700 9px/1 system-ui, sans-serif;
+  letter-spacing: .5px;
+}
+
+.displayAdTest {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 78px;
+  padding: 12px 16px;
+  background: linear-gradient(120deg, #151a3a, #202858);
+}
+
+.displayAdTest > span {
+  display: grid;
+  place-items: center;
+  flex: 0 0 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #f2f5ff;
+  color: #4352a8;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.displayAdTest > div { display: grid; flex: 1; min-width: 0; gap: 2px; }
+.displayAdTest b { font-size: 13px; }
+.displayAdTest small { color: #aeb4d5; font-size: 11px; }
+.displayAdTest em { padding: 4px 7px; border: 1px solid #7781bd; border-radius: 6px; color: #c8cdf0; font-size: 9px; font-style: normal; }
+.displayAd .adsbygoogle { min-height: 80px; }

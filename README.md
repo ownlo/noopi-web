@@ -35,5 +35,7 @@ Room 화면 우측 하단의 `Mock Lab`을 열어 게임 시작 전에 시나리
 - `VITE_USE_MOCK_API=false`: 실제 HTTP/WebSocket Adapter 사용
 - `VITE_API_BASE_URL`: REST API base URL
 - `VITE_WS_URL`: WebSocket URL
+- `VITE_ADSENSE_TEST_MODE=true`: 추리타임에 클릭되지 않는 테스트 광고 배너 표시
+- `VITE_ADSENSE_CLIENT_ID`, `VITE_ADSENSE_DISPLAY_SLOT_ID`: 운영 AdSense Display 광고 ID (`VITE_ADSENSE_TEST_MODE=false`에서 사용)
 
 실제 Backend 연결 전에는 API_SPEC에 정의되지 않은 게임 종료 후 `같은 게임 다시하기 / 다른 게임 선택 / 방 종료` 계약을 먼저 확정해야 합니다.
