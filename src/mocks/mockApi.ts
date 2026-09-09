@@ -1,6 +1,12 @@
 import type { Candidate, LiarGameState, NoopiApi, Player, RealtimeEvent, RoomState, Scenario, VoteResult } from '../api/types'
 
 const wait = (ms = 180) => new Promise<void>(resolve => setTimeout(resolve, ms))
+const TRANSITION_DELAY = {
+  voteStatus: 2_000,
+  voteResult: 3_000,
+  identityReveal: 2_500,
+  liarGuess: 2_000,
+} as const
 const players: Player[] = [
   { playerId: 1, nickname: '나', gender: 'MALE', host: true, connectionStatus: 'CONNECTED', currentGameParticipant: true },
   { playerId: 2, nickname: '누리', gender: 'FEMALE', host: false, connectionStatus: 'CONNECTED', currentGameParticipant: true },
@@ -33,7 +39,7 @@ export const mockApi: NoopiApi = {
   async startGame() { await wait(); updateGame({ type: 'LIAR', phase: 'ROLE_REVEAL', myRole: role(), keyword: role() === 'LIAR' ? null : '별빛 캠핑', roleChecked: false, roleCheckedCount: 2, participantCount: 4 }); emit('GAME_STARTED', { gameType: 'LIAR' }) },
   async confirmRole() { await wait(); updateGame({ type: 'LIAR', phase: 'ROLE_REVEAL', myRole: role(), keyword: role() === 'LIAR' ? null : '별빛 캠핑', roleChecked: true, roleCheckedCount: 3, participantCount: 4 }); emit('ROLE_CHECKED', { playerId: 1, roleCheckedCount: 3, participantCount: 4 }); setTimeout(() => { updateGame({ type: 'LIAR', phase: 'DISCUSSION', myRole: role(), firstSpeakerPlayerId: 3 }); emit('DISCUSSION_STARTED', { firstSpeakerPlayerId: 3 }) }, 900) },
   async startVote() { await wait(); updateGame(voteState('VOTING', 1, [1, 2, 3, 4])); emit('VOTE_STARTED', { voteRound: 1 }); return { voteRound: 1 } },
-  async submitVote(_roomId, _sessionId, input) { await wait(); const current = server.gameSession?.gameState; if (!current || (current.phase !== 'VOTING' && current.phase !== 'REVOTING')) return; updateGame({ ...current, vote: { ...current.vote, myVoteSubmitted: true, completedVoteCount: 3, playerVoteStatuses: server.players.map((p, i) => ({ playerId: p.playerId, submitted: i < 3 })) } }); emit('PLAYER_VOTED', { playerId: 1, voteRound: input.voteRound, completedVoteCount: 3, requiredVoteCount: 4 }); setTimeout(() => resolveVote(input.voteRound), 900) },
+  async submitVote(_roomId, _sessionId, input) { await wait(); const current = server.gameSession?.gameState; if (!current || (current.phase !== 'VOTING' && current.phase !== 'REVOTING')) return; updateGame({ ...current, vote: { ...current.vote, myVoteSubmitted: true, completedVoteCount: 3, playerVoteStatuses: server.players.map((p, i) => ({ playerId: p.playerId, submitted: i < 3 })) } }); emit('PLAYER_VOTED', { playerId: 1, voteRound: input.voteRound, completedVoteCount: 3, requiredVoteCount: 4 }); setTimeout(() => resolveVote(input.voteRound), TRANSITION_DELAY.voteStatus) },
   async submitGuess(_roomId, _sessionId, answer) { await wait(); const correct = answer.trim().replace(/\s+/g, ' ').toLowerCase() === '별빛 캠핑'; finish(correct ? 'LIAR' : 'CITIZEN', { answer, correct }, person(1)); return { correct } },
   async finishAndChoose(_roomId, action) { await wait(); server.gameSession = null; server.room.status = 'WAITING'; server.tieCount = 0; emit(action === 'REPLAY' ? 'GAME_SESSION_CREATED' : 'GAME_FINISHED') },
   subscribe(_roomId, listener, connection) { server.listeners.add(listener); connection(true); return () => server.listeners.delete(listener) },
@@ -47,7 +53,7 @@ function resolveVote(round: number) {
     ? { round, tied: true, counts: [{ ...person(2), voteCount: 2 }, { ...person(3), voteCount: 2 }], accusedPlayerId: null }
     : { round, tied: false, counts: [{ ...person(server.scenario === 'WRONG_ACCUSATION' ? 2 : server.scenario === 'LIAR_GUESS' ? 1 : 4), voteCount: 3 }, { ...person(3), voteCount: 1 }], accusedPlayerId: server.scenario === 'WRONG_ACCUSATION' ? 2 : server.scenario === 'LIAR_GUESS' ? 1 : 4 }
   if (tie) { server.tieCount++; const next = voteState('REVOTING', round + 1, [2, 3]); updateGame({ ...next, previousVoteResult: result }); emit('REVOTE_STARTED', { voteRound: round + 1, candidatePlayerIds: [2, 3] }); return }
-  updateGame({ type: 'LIAR', phase: 'VOTE_RESULT', myRole: role(), voteResult: result }); emit('VOTE_RESULT', { voteRound: round, tied: false, accusedPlayerId: result.accusedPlayerId ?? null }); setTimeout(() => reveal(result.accusedPlayerId!), 1300)
+  updateGame({ type: 'LIAR', phase: 'VOTE_RESULT', myRole: role(), voteResult: result }); emit('VOTE_RESULT', { voteRound: round, tied: false, accusedPlayerId: result.accusedPlayerId ?? null }); setTimeout(() => reveal(result.accusedPlayerId!), TRANSITION_DELAY.voteResult)
 }
 function reveal(accusedId: number) {
   const accusedWasLiar = server.scenario !== 'WRONG_ACCUSATION'
@@ -55,8 +61,8 @@ function reveal(accusedId: number) {
   setTimeout(() => {
     if (!accusedWasLiar) { finish('LIAR', null, person(2)); return }
     updateGame({ type: 'LIAR', phase: 'LIAR_GUESS', myRole: role(), liarPlayer: person(server.scenario === 'LIAR_GUESS' ? 1 : 4) }); emit('LIAR_GUESS_STARTED')
-    if (server.scenario !== 'LIAR_GUESS') setTimeout(() => finish('CITIZEN', { answer: '달빛 피크닉', correct: false }, person(4)), 1400)
-  }, 1300)
+    if (server.scenario !== 'LIAR_GUESS') setTimeout(() => finish('CITIZEN', { answer: '달빛 피크닉', correct: false }, person(4)), TRANSITION_DELAY.liarGuess)
+  }, TRANSITION_DELAY.identityReveal)
 }
 function finish(winner: 'CITIZEN' | 'LIAR', liarGuess: { answer: string; correct: boolean } | null, accused: Candidate) {
   const liar = server.scenario === 'LIAR_GUESS' ? person(1) : person(4)

@@ -5,8 +5,87 @@ import type { Gender } from '../api/types'
 import { Back, Brand, Button, Card, Page } from '../components/ui'
 
 export function OnboardingPage({ mode }: { mode: 'create' | 'join' }) {
-  const navigate = useNavigate(); const [step, setStep] = useState(mode === 'join' ? 'code' : 'profile'); const [code, setCode] = useState('NOOPI1'); const [roomId, setRoomId] = useState(0); const [nickname, setNickname] = useState(''); const [gender, setGender] = useState<Gender>('MALE'); const [busy, setBusy] = useState(false); const [error, setError] = useState('')
-  const find = async (e: FormEvent) => { e.preventDefault(); setBusy(true); setError(''); try { const room = await api.findRoom(code.trim().toUpperCase()); setRoomId(room.roomId); setStep('profile') } catch { setError('방을 찾을 수 없어요. 코드를 확인해주세요.') } finally { setBusy(false) } }
-  const submit = async (e: FormEvent) => { e.preventDefault(); if (!nickname.trim()) return setError('닉네임을 입력해주세요.'); setBusy(true); setError(''); try { let id = roomId; if (mode === 'create') { const result = await api.createRoom({ nickname: nickname.trim(), gender }); id = result.room.roomId } else { await api.joinRoom(roomId, { nickname: nickname.trim(), gender }) } localStorage.setItem('noopi.lastRoomId', String(id)); navigate(`/rooms/${id}`) } catch { setError('요청을 완료하지 못했어요. 잠시 후 다시 시도해주세요.') } finally { setBusy(false) } }
-  return <Page><header className="topbar"><Back onClick={() => step === 'profile' && mode === 'join' ? setStep('code') : navigate('/')} /><Brand /><span /></header>{step === 'code' ? <form className="form" onSubmit={find}><div className="stepIcon">⌁</div><p className="eyebrow">친구 방 찾기</p><h1>방 코드를<br />입력해주세요</h1><label htmlFor="roomCode">6자리 방 코드</label><input id="roomCode" className="codeInput" value={code} onChange={e => setCode(e.target.value.toUpperCase())} maxLength={6} autoComplete="off" /><p className="hint">Mock 기본 코드: NOOPI1</p>{error && <p className="error" role="alert">{error}</p>}<Button disabled={busy || code.length < 6}>{busy ? '찾는 중...' : '다음'}</Button></form> : <form className="form" onSubmit={submit}><div className="stepIcon">👋</div><p className="eyebrow">{mode === 'create' ? '새로운 게임방' : '거의 다 왔어요!'}</p><h1>게임에서 쓸<br />이름을 정해주세요</h1><label htmlFor="nickname">닉네임</label><input id="nickname" value={nickname} onChange={e => setNickname(e.target.value)} maxLength={10} placeholder="최대 10자" autoFocus /><fieldset><legend>성별</legend><div className="gender"><button type="button" className={gender === 'MALE' ? 'selected' : ''} onClick={() => setGender('MALE')}><span>🙋‍♂️</span>남자 {gender === 'MALE' && '✓'}</button><button type="button" className={gender === 'FEMALE' ? 'selected pinkSelect' : ''} onClick={() => setGender('FEMALE')}><span>🙋‍♀️</span>여자 {gender === 'FEMALE' && '✓'}</button></div></fieldset>{error && <p className="error" role="alert">{error}</p>}<Button disabled={busy}>{busy ? '입장 중...' : mode === 'create' ? '방 만들기' : '참가하기'}</Button></form>}<Card className="privacy">🔒 로그인 없이 익명으로 안전하게 즐겨요</Card></Page>
+  const navigate = useNavigate()
+  const [step, setStep] = useState(mode === 'join' ? 'code' : 'profile')
+  const [code, setCode] = useState('NOOPI1')
+  const [roomId, setRoomId] = useState(0)
+  const [nickname, setNickname] = useState('')
+  const [gender, setGender] = useState<Gender>('MALE')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  const find = async (event: FormEvent) => {
+    event.preventDefault()
+    setBusy(true)
+    setError('')
+    try {
+      const room = await api.findRoom(code.trim().toUpperCase())
+      setRoomId(room.roomId)
+      setStep('profile')
+    } catch {
+      setError('방을 찾을 수 없어요. 코드를 확인해주세요.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault()
+    if (!nickname.trim()) return setError('닉네임을 입력해주세요.')
+    setBusy(true)
+    setError('')
+    try {
+      let id = roomId
+      if (mode === 'create') {
+        const result = await api.createRoom({ nickname: nickname.trim(), gender })
+        id = result.room.roomId
+      } else {
+        await api.joinRoom(roomId, { nickname: nickname.trim(), gender })
+      }
+      localStorage.setItem('noopi.lastRoomId', String(id))
+      navigate('/rooms/' + id)
+    } catch {
+      setError('요청을 완료하지 못했어요. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Page>
+      <header className="topbar">
+        <Back onClick={() => step === 'profile' && mode === 'join' ? setStep('code') : navigate('/')} />
+        <Brand />
+        <span />
+      </header>
+      {step === 'code' ? (
+        <form className="form" onSubmit={find}>
+          <div className="stepIcon">⌁</div>
+          <h1>방 코드를<br />입력해주세요</h1>
+          <label htmlFor="roomCode">6자리 방 코드</label>
+          <input id="roomCode" className="codeInput" value={code} onChange={event => setCode(event.target.value.toUpperCase())} maxLength={6} autoComplete="off" />
+          <p className="hint">Mock 기본 코드: NOOPI1</p>
+          {error && <p className="error" role="alert">{error}</p>}
+          <Button disabled={busy || code.length < 6}>{busy ? '찾는 중...' : '다음'}</Button>
+        </form>
+      ) : (
+        <form className="form" onSubmit={submit}>
+          <p className="eyebrow">{mode === 'create' ? '새로운 게임방' : '거의 다 왔어요!'}</p>
+          <h1>게임에서 쓸<br />이름을 정해주세요</h1>
+          <label htmlFor="nickname">닉네임</label>
+          <input id="nickname" value={nickname} onChange={event => setNickname(event.target.value)} maxLength={10} placeholder="최대 10자" autoFocus />
+          <fieldset>
+            <legend>성별</legend>
+            <div className="gender">
+              <button type="button" aria-pressed={gender === 'MALE'} className={gender === 'MALE' ? 'selected' : ''} onClick={() => setGender('MALE')}><span>🙋‍♂️</span>남자</button>
+              <button type="button" aria-pressed={gender === 'FEMALE'} className={gender === 'FEMALE' ? 'selected pinkSelect' : ''} onClick={() => setGender('FEMALE')}><span>🙋‍♀️</span>여자</button>
+            </div>
+          </fieldset>
+          {error && <p className="error" role="alert">{error}</p>}
+          <Button disabled={busy}>{busy ? '입장 중...' : mode === 'create' ? '방 만들기' : '참가하기'}</Button>
+        </form>
+      )}
+      <Card className="privacy">🔒 로그인 없이 익명으로 안전하게 즐겨요</Card>
+    </Page>
+  )
 }

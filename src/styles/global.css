@@ -1,4 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Nunito:wght@700;800;900&display=swap');
+.mascot.small+.playerCard{margin-top:20px}
+.card:has(.summaryRow)+.button{margin-top:20px}
+.playerCard+.button{margin-top:20px}
 .content>label+input+.button{margin-top:18px}
 .page{min-height:100dvh}.phone{min-height:100dvh;padding-top:max(24px,env(safe-area-inset-top));padding-bottom:max(38px,env(safe-area-inset-bottom))}html,body,#root{width:100%;min-height:100%;overflow-x:hidden}button,input{max-width:100%}
 .avatar{overflow:hidden}.avatar img{display:block;width:118%;height:118%;object-fit:contain;object-position:center 22%}
