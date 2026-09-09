@@ -32,6 +32,7 @@ export function OnboardingPage({ mode }: { mode: 'create' | 'join' }) {
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     if (!nickname.trim()) return setError('닉네임을 입력해주세요.')
+    if (nickname.trim().length > 5) return setError('닉네임은 최대 5글자까지 입력할 수 있어요.')
     setBusy(true)
     setError('')
     try {
@@ -60,7 +61,6 @@ export function OnboardingPage({ mode }: { mode: 'create' | 'join' }) {
       </header>
       {step === 'code' ? (
         <form className="form" onSubmit={find}>
-          <div className="stepIcon">⌁</div>
           <h1>방 코드를<br />입력해주세요</h1>
           <label htmlFor="roomCode">6자리 방 코드</label>
           <input id="roomCode" className="codeInput" value={code} onChange={event => setCode(event.target.value.toUpperCase())} maxLength={6} autoComplete="off" />
@@ -73,7 +73,7 @@ export function OnboardingPage({ mode }: { mode: 'create' | 'join' }) {
           <p className="eyebrow">{mode === 'create' ? '새로운 게임방' : '거의 다 왔어요!'}</p>
           <h1>게임에서 쓸<br />이름을 정해주세요</h1>
           <label htmlFor="nickname">닉네임</label>
-          <input id="nickname" value={nickname} onChange={event => setNickname(event.target.value)} maxLength={10} placeholder="최대 10자" autoFocus />
+          <input id="nickname" value={nickname} onChange={event => setNickname(event.target.value)} maxLength={5} placeholder="최대 5글자" autoFocus />
           <fieldset>
             <legend>성별</legend>
             <div className="gender">
