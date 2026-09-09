@@ -1,0 +1,40 @@
+.roleRecall {
+  margin: 18px 0;
+}
+
+.roleRecall > button {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: #171a3b;
+  color: #d8daf1;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.roleRecall > button:focus-visible {
+  outline: 3px solid var(--cyan);
+  outline-offset: 3px;
+}
+
+.roleRecall .roleCard {
+  margin: 10px 0 0;
+}
+
+.roleCard.compact {
+  padding: 18px;
+}
+
+.roleCard.compact .roleEmoji {
+  font-size: 44px;
+}
+
+.roleCard.compact h2 {
+  margin: 4px 0 16px;
+  font-size: 22px;
+}
+
+.roleCard.compact small {
+  margin-top: 14px;
+}

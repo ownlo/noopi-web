@@ -9,7 +9,7 @@ export type LiarResult = { winner: 'CITIZEN' | 'LIAR'; liarPlayer: Candidate; ke
 export type LiarGameState =
   | { type: 'LIAR'; phase: 'READY'; categoryCode: string; categoryName: string }
   | { type: 'LIAR'; phase: 'ROLE_REVEAL'; myRole: 'CITIZEN' | 'LIAR'; keyword: string | null; roleChecked: boolean; roleCheckedCount: number; participantCount: number }
-  | { type: 'LIAR'; phase: 'DISCUSSION'; myRole: 'CITIZEN' | 'LIAR'; firstSpeakerPlayerId: number }
+  | { type: 'LIAR'; phase: 'DISCUSSION'; myRole: 'CITIZEN' | 'LIAR'; keyword: string | null; firstSpeakerPlayerId: number }
   | { type: 'LIAR'; phase: 'VOTING' | 'REVOTING'; myRole: 'CITIZEN' | 'LIAR'; vote: VoteState; previousVoteResult?: VoteResult }
   | { type: 'LIAR'; phase: 'VOTE_RESULT'; myRole: 'CITIZEN' | 'LIAR'; voteResult: VoteResult }
   | { type: 'LIAR'; phase: 'LIAR_REVEAL'; myRole: 'CITIZEN' | 'LIAR'; accusedPlayer: Candidate; accusedWasLiar: boolean }
