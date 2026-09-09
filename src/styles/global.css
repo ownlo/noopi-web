@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Nunito:wght@700;800;900&display=swap');
+.content>label+input+.button{margin-top:18px}
 .page{min-height:100dvh}.phone{min-height:100dvh;padding-top:max(24px,env(safe-area-inset-top));padding-bottom:max(38px,env(safe-area-inset-bottom))}html,body,#root{width:100%;min-height:100%;overflow-x:hidden}button,input{max-width:100%}
 .avatar{overflow:hidden}.avatar img{display:block;width:118%;height:118%;object-fit:contain;object-position:center 22%}
 .resultEmoji{text-align:center;font-size:74px;filter:drop-shadow(0 12px 18px #0008)}.confetti{text-align:center;color:var(--cyan);letter-spacing:12px;font-size:22px}.resultCard{margin:18px 0}.resultCard>div{display:flex;align-items:center;justify-content:space-between;min-height:58px;border-bottom:1px solid #ffffff0d}.resultCard>div:last-child{border:0}.resultCard span{color:var(--muted);font-size:13px}.resultCard b{display:flex;align-items:center;gap:8px}
