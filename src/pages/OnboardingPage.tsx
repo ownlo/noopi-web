@@ -9,7 +9,7 @@ import dogCharacter from '../assets/characters/noopi-dog.png'
 export function OnboardingPage({ mode }: { mode: 'create' | 'join' }) {
   const navigate = useNavigate()
   const [step, setStep] = useState(mode === 'join' ? 'code' : 'profile')
-  const [code, setCode] = useState('NOOPI1')
+  const [code, setCode] = useState('')
   const [roomId, setRoomId] = useState(0)
   const [nickname, setNickname] = useState('')
   const [gender, setGender] = useState<Gender>('MALE')
@@ -66,7 +66,6 @@ export function OnboardingPage({ mode }: { mode: 'create' | 'join' }) {
           <h1>방 코드를<br />입력해주세요</h1>
           <label htmlFor="roomCode">6자리 방 코드</label>
           <input id="roomCode" className="codeInput" value={code} onChange={event => setCode(event.target.value.toUpperCase())} maxLength={6} autoComplete="off" />
-          <p className="hint">Mock 기본 코드: NOOPI1</p>
           {error && <p className="error" role="alert">{error}</p>}
           <Button disabled={busy || code.length < 6}>{busy ? '찾는 중...' : '다음'}</Button>
         </form>

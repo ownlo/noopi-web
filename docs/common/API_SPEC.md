@@ -359,7 +359,13 @@ Response `200 OK` 예시:
       "keyword": "바다",
       "roleChecked": false,
       "roleCheckedCount": 2,
-      "participantCount": 4
+      "participantCount": 4,
+      "playerRoleCheckStatuses": [
+        { "playerId": 11, "checked": true },
+        { "playerId": 12, "checked": false },
+        { "playerId": 13, "checked": true },
+        { "playerId": 14, "checked": false }
+      ]
     }
   }
 }

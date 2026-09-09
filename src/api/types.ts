@@ -8,7 +8,7 @@ export type VoteResult = { round: number; tied: boolean; counts: VoteCount[]; ac
 export type LiarResult = { winner: 'CITIZEN' | 'LIAR'; liarPlayer: Candidate; keyword: string; accusedPlayer: Candidate; liarGuess: { answer: string; correct: boolean } | null }
 export type LiarGameState =
   | { type: 'LIAR'; phase: 'READY'; categoryCode: string; categoryName: string }
-  | { type: 'LIAR'; phase: 'ROLE_REVEAL'; myRole: 'CITIZEN' | 'LIAR'; keyword: string | null; roleChecked: boolean; roleCheckedCount: number; participantCount: number }
+  | { type: 'LIAR'; phase: 'ROLE_REVEAL'; myRole: 'CITIZEN' | 'LIAR'; keyword: string | null; roleChecked: boolean; roleCheckedCount: number; participantCount: number; playerRoleCheckStatuses: { playerId: number; checked: boolean }[] }
   | { type: 'LIAR'; phase: 'DISCUSSION'; myRole: 'CITIZEN' | 'LIAR'; keyword: string | null; firstSpeakerPlayerId: number }
   | { type: 'LIAR'; phase: 'VOTING' | 'REVOTING'; myRole: 'CITIZEN' | 'LIAR'; vote: VoteState; previousVoteResult?: VoteResult }
   | { type: 'LIAR'; phase: 'VOTE_RESULT'; myRole: 'CITIZEN' | 'LIAR'; voteResult: VoteResult }
@@ -21,12 +21,11 @@ export type GameCatalog = { games: { gameType: 'LIAR'; name: string; minPlayers:
 export type CategoryCatalog = { categories: { code: string; name: string; virtual: boolean }[] }
 export type RealtimeEvent = { eventId: string; type: string; roomId: number; gameSessionId: number | null; occurredAt: string; payload: Record<string, unknown> }
 
-export type Scenario = 'CITIZEN_WIN' | 'WRONG_ACCUSATION' | 'LIAR_GUESS' | 'REPEATED_TIE'
 export interface NoopiApi {
   createRoom(input: { nickname: string; gender: Gender }): Promise<{ room: RoomState['room']; me: Player }>
   findRoom(roomCode: string): Promise<{ roomId: number; roomCode: string; status: string; playerCount: number; joinable: boolean }>
   joinRoom(roomId: number, input: { nickname: string; gender: Gender }): Promise<{ player: Player }>
-  getRoomState(roomId: number): Promise<RoomState>
+  getRoomState(roomId: number, signal?: AbortSignal): Promise<RoomState>
   getGames(): Promise<GameCatalog>
   getCategories(): Promise<CategoryCatalog>
   createGameSession(roomId: number, categoryCode: string): Promise<{ gameSessionId: number; gameType: 'LIAR'; status: 'READY' }>
@@ -35,8 +34,5 @@ export interface NoopiApi {
   startVote(roomId: number, gameSessionId: number): Promise<{ voteRound: number }>
   submitVote(roomId: number, gameSessionId: number, input: { voteRound: number; targetPlayerId: number }): Promise<void>
   submitGuess(roomId: number, gameSessionId: number, answer: string): Promise<{ correct: boolean }>
-  finishAndChoose(roomId: number, action: 'REPLAY' | 'OTHER'): Promise<void>
   subscribe(roomId: number, listener: (event: RealtimeEvent) => void, connection: (connected: boolean) => void): () => void
-  setScenario?(scenario: Scenario): void
-  simulateDisconnect?(roomId: number): void
 }

@@ -11,14 +11,13 @@ export const httpApi: NoopiApi = {
   createRoom: input => request('/rooms', { method: 'POST', body: JSON.stringify(input) }),
   findRoom: code => request(`/rooms/by-code/${code}`),
   joinRoom: (id, input) => request(`/rooms/${id}/players`, { method: 'POST', body: JSON.stringify(input) }),
-  getRoomState: id => request(`/rooms/${id}/state`), getGames: () => request('/games'), getCategories: () => request('/games/liar/categories'),
+  getRoomState: (id, signal) => request(`/rooms/${id}/state`, { cache: 'no-store', signal }), getGames: () => request('/games'), getCategories: () => request('/games/liar/categories'),
   createGameSession: (id, categoryCode) => request(`/rooms/${id}/game-sessions`, { method: 'POST', body: JSON.stringify({ gameType: 'LIAR', config: { categoryCode } }) }),
   startGame: (id, gameSessionId) => request(`/rooms/${id}/game-sessions/${gameSessionId}/start`, { method: 'POST' }),
   confirmRole: (id, gameSessionId) => request(`/rooms/${id}/game-sessions/${gameSessionId}/liar/role-check`, { method: 'POST' }),
   startVote: (id, gameSessionId) => request(`/rooms/${id}/game-sessions/${gameSessionId}/liar/votes/start`, { method: 'POST' }),
   submitVote: (id, gameSessionId, input) => request(`/rooms/${id}/game-sessions/${gameSessionId}/liar/votes`, { method: 'POST', body: JSON.stringify(input) }),
   submitGuess: (id, gameSessionId, answer) => request(`/rooms/${id}/game-sessions/${gameSessionId}/liar/guess`, { method: 'POST', body: JSON.stringify({ answer }) }),
-  finishAndChoose: async () => { throw { code: 'NOT_IMPLEMENTED', message: 'Backend 연결 시 종료 후 흐름 API 결정이 필요합니다.' } },
   subscribe(roomId, listener, connection) {
     const wsUrl = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8080/ws'
     let stopped = false; let ws: WebSocket; let timer: number
