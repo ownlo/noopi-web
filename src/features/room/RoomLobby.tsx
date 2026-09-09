@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { RoomState } from '../../api/types'
-import { Avatar, Button, Card, SpinnerText } from '../../components/ui'
+import { Avatar, Button, Card, CharacterStage, SpinnerText } from '../../components/ui'
 
 export function PlayerList({ state }: { state: RoomState }) {
   return (
@@ -39,9 +39,7 @@ export function RoomLobby({ state, onSelect }: { state: RoomState; onSelect: () 
         </button>
         <small aria-live="polite">{copied ? '복사됐어요!' : '코드를 눌러 복사하세요'}</small>
       </div>
-      <div className="mascot small" aria-hidden>
-        {state.players.slice(0, 3).map(player => <Avatar key={player.playerId} gender={player.gender} />)}
-      </div>
+      <CharacterStage compact />
       <PlayerList state={state} />
       {state.me.host
         ? <Button onClick={onSelect}>게임 선택하기 <span>→</span></Button>

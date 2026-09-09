@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import type { Gender } from '../api/types'
 import { Back, Brand, Button, Card, Page } from '../components/ui'
+import catCharacter from '../assets/characters/noopi-cat.png'
+import dogCharacter from '../assets/characters/noopi-dog.png'
 
 export function OnboardingPage({ mode }: { mode: 'create' | 'join' }) {
   const navigate = useNavigate()
@@ -77,8 +79,8 @@ export function OnboardingPage({ mode }: { mode: 'create' | 'join' }) {
           <fieldset>
             <legend>성별</legend>
             <div className="gender">
-              <button type="button" aria-pressed={gender === 'MALE'} className={gender === 'MALE' ? 'selected' : ''} onClick={() => setGender('MALE')}><span>🙋‍♂️</span>남자</button>
-              <button type="button" aria-pressed={gender === 'FEMALE'} className={gender === 'FEMALE' ? 'selected pinkSelect' : ''} onClick={() => setGender('FEMALE')}><span>🙋‍♀️</span>여자</button>
+              <button type="button" aria-pressed={gender === 'MALE'} className={gender === 'MALE' ? 'selected' : ''} onClick={() => setGender('MALE')}><span className="genderPortrait"><img src={catCharacter} alt="" /></span><b>남자</b>{gender === 'MALE' && <i>✓</i>}</button>
+              <button type="button" aria-pressed={gender === 'FEMALE'} className={gender === 'FEMALE' ? 'selected pinkSelect' : ''} onClick={() => setGender('FEMALE')}><span className="genderPortrait"><img src={dogCharacter} alt="" /></span><b>여자</b>{gender === 'FEMALE' && <i>✓</i>}</button>
             </div>
           </fieldset>
           {error && <p className="error" role="alert">{error}</p>}
