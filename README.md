@@ -21,7 +21,7 @@ npm run build
 
 `.env.example`을 참고하세요.
 
-- `VITE_API_BASE_URL`: REST API base URL (로컬 설정: `http://localhost:8080/api`)
-- `VITE_WS_URL`: WebSocket URL (로컬 설정: `ws://localhost:8080/ws`)
+- `VITE_API_BASE_URL`: REST API base URL (`development`: `http://localhost:8080/api`, `production`: `https://api.noopi.kr/api`)
+- `VITE_WS_URL`: WebSocket URL (`development`: `ws://localhost:8080/ws`, `production`: `wss://api.noopi.kr/ws`)
 - `VITE_ADSENSE_TEST_MODE=true`: 추리타임에 클릭되지 않는 테스트 광고 배너 표시
 - `VITE_ADSENSE_CLIENT_ID`, `VITE_ADSENSE_DISPLAY_SLOT_ID`: 운영 AdSense Display 광고 ID (`VITE_ADSENSE_TEST_MODE=false`에서 사용)
