@@ -1,7 +1,7 @@
 import { getClientId } from '../features/client/clientId'
 import type { NoopiApi, RealtimeEvent } from './types'
 
-const base = import.meta.env.VITE_API_BASE_URL ?? '/api'
+const base = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api'
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${base}${path}`, { ...init, headers: { 'Content-Type': 'application/json', 'X-Client-Id': getClientId(), ...init?.headers } })
   if (!response.ok) throw await response.json()

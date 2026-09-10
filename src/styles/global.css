@@ -31,3 +31,7 @@ body{background:radial-gradient(circle at 50% -5%,#28208a 0,transparent 36%),lin
   outline: 3px solid var(--cyan);
   outline-offset: 3px;
 }
+
+.mockToggle{position:fixed;z-index:100;right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));display:flex;align-items:center;gap:7px;min-height:38px;padding:8px 12px;border:1px solid #ffffff2d;border-radius:99px;background:#151735e8;box-shadow:0 8px 24px #0008;color:#b6b8d8;font-size:12px;font-weight:900;cursor:pointer;backdrop-filter:blur(12px)}.mockToggle span{width:8px;height:8px;border-radius:50%;background:#777c9e}.mockToggle.enabled{border-color:#49edbd70;color:#86f8d5}.mockToggle.enabled span{background:#49edbd;box-shadow:0 0 10px #49edbd}.mockToggle:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}
+.gameNotice{position:fixed;z-index:110;left:50%;bottom:max(64px,calc(env(safe-area-inset-bottom) + 64px));width:calc(100% - 32px);max-width:398px;padding:14px 18px;border:1px solid #ff7189a8;border-radius:16px;background:linear-gradient(135deg,#6c1f39f2,#3d1528f2);box-shadow:0 14px 36px #16000dbf,0 0 24px #ff4f7450;color:#ffdce4;text-align:center;font-size:14px;font-weight:900;line-height:1.45;transform:translateX(-50%);animation:toastIn .22s ease-out;backdrop-filter:blur(14px)}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}

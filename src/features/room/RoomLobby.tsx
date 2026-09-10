@@ -22,27 +22,40 @@ export function PlayerList({ state }: { state: RoomState }) {
 }
 
 export function RoomLobby({ state, onSelect }: { state: RoomState; onSelect: () => void }) {
-  const [copied, setCopied] = useState(false)
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'code' | 'link' | 'error'>('idle')
 
-  const copyRoomCode = async () => {
-    await navigator.clipboard.writeText(state.room.roomCode)
-    setCopied(true)
-    window.setTimeout(() => setCopied(false), 1_500)
+  const copyInvite = async (kind: 'code' | 'link') => {
+    const value = kind === 'code'
+      ? state.room.roomCode
+      : `${window.location.origin}/join?code=${encodeURIComponent(state.room.roomCode)}`
+    try {
+      await navigator.clipboard.writeText(value)
+      setCopyStatus(kind)
+    } catch {
+      setCopyStatus('error')
+    }
+    window.setTimeout(() => setCopyStatus('idle'), 1_500)
   }
 
   return (
     <>
       <div className="invite">
         <p>방 코드</p>
-        <button onClick={() => void copyRoomCode()} aria-label={'방 코드 ' + state.room.roomCode + ' 복사'}>
+        <button className="inviteCode" onClick={() => void copyInvite('code')} aria-label={'방 코드 ' + state.room.roomCode + ' 복사'}>
           {state.room.roomCode}
         </button>
-        <small aria-live="polite">{copied ? '복사됐어요!' : '코드를 눌러 복사하세요'}</small>
+        <small>코드를 눌러 복사하세요</small>
+        <button className="inviteLink" onClick={() => void copyInvite('link')}>🔗 초대 링크 복사</button>
+        <small aria-live="polite">
+          {copyStatus === 'code' && '방 코드가 복사됐어요!'}
+          {copyStatus === 'link' && '초대 링크가 복사됐어요!'}
+          {copyStatus === 'error' && '복사하지 못했어요. 다시 시도해주세요.'}
+        </small>
       </div>
       <CharacterStage compact />
       <PlayerList state={state} />
       {state.me.host
-        ? <Button onClick={onSelect}>게임 선택하기 <span>→</span></Button>
+        ? <Button onClick={onSelect}>게임 선택하기</Button>
         : <SpinnerText>방장이 게임을 고르는 중이에요</SpinnerText>}
     </>
   )

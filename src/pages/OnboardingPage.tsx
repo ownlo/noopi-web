@@ -1,5 +1,5 @@
-import { FormEvent, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { FormEvent, useEffect, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import type { Gender } from '../api/types'
 import { Back, Brand, Button, Card, Page } from '../components/ui'
@@ -8,13 +8,34 @@ import dogCharacter from '../assets/characters/noopi-dog.png'
 
 export function OnboardingPage({ mode }: { mode: 'create' | 'join' }) {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const inviteCode = mode === 'join' ? (searchParams.get('code') ?? '').trim().toUpperCase() : ''
   const [step, setStep] = useState(mode === 'join' ? 'code' : 'profile')
-  const [code, setCode] = useState('')
+  const [code, setCode] = useState(inviteCode)
   const [roomId, setRoomId] = useState(0)
   const [nickname, setNickname] = useState('')
   const [gender, setGender] = useState<Gender>('MALE')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (mode !== 'join' || inviteCode.length !== 6) return
+    let active = true
+    setBusy(true)
+    api.findRoom(inviteCode)
+      .then(room => {
+        if (!active) return
+        setRoomId(room.roomId)
+        setStep('profile')
+      })
+      .catch(() => {
+        if (active) setError('방을 찾을 수 없어요. 링크를 확인해주세요.')
+      })
+      .finally(() => {
+        if (active) setBusy(false)
+      })
+    return () => { active = false }
+  }, [inviteCode, mode])
 
   const find = async (event: FormEvent) => {
     event.preventDefault()
