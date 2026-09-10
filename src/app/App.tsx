@@ -5,5 +5,5 @@ import { RoomPage } from '../pages/RoomPage'
 import { MockModeToggle } from '../components/MockModeToggle'
 
 export function App() {
-  return <><MockModeToggle /><Routes><Route path="/" element={<HomePage />} /><Route path="/create" element={<OnboardingPage mode="create" />} /><Route path="/join" element={<OnboardingPage mode="join" />} /><Route path="/rooms/:roomId" element={<RoomPage />} /><Route path="*" element={<Navigate to="/" replace />} /></Routes></>
+  return <>{import.meta.env.DEV && <MockModeToggle />}<Routes><Route path="/" element={<HomePage />} /><Route path="/create" element={<OnboardingPage mode="create" />} /><Route path="/join" element={<OnboardingPage mode="join" />} /><Route path="/rooms/:roomId" element={<RoomPage />} /><Route path="*" element={<Navigate to="/" replace />} /></Routes></>
 }

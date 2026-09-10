@@ -2,7 +2,7 @@ import { httpApi } from './httpApi'
 import { mockApi } from '../mocks/mockApi'
 import type { NoopiApi } from './types'
 
-const isMockMode = () => sessionStorage.getItem('noopi.mockMode') === 'true'
+const isMockMode = () => import.meta.env.DEV && sessionStorage.getItem('noopi.mockMode') === 'true'
 
 export const api = new Proxy({} as NoopiApi, {
   get: (_target, key: keyof NoopiApi) => {
