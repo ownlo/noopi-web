@@ -8,6 +8,7 @@ import { RoomLobby } from '../features/room/RoomLobby'
 import { getGameUnavailableReason } from '../features/game-session/gameAvailability'
 import { DiscussionView, FinalView, GuessView, ReadyView, RevealView, RoleView, VoteResultView, VotingView } from '../features/games/liar/LiarViews'
 import liarCharacter from '../assets/characters/noopi-liar-cat.png'
+import liarGameChoiceCharacter from '../assets/characters/noopi-liar-cat-game-choice.png'
 
 export function RoomPage() {
   const { roomId: value } = useParams(); const roomId = Number(value); const navigate = useNavigate(); const queryClient = useQueryClient(); const [connected, setConnected] = useState(true); const [screen, setScreen] = useState<'LOBBY'|'GAMES'|'SETUP'>('LOBBY'); const [category, setCategory] = useState(''); const [notice, setNotice] = useState('')
@@ -68,7 +69,7 @@ function GameSelect({ games, onSelect }: { games: GameCatalog['games']; onSelect
     <h1>무슨 게임을 할까요?</h1>
     <p className="sub">오늘 분위기에 딱 맞는 게임을 골라보세요.</p>
     {games.filter(game => game.enabled).map(game => <button className="gameChoice" key={game.gameType} onClick={() => onSelect(game)}>
-      <span className="gameChoiceCharacter"><img src={liarCharacter} alt="" /></span>
+      <span className="gameChoiceCharacter"><img src={liarGameChoiceCharacter} alt="" /></span>
       <div><small>{game.minPlayers}–{game.maxPlayers}명</small><h2>{game.name}</h2><p>제시어를 숨긴 라이어를 찾아보세요</p></div>
     </button>)}
   </>
