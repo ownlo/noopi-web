@@ -37,6 +37,11 @@ function room(): RoomState {
   return currentRoom
 }
 
+function requireConnectedHost(state: RoomState) {
+  const host = state.players.find(player => player.playerId === state.room.hostPlayerId)
+  if (!host || host.connectionStatus !== 'CONNECTED') throw { code: 'ROOM_NOT_FOUND', message: '방을 찾을 수 없습니다.' }
+}
+
 function emit(type: string) {
   const state = room()
   const event: RealtimeEvent = {
@@ -78,12 +83,20 @@ export const mockApi: NoopiApi = {
     await wait()
     const state = room()
     if (roomCode !== 'MOCK01' && roomCode !== state.room.roomCode) throw new Error('ROOM_NOT_FOUND')
+    requireConnectedHost(state)
     return { roomId: state.room.roomId, roomCode: state.room.roomCode, status: state.room.status, playerCount: state.players.length, joinable: true }
   },
   async joinRoom(_roomId, input) {
     await wait()
+    requireConnectedHost(room())
     currentRoom = createState(input.nickname, input.gender)
     return { player: currentRoom.me }
+  },
+  async leaveRoom() {
+    await wait()
+    const state = room()
+    if (state.me.host) emit('ROOM_CLOSED')
+    currentRoom = null
   },
   async getRoomState() { await wait(80); return structuredClone(room()) },
   async getGames() { await wait(80); return games },

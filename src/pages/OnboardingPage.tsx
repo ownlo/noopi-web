@@ -6,6 +6,10 @@ import { Back, Brand, Button, Card, Page } from '../components/ui'
 import catCharacter from '../assets/characters/noopi-cat.png'
 import dogCharacter from '../assets/characters/noopi-dog.png'
 
+function isRoomNotFound(error: unknown): error is { code: 'ROOM_NOT_FOUND' } {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ROOM_NOT_FOUND'
+}
+
 export function OnboardingPage({ mode }: { mode: 'create' | 'join' }) {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -29,7 +33,7 @@ export function OnboardingPage({ mode }: { mode: 'create' | 'join' }) {
         setStep('profile')
       })
       .catch(() => {
-        if (active) setError('방을 찾을 수 없어요. 링크를 확인해주세요.')
+        if (active) setError('존재하지 않는 방이에요.')
       })
       .finally(() => {
         if (active) setBusy(false)
@@ -46,7 +50,7 @@ export function OnboardingPage({ mode }: { mode: 'create' | 'join' }) {
       setRoomId(room.roomId)
       setStep('profile')
     } catch {
-      setError('방을 찾을 수 없어요. 코드를 확인해주세요.')
+      setError('존재하지 않는 방이에요.')
     } finally {
       setBusy(false)
     }
@@ -68,8 +72,8 @@ export function OnboardingPage({ mode }: { mode: 'create' | 'join' }) {
       }
       localStorage.setItem('noopi.lastRoomId', String(id))
       navigate('/rooms/' + id)
-    } catch {
-      setError('요청을 완료하지 못했어요. 잠시 후 다시 시도해주세요.')
+    } catch (error) {
+      setError(isRoomNotFound(error) ? '존재하지 않는 방이에요.' : '요청을 완료하지 못했어요. 잠시 후 다시 시도해주세요.')
     } finally {
       setBusy(false)
     }

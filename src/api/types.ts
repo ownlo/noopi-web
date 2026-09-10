@@ -25,6 +25,7 @@ export interface NoopiApi {
   createRoom(input: { nickname: string; gender: Gender }): Promise<{ room: RoomState['room']; me: Player }>
   findRoom(roomCode: string): Promise<{ roomId: number; roomCode: string; status: string; playerCount: number; joinable: boolean }>
   joinRoom(roomId: number, input: { nickname: string; gender: Gender }): Promise<{ player: Player }>
+  leaveRoom(roomId: number): Promise<void>
   getRoomState(roomId: number, signal?: AbortSignal): Promise<RoomState>
   getGames(): Promise<GameCatalog>
   getCategories(): Promise<CategoryCatalog>

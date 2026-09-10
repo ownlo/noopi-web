@@ -15,6 +15,7 @@ export const httpApi: NoopiApi = {
   createRoom: input => request('/rooms', { method: 'POST', body: JSON.stringify(input) }),
   findRoom: code => request(`/rooms/by-code/${code}`),
   joinRoom: (id, input) => request(`/rooms/${id}/players`, { method: 'POST', body: JSON.stringify(input) }),
+  leaveRoom: id => request(`/rooms/${id}/players/me`, { method: 'DELETE' }),
   getRoomState: (id, signal) => request(`/rooms/${id}/state`, { cache: 'no-store', signal }), getGames: () => request('/games'), getCategories: () => request('/games/liar/categories'),
   createGameSession: (id, categoryCode) => request(`/rooms/${id}/game-sessions`, { method: 'POST', body: JSON.stringify({ gameType: 'LIAR', config: { categoryCode } }) }),
   startGame: (id, gameSessionId) => request(`/rooms/${id}/game-sessions/${gameSessionId}/start`, { method: 'POST' }),

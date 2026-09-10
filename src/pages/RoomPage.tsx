@@ -10,8 +10,12 @@ import { DiscussionView, FinalView, GuessView, ReadyView, RevealView, RoleView, 
 import liarCharacter from '../assets/characters/noopi-liar-cat.png'
 import liarGameChoiceCharacter from '../assets/characters/noopi-liar-cat-game-choice.png'
 
+function isRoomNotFound(error: unknown): error is { code: 'ROOM_NOT_FOUND' } {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ROOM_NOT_FOUND'
+}
+
 export function RoomPage() {
-  const { roomId: value } = useParams(); const roomId = Number(value); const navigate = useNavigate(); const queryClient = useQueryClient(); const [connected, setConnected] = useState(true); const [screen, setScreen] = useState<'LOBBY'|'GAMES'|'SETUP'>('LOBBY'); const [category, setCategory] = useState(''); const [notice, setNotice] = useState('')
+  const { roomId: value } = useParams(); const roomId = Number(value); const navigate = useNavigate(); const queryClient = useQueryClient(); const [connected, setConnected] = useState(true); const [screen, setScreen] = useState<'LOBBY'|'GAMES'|'SETUP'>('LOBBY'); const [category, setCategory] = useState(''); const [notice, setNotice] = useState(''); const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   const stateQuery = useQuery({
     queryKey: ['room-state', roomId],
     queryFn: ({ signal }) => api.getRoomState(roomId, signal),
@@ -23,19 +27,45 @@ export function RoomPage() {
   const games = useQuery({ queryKey: ['games'], queryFn: api.getGames, enabled: screen === 'GAMES' || screen === 'SETUP' })
   const categories = useQuery({ queryKey: ['liar-categories'], queryFn: api.getCategories, enabled: screen === 'SETUP' })
   const sync = useCallback(() => queryClient.invalidateQueries({ queryKey: ['room-state', roomId] }), [queryClient, roomId])
-  useEffect(() => api.subscribe(roomId, () => { void sync() }, isUp => { setConnected(isUp); if (isUp) void sync() }), [roomId, sync])
+  useEffect(() => api.subscribe(roomId, event => {
+    if (event.type === 'ROOM_CLOSED') {
+      localStorage.removeItem('noopi.lastRoomId')
+      navigate('/', { replace: true })
+      return
+    }
+    void sync()
+  }, isUp => { setConnected(isUp); if (isUp) void sync() }), [navigate, roomId, sync])
+  useEffect(() => {
+    if (!isRoomNotFound(stateQuery.error)) return
+    localStorage.removeItem('noopi.lastRoomId')
+    navigate('/', { replace: true })
+  }, [navigate, stateQuery.error])
   useEffect(() => {
     if (!notice) return
     const timer = window.setTimeout(() => setNotice(''), 2_800)
     return () => window.clearTimeout(timer)
   }, [notice])
+  useEffect(() => {
+    if (!showLeaveConfirm) return
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setShowLeaveConfirm(false) }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [showLeaveConfirm])
   const mutation = useMutation({ mutationFn: async (action: { type:string; payload?: number|string }) => { const s=stateQuery.data; const session=s?.gameSession; switch(action.type) { case 'CREATE': { const selectedGame = games.data?.games.find(game => game.gameType === 'LIAR'); if (!s?.me.host || !selectedGame || getGameUnavailableReason(selectedGame, s.players.length)) throw new Error('Game unavailable'); return api.createGameSession(roomId, String(action.payload)) } case 'START': return api.startGame(roomId, session!.gameSessionId); case 'ROLE': return api.confirmRole(roomId, session!.gameSessionId); case 'START_VOTE': return api.startVote(roomId, session!.gameSessionId); case 'VOTE': { const g=session!.gameState; if(g.phase!=='VOTING'&&g.phase!=='REVOTING') return; return api.submitVote(roomId, session!.gameSessionId, { voteRound:g.vote.round, targetPlayerId:Number(action.payload) }) } case 'GUESS': return api.submitGuess(roomId, session!.gameSessionId, String(action.payload)) } }, onSuccess: (_data, action) => { setNotice(''); if(action.type==='CREATE') setScreen('LOBBY'); void sync() }, onError: () => { setNotice('지금은 이 행동을 할 수 없어요. 상태를 다시 확인했어요.'); void sync() } })
+  const leaveMutation = useMutation({ mutationFn: () => api.leaveRoom(roomId), onSuccess: () => { localStorage.removeItem('noopi.lastRoomId'); navigate('/', { replace: true }) }, onError: () => setNotice('방을 나가지 못했어요. 잠시 후 다시 시도해주세요.') })
   if (stateQuery.isLoading) return <Page><div className="centerState"><div className="loader" /><p>게임 상태를 불러오는 중...</p></div></Page>
   if (!stateQuery.data || stateQuery.isError) return <Page><div className="centerState"><div className="gameIcon">🥲</div><h1>방을 찾을 수 없어요</h1><Button onClick={() => navigate('/')}>홈으로</Button></div></Page>
   const state=stateQuery.data; const game=state.gameSession?.gameState
   const selectedGame = games.data?.games.find(game => game.gameType === 'LIAR')
   const setupUnavailableReason = selectedGame ? getGameUnavailableReason(selectedGame, state.players.length) : '게임 정보를 확인하고 있어요.'
   const choosingNextGame = game?.phase === 'FINISHED' && state.me.host && screen !== 'LOBBY'
+  const requestLeave = () => {
+    setShowLeaveConfirm(true)
+  }
+  const confirmLeave = () => {
+    setShowLeaveConfirm(false)
+    leaveMutation.mutate()
+  }
   const act = (type: string, payload?: number|string|'REPLAY'|'OTHER') => {
     if (type === 'FINISH') {
       setNotice('')
@@ -45,7 +75,15 @@ export function RoomPage() {
     }
     mutation.mutate({ type, payload: payload as number|string|undefined })
   }
-  return <Page><header className="roomHeader"><Brand /></header>{!connected && <div className="network">연결이 불안정해요. 다시 연결하고 있습니다...</div>}{notice && screen !== 'GAMES' && <div className="toast" role="status">{notice}</div>}{notice && screen === 'GAMES' && <div className="gameNotice" role="status">{notice}</div>}<PlayerGenderProvider players={state.players}><div className="content">{game && !choosingNextGame ? <Game key={state.gameSession?.gameSessionId} game={game} state={state} pending={mutation.isPending} act={act} /> : screen === 'GAMES' && state.me.host ? <GameSelect games={games.data?.games ?? []} onSelect={selected => { const reason = getGameUnavailableReason(selected, state.players.length); setNotice(reason ?? ''); if (!reason) setScreen('SETUP') }} /> : screen === 'SETUP' && state.me.host ? <Setup unavailableReason={setupUnavailableReason} categories={categories.data?.categories ?? []} category={category} setCategory={setCategory} pending={mutation.isPending} onCreate={() => mutation.mutate({type:'CREATE',payload:category})} /> : <RoomLobby state={state} onSelect={() => setScreen('GAMES')} />}</div></PlayerGenderProvider></Page>
+  return <Page><header className="roomHeader"><Brand /><LeaveRoomButton pending={leaveMutation.isPending} onClick={requestLeave} /></header>{!connected && <div className="network">연결이 불안정해요. 다시 연결하고 있습니다...</div>}{notice && screen !== 'GAMES' && <div className="toast" role="status">{notice}</div>}{notice && screen === 'GAMES' && <div className="gameNotice" role="status">{notice}</div>}<PlayerGenderProvider players={state.players}><div className="content">{game && !choosingNextGame ? <Game key={state.gameSession?.gameSessionId} game={game} state={state} pending={mutation.isPending} act={act} /> : screen === 'GAMES' && state.me.host ? <GameSelect games={games.data?.games ?? []} onSelect={selected => { const reason = getGameUnavailableReason(selected, state.players.length); setNotice(reason ?? ''); if (!reason) setScreen('SETUP') }} /> : screen === 'SETUP' && state.me.host ? <Setup unavailableReason={setupUnavailableReason} categories={categories.data?.categories ?? []} category={category} setCategory={setCategory} pending={mutation.isPending} onCreate={() => mutation.mutate({type:'CREATE',payload:category})} /> : <RoomLobby state={state} onSelect={() => setScreen('GAMES')} />}</div></PlayerGenderProvider>{showLeaveConfirm && <LeaveConfirm host={state.me.host} pending={leaveMutation.isPending} onCancel={() => setShowLeaveConfirm(false)} onConfirm={confirmLeave} />}</Page>
+}
+
+function LeaveRoomButton({ pending, onClick }: { pending: boolean; onClick: () => void }) {
+  return <button type="button" className={`leaveRoomButton ${pending ? 'pending' : ''}`} onClick={onClick} disabled={pending} aria-label={pending ? '방에서 나가는 중' : '방 나가기'} title="방 나가기"><svg aria-hidden viewBox="0 0 24 24"><path d="M14 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-3M10 12h11m-3-3 3 3-3 3" /></svg></button>
+}
+
+function LeaveConfirm({ host, pending, onCancel, onConfirm }: { host: boolean; pending: boolean; onCancel: () => void; onConfirm: () => void }) {
+  return <div className="dialogBackdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onCancel() }}><section className="leaveDialog" role="alertdialog" aria-modal="true" aria-labelledby="leave-dialog-title" aria-describedby="leave-dialog-description"><h2 id="leave-dialog-title">{host ? '방을 종료할까요?' : '방에서 나갈까요?'}</h2><p id="leave-dialog-description">{host ? <>방장이 나가면 이 방은 사라지고<br />모든 참가자가 홈으로 이동해요.</> : <>나가면 홈 화면으로 이동해요.</>}</p><div className="leaveDialogActions"><Button className="secondary" autoFocus disabled={pending} onClick={onCancel}>취소</Button><Button className="danger" disabled={pending} onClick={onConfirm}>{pending ? '나가는 중...' : '나가기'}</Button></div></section></div>
 }
 
 type State = Awaited<ReturnType<typeof api.getRoomState>>
