@@ -124,7 +124,7 @@ export const mockApi: NoopiApi = {
     const state = room()
     if (state.gameSession?.gameType === 'BLIND') {
       if (state.players.length !== 2) throw new Error('INVALID_PLAYER_COUNT')
-      setGameState({ type: 'BLIND', phase: 'GUESSING', opponentPlayer: { playerId: state.players[1].playerId, nickname: state.players[1].nickname }, opponentKeyword: '기린' })
+      setGameState({ type: 'BLIND', phase: 'GUESSING', opponentPlayer: { playerId: state.players[1].playerId, nickname: state.players[1].nickname }, opponentKeyword: '아메리카노' })
       emit('GAME_STARTED')
       return
     }
@@ -191,7 +191,7 @@ export const mockApi: NoopiApi = {
       winnerPlayer: { playerId: state.me.playerId, nickname: state.me.nickname },
       keywordAssignments: [
         { playerId: state.me.playerId, nickname: state.me.nickname, keyword: '피자' },
-        { playerId: state.players[1].playerId, nickname: state.players[1].nickname, keyword: '기린' },
+        { playerId: state.players[1].playerId, nickname: state.players[1].nickname, keyword: '아메리카노' },
       ],
     }
     setGameState({ type: 'BLIND', phase: 'FINISHED', result }, 'FINISHED')
