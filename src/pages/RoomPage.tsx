@@ -2,14 +2,17 @@ import { useCallback, useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
-import type { GameCatalog, LiarGameState } from '../api/types'
+import type { BlindGameState, GameCatalog, GameState, GameType, LiarGameState } from '../api/types'
 import { Brand, Button, Page, PlayerGenderProvider } from '../components/ui'
 import { RoomLobby } from '../features/room/RoomLobby'
 import { getGameUnavailableReason } from '../features/game-session/gameAvailability'
 import { LiarGameGuide } from '../features/games/liar/LiarGameGuide'
 import { DiscussionView, FinalView, GuessView, ReadyView, RevealView, RoleView, VoteResultView, VotingView } from '../features/games/liar/LiarViews'
+import { BlindGameGuide } from '../features/games/blind/BlindGameGuide'
+import { BlindFinalView, BlindGuessingView, BlindReadyView } from '../features/games/blind/BlindViews'
 import liarCharacter from '../assets/characters/noopi-liar-cat.png'
 import liarGameChoiceCharacter from '../assets/characters/noopi-liar-cat-game-choice.png'
+import blindGameChoiceCharacter from '../assets/characters/noopi-blind-game-choice.png'
 
 function isRoomNotFound(error: unknown): error is { code: 'ROOM_NOT_FOUND' } {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ROOM_NOT_FOUND'
@@ -52,7 +55,7 @@ export function RoomPage() {
     window.addEventListener('keydown', closeOnEscape)
     return () => window.removeEventListener('keydown', closeOnEscape)
   }, [showLeaveConfirm])
-  const mutation = useMutation({ mutationFn: async (action: { type:string; payload?: number|string }) => { const s=stateQuery.data; const session=s?.gameSession; switch(action.type) { case 'CREATE': { const selectedGame = games.data?.games.find(game => game.gameType === 'LIAR'); if (!s?.me.host || !selectedGame || getGameUnavailableReason(selectedGame, s.players.length)) throw new Error('Game unavailable'); return api.createGameSession(roomId, String(action.payload)) } case 'START': return api.startGame(roomId, session!.gameSessionId); case 'ROLE': return api.confirmRole(roomId, session!.gameSessionId); case 'START_VOTE': return api.startVote(roomId, session!.gameSessionId); case 'VOTE': { const g=session!.gameState; if(g.phase!=='VOTING'&&g.phase!=='REVOTING') return; return api.submitVote(roomId, session!.gameSessionId, { voteRound:g.vote.round, targetPlayerId:Number(action.payload) }) } case 'GUESS': return api.submitGuess(roomId, session!.gameSessionId, String(action.payload)) } }, onSuccess: (_data, action) => { setNotice(''); if(action.type==='CREATE') setScreen('LOBBY'); void sync() }, onError: () => { setNotice('지금은 이 행동을 할 수 없어요. 상태를 다시 확인했어요.'); void sync() } })
+  const mutation = useMutation({ mutationFn: async (action: { type:string; payload?: number|string|{ gameType: GameType; categoryCode?: string } }) => { const s=stateQuery.data; const session=s?.gameSession; switch(action.type) { case 'CREATE': { const input = action.payload as { gameType: GameType; categoryCode?: string }; const selectedGame = games.data?.games.find(game => game.gameType === input.gameType); if (!s?.me.host || !selectedGame || getGameUnavailableReason(selectedGame, s.players.length)) throw new Error('Game unavailable'); const config = input.gameType === 'LIAR' ? { categoryCode: input.categoryCode ?? '' } : {}; return api.createGameSession(roomId, input.gameType, config) } case 'START': return api.startGame(roomId, session!.gameSessionId); case 'ROLE': return api.confirmRole(roomId, session!.gameSessionId); case 'START_VOTE': return api.startVote(roomId, session!.gameSessionId); case 'VOTE': { const g=session!.gameState; if(g.type !== 'LIAR' || (g.phase!=='VOTING'&&g.phase!=='REVOTING')) return; return api.submitVote(roomId, session!.gameSessionId, { voteRound:g.vote.round, targetPlayerId:Number(action.payload) }) } case 'GUESS': return api.submitGuess(roomId, session!.gameSessionId, String(action.payload)); case 'BLIND_GUESS': return api.submitBlindGuess(roomId, session!.gameSessionId, String(action.payload)) } }, onSuccess: (data, action) => { setNotice(''); if(action.type==='CREATE') setScreen('LOBBY'); if(action.type === 'BLIND_GUESS' && data && 'correct' in data && !data.correct) setNotice('땡! 다시 추리해보세요.'); void sync() }, onError: () => { setNotice('지금은 이 행동을 할 수 없어요. 상태를 다시 확인했어요.'); void sync() } })
   const leaveMutation = useMutation({ mutationFn: () => api.leaveRoom(roomId), onSuccess: () => { localStorage.removeItem('noopi.lastRoomId'); navigate('/', { replace: true }) }, onError: () => setNotice('방을 나가지 못했어요. 잠시 후 다시 시도해주세요.') })
   if (stateQuery.isLoading) return <Page><div className="centerState"><div className="loader" /><p>게임 상태를 불러오는 중...</p></div></Page>
   if (!stateQuery.data || stateQuery.isError) return <Page><div className="centerState"><div className="gameIcon">🥲</div><h1>방을 찾을 수 없어요</h1><Button onClick={() => navigate('/')}>홈으로</Button></div></Page>
@@ -67,16 +70,20 @@ export function RoomPage() {
     setShowLeaveConfirm(false)
     leaveMutation.mutate()
   }
-  const act = (type: string, payload?: number|string|'REPLAY'|'OTHER') => {
+  const act = async (type: string, payload?: number|string|'REPLAY'|'OTHER'|{ gameType: GameType; categoryCode?: string }) => {
     if (type === 'FINISH') {
       setNotice('')
       setCategory('')
       setScreen(payload === 'OTHER' ? 'GAMES' : 'SETUP')
-      return
+      return undefined
     }
-    mutation.mutate({ type, payload: payload as number|string|undefined })
+    try {
+      return await mutation.mutateAsync({ type, payload: payload as number|string|undefined })
+    } catch {
+      return undefined
+    }
   }
-  return <Page><header className="roomHeader"><Brand /><LeaveRoomButton pending={leaveMutation.isPending} onClick={requestLeave} /></header>{!connected && <div className="network">연결이 불안정해요. 다시 연결하고 있습니다...</div>}{notice && screen !== 'GAMES' && <div className="toast" role="status">{notice}</div>}{notice && screen === 'GAMES' && <div className="gameNotice" role="status">{notice}</div>}<PlayerGenderProvider players={state.players}><div className="content">{game && !choosingNextGame ? <Game key={state.gameSession?.gameSessionId} game={game} state={state} pending={mutation.isPending} act={act} /> : screen === 'GAMES' && state.me.host ? <GameSelect games={games.data?.games ?? []} onSelect={selected => { const reason = getGameUnavailableReason(selected, state.players.length); setNotice(reason ?? ''); if (!reason) setScreen('SETUP') }} /> : screen === 'SETUP' && state.me.host ? <Setup unavailableReason={setupUnavailableReason} categories={categories.data?.categories ?? []} category={category} setCategory={setCategory} pending={mutation.isPending} onCreate={() => mutation.mutate({type:'CREATE',payload:category})} /> : <RoomLobby state={state} onSelect={() => setScreen('GAMES')} />}</div></PlayerGenderProvider>{showLeaveConfirm && <LeaveConfirm host={state.me.host} pending={leaveMutation.isPending} onCancel={() => setShowLeaveConfirm(false)} onConfirm={confirmLeave} />}</Page>
+  return <Page><header className="roomHeader"><Brand /><LeaveRoomButton pending={leaveMutation.isPending} onClick={requestLeave} /></header>{!connected && <div className="network">연결이 불안정해요. 다시 연결하고 있습니다...</div>}{notice && screen !== 'GAMES' && <div className="toast" role="status">{notice}</div>}{notice && screen === 'GAMES' && <div className="gameNotice" role="status">{notice}</div>}<PlayerGenderProvider players={state.players}><div className="content">{game && !choosingNextGame ? <Game key={state.gameSession?.gameSessionId} game={game} state={state} pending={mutation.isPending} act={act} /> : screen === 'GAMES' && state.me.host ? <GameSelect games={games.data?.games ?? []} onSelect={selected => { const reason = getGameUnavailableReason(selected, state.players.length); setNotice(reason ?? ''); if (reason) return; if (selected.gameType === 'BLIND') mutation.mutate({ type: 'CREATE', payload: { gameType: 'BLIND' } }); else setScreen('SETUP') }} /> : screen === 'SETUP' && state.me.host ? <Setup unavailableReason={setupUnavailableReason} categories={categories.data?.categories ?? []} category={category} setCategory={setCategory} pending={mutation.isPending} onCreate={() => mutation.mutate({type:'CREATE',payload:{ gameType: 'LIAR', categoryCode: category }})} /> : <RoomLobby state={state} onSelect={() => setScreen('GAMES')} />}</div></PlayerGenderProvider>{showLeaveConfirm && <LeaveConfirm host={state.me.host} pending={leaveMutation.isPending} onCancel={() => setShowLeaveConfirm(false)} onConfirm={confirmLeave} />}</Page>
 }
 
 function LeaveRoomButton({ pending, onClick }: { pending: boolean; onClick: () => void }) {
@@ -88,7 +95,7 @@ function LeaveConfirm({ host, pending, onCancel, onConfirm }: { host: boolean; p
 }
 
 type State = Awaited<ReturnType<typeof api.getRoomState>>
-function GameContent({ game, state, pending, act }: { game:LiarGameState; state:State; pending:boolean; act:(type:string,payload?:number|string|'REPLAY'|'OTHER')=>void }) {
+function LiarGameContent({ game, state, pending, act }: { game:LiarGameState; state:State; pending:boolean; act:(type:string,payload?:number|string|'REPLAY'|'OTHER')=>void }) {
   switch(game.phase) {
     case 'READY': return <ReadyView state={game} host={state.me.host} pending={pending} onStart={()=>act('START')} />
     case 'ROLE_REVEAL': return <RoleView state={game} players={state.players} pending={pending} onConfirm={()=>act('ROLE')} />
@@ -102,7 +109,18 @@ function GameContent({ game, state, pending, act }: { game:LiarGameState; state:
   }
 }
 
-function Game(props: Parameters<typeof GameContent>[0]) { return <GameContent {...props} /> }
+function BlindGameContent({ game, state, pending, act }: { game:BlindGameState; state:State; pending:boolean; act:(type:string,payload?:number|string|'REPLAY'|'OTHER'|{ gameType: GameType })=>Promise<unknown> }) {
+  switch (game.phase) {
+    case 'READY': return <BlindReadyView host={state.me.host} pending={pending} onStart={() => act('START')} />
+    case 'GUESSING': return <BlindGuessingView state={game} pending={pending} onGuess={async answer => { try { const result = await act('BLIND_GUESS', answer); return typeof result === 'object' && result !== null && 'correct' in result && result.correct === true } catch { return false } }} />
+    case 'FINISHED': return <BlindFinalView state={game} meId={state.me.playerId} host={state.me.host} pending={pending} onAction={action => { if (action === 'REPLAY') void act('CREATE', { gameType: 'BLIND' }); else void act('FINISH', 'OTHER') }} />
+    case 'CANCELLED': return <><div className="gameIcon">🫧</div><h1>게임이 취소됐어요</h1><p className="sub">Room은 그대로 유지됩니다.</p></>
+  }
+}
+
+function Game({ game, state, pending, act }: { game: GameState; state: State; pending: boolean; act: (type:string,payload?:number|string|'REPLAY'|'OTHER'|{ gameType: GameType })=>Promise<unknown> }) {
+  return game.type === 'LIAR' ? <LiarGameContent game={game} state={state} pending={pending} act={act} /> : <BlindGameContent game={game} state={state} pending={pending} act={act} />
+}
 function GameSelect({ games, onSelect }: { games: GameCatalog['games']; onSelect: (game: GameCatalog['games'][number]) => void }) {
   const [guideGame, setGuideGame] = useState<GameCatalog['games'][number] | null>(null)
   useEffect(() => {
@@ -117,10 +135,10 @@ function GameSelect({ games, onSelect }: { games: GameCatalog['games']; onSelect
     <p className="sub">오늘 분위기에 딱 맞는 게임을 골라보세요.</p>
     {games.filter(game => game.enabled).map(game => <article className="gameChoice" key={game.gameType}>
       <button className="gameChoiceHitArea" type="button" onClick={() => setGuideGame(game)} aria-label={`${game.name} 자세히 보기`} />
-      <span className="gameChoiceCharacter" aria-hidden><img src={liarGameChoiceCharacter} alt="" /></span>
-      <span className="gameChoiceCopy" aria-hidden><small>{game.minPlayers}–{game.maxPlayers}명</small><strong>{game.name}</strong><span>제시어를 숨긴 라이어를 찾아보세요</span></span>
+      <span className="gameChoiceCharacter" aria-hidden><img src={game.gameType === 'BLIND' ? blindGameChoiceCharacter : liarGameChoiceCharacter} alt="" /></span>
+      <span className="gameChoiceCopy" aria-hidden><small>{game.minPlayers === game.maxPlayers ? `${game.minPlayers}명 전용` : `${game.minPlayers}–${game.maxPlayers}명`}</small><strong>{game.name}</strong><span>{game.gameType === 'BLIND' ? '질문하면서 내 제시어를 먼저 맞춰보세요' : '제시어를 숨긴 라이어를 찾아보세요'}</span></span>
     </article>)}
-    {guideGame && <LiarGameGuide game={guideGame} actionLabel="시작하기" onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} />}
+    {guideGame && (guideGame.gameType === 'LIAR' ? <LiarGameGuide game={guideGame} actionLabel="시작하기" onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : <BlindGameGuide game={guideGame} actionLabel="시작하기" onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} />)}
   </>
 }
 function Setup({ unavailableReason, categories, category, setCategory, pending, onCreate }: { unavailableReason:string|null;categories:{code:string;name:string;virtual:boolean}[];category:string;setCategory:(v:string)=>void;pending:boolean;onCreate:()=>void }) { return <div className="setupScreen"><div className="liarCharacter setupBackdrop" aria-hidden><img src={liarCharacter} alt="" /></div><div className="gameIntro setupIntro"><p className="eyebrow">라이어 게임</p><h1>카테고리를<br />골라주세요</h1></div><div className="categoryGrid">{categories.map(c=><button key={c.code} className={category===c.code?'selected':''} onClick={()=>setCategory(c.code)}><b>{c.name}</b>{category===c.code&&<i>✓</i>}</button>)}</div><p className="hint" role="status">{unavailableReason}</p><Button disabled={!category||pending||unavailableReason !== null} onClick={onCreate}>{pending?'준비 중...':'이 카테고리로 준비하기'}</Button></div> }

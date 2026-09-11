@@ -17,12 +17,13 @@ export const httpApi: NoopiApi = {
   joinRoom: (id, input) => request(`/rooms/${id}/players`, { method: 'POST', body: JSON.stringify(input) }),
   leaveRoom: id => request(`/rooms/${id}/players/me`, { method: 'DELETE' }),
   getRoomState: (id, signal) => request(`/rooms/${id}/state`, { cache: 'no-store', signal }), getGames: () => request('/games'), getCategories: () => request('/games/liar/categories'),
-  createGameSession: (id, categoryCode) => request(`/rooms/${id}/game-sessions`, { method: 'POST', body: JSON.stringify({ gameType: 'LIAR', config: { categoryCode } }) }),
+  createGameSession: (id, gameType, config) => request(`/rooms/${id}/game-sessions`, { method: 'POST', body: JSON.stringify({ gameType, config }) }),
   startGame: (id, gameSessionId) => request(`/rooms/${id}/game-sessions/${gameSessionId}/start`, { method: 'POST' }),
   confirmRole: (id, gameSessionId) => request(`/rooms/${id}/game-sessions/${gameSessionId}/liar/role-check`, { method: 'POST' }),
   startVote: (id, gameSessionId) => request(`/rooms/${id}/game-sessions/${gameSessionId}/liar/votes/start`, { method: 'POST' }),
   submitVote: (id, gameSessionId, input) => request(`/rooms/${id}/game-sessions/${gameSessionId}/liar/votes`, { method: 'POST', body: JSON.stringify(input) }),
   submitGuess: (id, gameSessionId, answer) => request(`/rooms/${id}/game-sessions/${gameSessionId}/liar/guess`, { method: 'POST', body: JSON.stringify({ answer }) }),
+  submitBlindGuess: (id, gameSessionId, answer) => request(`/rooms/${id}/game-sessions/${gameSessionId}/blind/guesses`, { method: 'POST', body: JSON.stringify({ answer }) }),
   subscribe(roomId, listener, connection) {
     const wsUrl = import.meta.env.VITE_WS_URL
     if (!wsUrl) throw new Error('VITE_WS_URL 환경 변수가 설정되지 않았습니다.')

@@ -1,10 +1,10 @@
-import type { CategoryCatalog, GameCatalog, LiarGameState, NoopiApi, Player, RealtimeEvent, RoomState } from '../api/types'
+import type { BlindGameState, CategoryCatalog, GameCatalog, GameState, NoopiApi, Player, RealtimeEvent, RoomState } from '../api/types'
 
 const wait = (ms = 180) => new Promise(resolve => window.setTimeout(resolve, ms))
 const PHASE_TRANSITION_DELAY_MS = 3_000
 const listeners = new Set<(event: RealtimeEvent) => void>()
 
-const games: GameCatalog = { games: [{ gameType: 'LIAR', name: '라이어 게임', minPlayers: 3, maxPlayers: 12, enabled: true }] }
+const games: GameCatalog = { games: [{ gameType: 'LIAR', name: '라이어 게임', minPlayers: 3, maxPlayers: 12, enabled: true }, { gameType: 'BLIND', name: '블라인드 게임', minPlayers: 2, maxPlayers: 2, enabled: true }] }
 const categories: CategoryCatalog = { categories: [
   { code: 'RANDOM', name: '랜덤', virtual: true },
   { code: 'FOOD', name: '음식', virtual: false },
@@ -23,7 +23,9 @@ const mockPlayers = (nickname: string, gender: Player['gender']): Player[] => [
 ]
 
 function createState(nickname = '누피', gender: Player['gender'] = 'MALE'): RoomState {
-  const players = mockPlayers(nickname, gender)
+  const requestedCount = Number(sessionStorage.getItem('noopi.mockPlayerCount'))
+  const playerCount = requestedCount >= 2 && requestedCount <= 4 ? requestedCount : 4
+  const players = mockPlayers(nickname, gender).slice(0, playerCount)
   return {
     room: { roomId: nextRoomId++, roomCode: 'MOCK01', status: 'WAITING', hostPlayerId: 1 },
     me: players[0],
@@ -52,7 +54,7 @@ function emit(type: string) {
   listeners.forEach(listener => listener(event))
 }
 
-function setGameState(gameState: LiarGameState, status: NonNullable<RoomState['gameSession']>['status'] = 'PLAYING') {
+function setGameState(gameState: GameState, status: NonNullable<RoomState['gameSession']>['status'] = 'PLAYING') {
   const state = room()
   if (!state.gameSession) throw new Error('GAME_SESSION_NOT_FOUND')
   state.gameSession = { ...state.gameSession, status, gameState }
@@ -101,20 +103,32 @@ export const mockApi: NoopiApi = {
   async getRoomState() { await wait(80); return structuredClone(room()) },
   async getGames() { await wait(80); return games },
   async getCategories() { await wait(80); return categories },
-  async createGameSession(_roomId, categoryCode) {
+  async createGameSession(_roomId, gameType, config) {
     await wait()
     const state = room()
-    const selected = categories.categories.find(category => category.code === categoryCode)
-    if (!selected) throw new Error('INVALID_CATEGORY')
     const gameSessionId = nextSessionId++
     state.room.status = 'ACTIVE'
-    state.gameSession = { gameSessionId, gameType: 'LIAR', status: 'READY', gameState: { type: 'LIAR', phase: 'READY', categoryCode, categoryName: selected.name } }
+    if (gameType === 'BLIND') {
+      state.gameSession = { gameSessionId, gameType, status: 'READY', gameState: { type: 'BLIND', phase: 'READY' } }
+    } else {
+      const categoryCode = config.categoryCode ?? ''
+      const selected = categories.categories.find(category => category.code === categoryCode)
+      if (!selected) throw new Error('INVALID_CATEGORY')
+      state.gameSession = { gameSessionId, gameType, status: 'READY', gameState: { type: 'LIAR', phase: 'READY', categoryCode, categoryName: selected.name } }
+    }
     emit('GAME_SESSION_CREATED')
-    return { gameSessionId, gameType: 'LIAR', status: 'READY' }
+    return { gameSessionId, gameType, status: 'READY' }
   },
   async startGame() {
     await wait()
-    const players = room().players
+    const state = room()
+    if (state.gameSession?.gameType === 'BLIND') {
+      if (state.players.length !== 2) throw new Error('INVALID_PLAYER_COUNT')
+      setGameState({ type: 'BLIND', phase: 'GUESSING', opponentPlayer: { playerId: state.players[1].playerId, nickname: state.players[1].nickname }, opponentKeyword: '기린' })
+      emit('GAME_STARTED')
+      return
+    }
+    const players = state.players
     setGameState({ type: 'LIAR', phase: 'ROLE_REVEAL', myRole: 'CITIZEN', keyword: '떡볶이', roleChecked: false, roleCheckedCount: 3, participantCount: players.length, playerRoleCheckStatuses: players.map(player => ({ playerId: player.playerId, checked: player.playerId !== 1 })) })
     emit('GAME_STARTED')
   },
@@ -167,6 +181,22 @@ export const mockApi: NoopiApi = {
     setGameState({ type: 'LIAR', phase: 'FINISHED', result: { winner: correct ? 'LIAR' : 'CITIZEN', liarPlayer: { playerId: 1, nickname: state.me.nickname }, keyword: '떡볶이', accusedPlayer: { playerId: 1, nickname: state.me.nickname }, liarGuess: { answer: answer.trim(), correct } } }, 'FINISHED')
     emit('GAME_FINISHED')
     return { correct }
+  },
+  async submitBlindGuess(_roomId, _gameSessionId, answer) {
+    await wait()
+    const correct = answer.trim() === '피자'
+    if (!correct) return { correct: false }
+    const state = room()
+    const result: Extract<BlindGameState, { phase: 'FINISHED' }>['result'] = {
+      winnerPlayer: { playerId: state.me.playerId, nickname: state.me.nickname },
+      keywordAssignments: [
+        { playerId: state.me.playerId, nickname: state.me.nickname, keyword: '피자' },
+        { playerId: state.players[1].playerId, nickname: state.players[1].nickname, keyword: '기린' },
+      ],
+    }
+    setGameState({ type: 'BLIND', phase: 'FINISHED', result }, 'FINISHED')
+    emit('GAME_FINISHED')
+    return { correct: true }
   },
   subscribe(_roomId, listener, connection) {
     listeners.add(listener)

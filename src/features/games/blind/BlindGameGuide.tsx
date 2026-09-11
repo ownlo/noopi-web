@@ -1,0 +1,9 @@
+import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
+import type { GameCatalog } from '../../../api/types'
+import { Button } from '../../../components/ui'
+
+export function BlindGameGuide({ game, actionLabel, onClose, onAction, showCloseButton = true, actionVariant = 'primary' }: { game: GameCatalog['games'][number]; actionLabel: string; onClose: () => void; onAction: () => void; showCloseButton?: boolean; actionVariant?: 'primary' | 'secondary' }) {
+  useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }; window.addEventListener('keydown', close); return () => window.removeEventListener('keydown', close) }, [onClose])
+  return createPortal(<div className="dialogBackdrop gameGuideBackdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><section className="gameGuideDialog blindGuideDialog" role="dialog" aria-modal="true" aria-labelledby="blind-guide-title"><header className="gameGuideHeader"><div><p>NOOPI GAME GUIDE</p><h2 id="blind-guide-title">{game.name}</h2></div>{showCloseButton && <button type="button" onClick={onClose} aria-label="게임 방법 닫기">×</button>}</header><p className="gameGuideSummary">상대의 제시어를 보며 질문을 주고받고, 내 제시어를 먼저 맞혀보세요.</p><div className="gameGuideMeta"><span>👥 2명 전용</span><span>🙈 내 제시어는 비밀</span></div><ol className="blindGuideSteps"><li><b>1</b><span><strong>상대의 제시어를 확인해요</strong><small>내 화면에는 상대방의 제시어만 보여요.</small></span></li><li><b>2</b><span><strong>서로 질문하며 추리해요</strong><small>질문과 답변은 마주 보고 자유롭게 나눠요.</small></span></li><li><b>3</b><span><strong>내 제시어를 먼저 맞혀요</strong><small>틀려도 횟수 제한 없이 다시 도전할 수 있어요.</small></span></li></ol><Button className={`gameGuideStart ${actionVariant === 'secondary' ? 'secondary' : ''}`} autoFocus={!showCloseButton} onClick={onAction}>{actionLabel}</Button></section></div>, document.body)
+}
