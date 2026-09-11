@@ -6,6 +6,7 @@ import type { GameCatalog, LiarGameState } from '../api/types'
 import { Brand, Button, Page, PlayerGenderProvider } from '../components/ui'
 import { RoomLobby } from '../features/room/RoomLobby'
 import { getGameUnavailableReason } from '../features/game-session/gameAvailability'
+import { LiarGameGuide } from '../features/games/liar/LiarGameGuide'
 import { DiscussionView, FinalView, GuessView, ReadyView, RevealView, RoleView, VoteResultView, VotingView } from '../features/games/liar/LiarViews'
 import liarCharacter from '../assets/characters/noopi-liar-cat.png'
 import liarGameChoiceCharacter from '../assets/characters/noopi-liar-cat-game-choice.png'
@@ -103,13 +104,23 @@ function GameContent({ game, state, pending, act }: { game:LiarGameState; state:
 
 function Game(props: Parameters<typeof GameContent>[0]) { return <GameContent {...props} /> }
 function GameSelect({ games, onSelect }: { games: GameCatalog['games']; onSelect: (game: GameCatalog['games'][number]) => void }) {
+  const [guideGame, setGuideGame] = useState<GameCatalog['games'][number] | null>(null)
+  useEffect(() => {
+    if (!guideGame) return
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setGuideGame(null) }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [guideGame])
+
   return <>
     <h1>무슨 게임을 할까요?</h1>
     <p className="sub">오늘 분위기에 딱 맞는 게임을 골라보세요.</p>
-    {games.filter(game => game.enabled).map(game => <button className="gameChoice" key={game.gameType} onClick={() => onSelect(game)}>
-      <span className="gameChoiceCharacter"><img src={liarGameChoiceCharacter} alt="" /></span>
-      <div><small>{game.minPlayers}–{game.maxPlayers}명</small><h2>{game.name}</h2><p>제시어를 숨긴 라이어를 찾아보세요</p></div>
-    </button>)}
+    {games.filter(game => game.enabled).map(game => <article className="gameChoice" key={game.gameType}>
+      <button className="gameChoiceHitArea" type="button" onClick={() => setGuideGame(game)} aria-label={`${game.name} 자세히 보기`} />
+      <span className="gameChoiceCharacter" aria-hidden><img src={liarGameChoiceCharacter} alt="" /></span>
+      <span className="gameChoiceCopy" aria-hidden><small>{game.minPlayers}–{game.maxPlayers}명</small><strong>{game.name}</strong><span>제시어를 숨긴 라이어를 찾아보세요</span></span>
+    </article>)}
+    {guideGame && <LiarGameGuide game={guideGame} actionLabel="시작하기" onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} />}
   </>
 }
 function Setup({ unavailableReason, categories, category, setCategory, pending, onCreate }: { unavailableReason:string|null;categories:{code:string;name:string;virtual:boolean}[];category:string;setCategory:(v:string)=>void;pending:boolean;onCreate:()=>void }) { return <div className="setupScreen"><div className="liarCharacter setupBackdrop" aria-hidden><img src={liarCharacter} alt="" /></div><div className="gameIntro setupIntro"><p className="eyebrow">라이어 게임</p><h1>카테고리를<br />골라주세요</h1></div><div className="categoryGrid">{categories.map(c=><button key={c.code} className={category===c.code?'selected':''} onClick={()=>setCategory(c.code)}><b>{c.name}</b>{category===c.code&&<i>✓</i>}</button>)}</div><p className="hint" role="status">{unavailableReason}</p><Button disabled={!category||pending||unavailableReason !== null} onClick={onCreate}>{pending?'준비 중...':'이 카테고리로 준비하기'}</Button></div> }
