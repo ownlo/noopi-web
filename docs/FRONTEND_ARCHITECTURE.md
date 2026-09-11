@@ -12,6 +12,7 @@ Frontend 구현 시 다음 문서를 Source of Truth로 사용한다.
 -   `API_SPEC.md`
 -   `UI_SPEC.md`
 -   `games/LIAR_GAME_SPEC.md`
+-   `games/BLIND_GAME_SPEC.md`
 
 Frontend는 서버가 결정한 Room/Game 상태를 표현하고 사용자의 행동을
 서버에 전달하는 역할을 담당한다.
@@ -263,6 +264,8 @@ function RoomPage() {
 switch (gameSession.gameType) {
   case 'LIAR':
     return <LiarGame />
+  case 'BLIND':
+    return <BlindGame />
 }
 ```
 
@@ -297,6 +300,20 @@ features/games/liar/
 ```
 
 하나의 거대한 `LiarGame.tsx` 안에 모든 화면과 로직을 넣지 않는다.
+
+블라인드 게임은 동일한 경계 아래에 둔다.
+
+``` text
+features/games/blind/
+├── components/
+├── hooks/
+├── api/
+├── types/
+└── views/
+    ├── BlindReadyView.tsx
+    ├── BlindGuessingView.tsx
+    └── BlindResultView.tsx
+```
 
 ------------------------------------------------------------------------
 
@@ -345,6 +362,11 @@ switch (gameState.phase) {
 Frontend가 다음 phase를 추측해서 이동하지 않는다.
 
 서버 상태가 바뀐 후 새로운 상태를 기준으로 렌더링한다.
+
+블라인드 게임은 `GUESSING`에서 개인화된 `opponentKeyword`를 표시하고
+정답 제출 Mutation을 제공한다. 오답 응답은 동일 phase를 유지하며, 정답
+응답이나 `GAME_FINISHED` 이벤트 후 `/state`를 갱신해 `FINISHED`를
+렌더링한다. 본인의 제시어와 승자를 Frontend에서 계산하지 않는다.
 
 ------------------------------------------------------------------------
 
@@ -1087,7 +1109,7 @@ API DTO와 Game State는 명시적으로 타입을 정의한다.
 ``` ts
 type Gender = 'MALE' | 'FEMALE'
 
-type GameType = 'LIAR'
+type GameType = 'LIAR' | 'BLIND'
 
 type LiarPhase =
   | 'ROLE_REVEAL'
@@ -1097,6 +1119,10 @@ type LiarPhase =
   | 'REVOTING'
   | 'LIAR_REVEAL'
   | 'LIAR_GUESS'
+  | 'FINISHED'
+
+type BlindPhase =
+  | 'GUESSING'
   | 'FINISHED'
 ```
 
@@ -1113,8 +1139,7 @@ type LiarPhase =
 ``` ts
 type GameState =
   | LiarGameState
-  // | BalanceGameState
-  // | BombGameState
+  | BlindGameState
 ```
 
 ``` ts
@@ -1122,6 +1147,12 @@ type LiarGameState = {
   type: 'LIAR'
   phase: LiarPhase
   // phase별 데이터
+}
+
+type BlindGameState = {
+  type: 'BLIND'
+  phase: BlindPhase
+  // phase별 개인화 데이터
 }
 ```
 
