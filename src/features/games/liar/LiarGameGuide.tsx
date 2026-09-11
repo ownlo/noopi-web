@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import type { GameCatalog } from '../../../api/types'
 import { Button } from '../../../components/ui'
 import animalDuo from '../../../assets/characters/noopi-animal-duo.png'
@@ -15,7 +16,7 @@ export function LiarGameGuide({ game, actionLabel, onClose, onAction, showCloseB
     return () => window.removeEventListener('keydown', closeOnEscape)
   }, [onClose])
 
-  return <div className="dialogBackdrop gameGuideBackdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
+  return createPortal(<div className="dialogBackdrop gameGuideBackdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
     <section className="gameGuideDialog" role="dialog" aria-modal="true" aria-labelledby="game-guide-title" aria-describedby="game-guide-summary">
       <header className="gameGuideHeader">
         <div><p>NOOPI GAME GUIDE</p><h2 id="game-guide-title">{game.name}</h2></div>
@@ -32,5 +33,5 @@ export function LiarGameGuide({ game, actionLabel, onClose, onAction, showCloseB
       <div className="gameGuideTip"><b>누피의 팁</b><span>정답을 그대로 말하지 말고, 모두가 조금씩 고민할 만한 힌트를 주세요!</span></div>
       <Button className={`gameGuideStart ${actionVariant === 'secondary' ? 'secondary' : ''}`} autoFocus={!showCloseButton} onClick={onAction}>{actionLabel}</Button>
     </section>
-  </div>
+  </div>, document.body)
 }
