@@ -16,7 +16,7 @@
 
 .speakingOrderCard li {
   display: grid;
-  grid-template-columns: 30px 40px minmax(0, 1fr) auto;
+  grid-template-columns: 30px 40px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   min-height: 56px;
@@ -37,14 +37,21 @@
   font-size: 12px;
 }
 
-.speakingOrderCard li > strong {
+.speakingOrderName {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   min-width: 0;
+}
+
+.speakingOrderName > strong {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.speakingOrderCard li > small {
+.speakingOrderName > small {
+  flex: 0 0 auto;
   color: var(--cyan);
   font-size: 10px;
   font-weight: 900;

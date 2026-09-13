@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import type { Gender } from '../api/types'
+import { AdSenseDisplayBanner } from '../components/AdSenseDisplayBanner'
 import { Back, Brand, Button, Card, Page } from '../components/ui'
 import catCharacter from '../assets/characters/noopi-cat.png'
 import dogCharacter from '../assets/characters/noopi-dog.png'
@@ -111,6 +112,7 @@ export function OnboardingPage({ mode }: { mode: 'create' | 'join' }) {
           <Button disabled={busy}>{busy ? '입장 중...' : mode === 'create' ? '방 만들기' : '참가하기'}</Button>
         </form>
       )}
+      {step === 'code' && <AdSenseDisplayBanner />}
       <Card className="privacy">🔒 로그인 없이 익명으로 안전하게 즐겨요</Card>
     </Page>
   )
