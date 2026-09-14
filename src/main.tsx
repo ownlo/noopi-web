@@ -7,6 +7,7 @@ import { loadAdSenseScript } from './utils/adsense'
 import './styles/global.css'
 import './styles/ads.css'
 import './styles/liar.css'
+import './styles/mafia.css'
 import './styles/theme.css'
 
 loadAdSenseScript()

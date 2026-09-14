@@ -34,6 +34,7 @@ UI_SPEC.md
 FRONTEND_ARCHITECTURE.md
 games/LIAR_GAME_SPEC.md
 games/BLIND_GAME_SPEC.md
+games/MAFIA_GAME_SPEC.md
 ```
 
 우선순위:
@@ -42,6 +43,7 @@ games/BLIND_GAME_SPEC.md
 게임 규칙
 → games/LIAR_GAME_SPEC.md
 → games/BLIND_GAME_SPEC.md
+→ games/MAFIA_GAME_SPEC.md
 
 REST / WebSocket 계약
 → API_SPEC.md
@@ -175,7 +177,9 @@ src/
 │   ├── room/
 │   ├── game-session/
 │   └── games/
-│       └── liar/
+│       ├── liar/
+│       ├── blind/
+│       └── mafia/
 ├── components/
 ├── api/
 ├── realtime/
@@ -242,6 +246,11 @@ GameSession
 승패
 블라인드 게임의 Player별 제시어 배정
 블라인드 게임의 정답 판정과 승자
+마피아 게임의 역할 구성과 배정
+마피아 게임의 밤 행동 후보와 행동 완료 상태
+마피아 공격 집계, 경찰 조사 결과, 의사 치료 결과
+시민 의심 집계와 Player별 개인 의심 수
+마피아 게임의 사망 처리와 승패
 ```
 
 Frontend에서 이 값을 자체 계산하여 확정하지 않는다.
@@ -829,6 +838,18 @@ Discussion
 블라인드 상대방 제시어 표시
 블라인드 정답 / 오답 / 재시도
 블라인드 승자 결정 및 종료 결과
+마피아 역할 확인과 첫 번째 밤
+마피아/경찰/의사/시민별 밤 행동
+경찰 조사 즉시 결과와 과거 조사 기록 복구
+마피아 동료 목록 재확인과 재접속 복구
+복수 마피아 공격 합의와 동률 실패
+의사 연속 치료 제한
+개인 의심 수 공개와 의심 정보 비공개
+마피아 처형 투표, 동률, 반복 재투표
+밤 사망/치료 성공과 처형 결과
+방장의 결과 단계 진행
+사망자 관전
+마피아팀/시민팀 승리와 전체 역할 공개
 연결 끊김
 재접속
 Host 변경
@@ -1048,6 +1069,10 @@ Frontend에서 제시어 선정
 블라인드 게임 종료 전 본인 제시어 노출
 블라인드 카테고리 선택 / 공개
 블라인드 정답과 승자를 Frontend에서 판정
+마피아 역할 구성 또는 역할을 Frontend에서 결정
+마피아 공격 대상, 치료 성공, 사망자를 Frontend에서 판정
+시민 의심을 Frontend에서 집계하거나 타인의 의심 정보를 노출
+마피아 게임의 승패를 Frontend에서 판정
 재투표 횟수 제한 추가
 동률 랜덤 지목 추가
 카테고리 하드코딩

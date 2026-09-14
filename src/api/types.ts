@@ -22,8 +22,27 @@ export type BlindGameState =
   | { type: 'BLIND'; phase: 'GUESSING'; opponentPlayer: Candidate; opponentKeyword: string }
   | { type: 'BLIND'; phase: 'FINISHED'; result: BlindResult }
   | { type: 'BLIND'; phase: 'CANCELLED'; reason?: string }
-export type GameType = 'LIAR' | 'BLIND'
-export type GameState = LiarGameState | BlindGameState
+export type MafiaRole = 'MAFIA' | 'POLICE' | 'DOCTOR' | 'CITIZEN'
+export type MafiaPlayer = Candidate & { alive: boolean; revealedRole: MafiaRole | null }
+export type MafiaNightActionType = 'ATTACK' | 'INVESTIGATE' | 'HEAL' | 'SUSPECT' | 'CONFIRM'
+export type Investigation = { nightNo: number; targetPlayerId: number; targetNickname: string; mafia: boolean }
+export type MafiaVoteResult = Omit<VoteResult, 'accusedPlayerId'> & { executionTargetPlayerId?: number | null }
+export type MafiaResult = { winnerTeam: 'MAFIA_TEAM' | 'CITIZEN_TEAM'; players: (Candidate & { role: MafiaRole; alive: boolean })[] }
+export type MafiaRoleComposition = { mafia: number; police: number; doctor: number; citizen: number }
+type MafiaCommon = { type: 'MAFIA'; myRole: MafiaRole; alive: boolean; players?: MafiaPlayer[]; mafiaTeammates?: (Candidate & { alive: boolean })[]; investigationHistory?: Investigation[] }
+export type MafiaGameState =
+  | { type: 'MAFIA'; phase: 'READY'; participantCount: number; roleComposition: MafiaRoleComposition }
+  | (MafiaCommon & { phase: 'ROLE_REVEAL'; roleChecked: boolean; roleCheckedCount: number; participantCount: number })
+  | (MafiaCommon & { phase: 'FIRST_NIGHT' | 'NIGHT'; nightNo: number; nightAction?: { actionType: MafiaNightActionType; submitted: boolean; eligibleTargets?: Candidate[] }; nightProgress?: { completedActionCount: number; requiredActionCount: number } })
+  | (MafiaCommon & { phase: 'DAY'; dayNo: number; lastNightResult: { nightNo: number; deadPlayer: (Candidate & { revealedRole: MafiaRole }) | null; mySuspicionCount: number | null }; canAdvance?: boolean })
+  | (MafiaCommon & { phase: 'VOTING' | 'REVOTING'; vote: Omit<VoteState, 'playerVoteStatuses'>; previousVoteResult?: MafiaVoteResult })
+  | (MafiaCommon & { phase: 'VOTE_RESULT'; voteResult: MafiaVoteResult; canAdvance: boolean })
+  | (MafiaCommon & { phase: 'EXECUTION'; executionResult: Candidate & { revealedRole: MafiaRole }; canAdvance: boolean })
+  | (MafiaCommon & { phase: 'NIGHT_RESULT'; nightResult: { nightNo: number; deadPlayer: (Candidate & { revealedRole: MafiaRole }) | null; mySuspicionCount: number | null }; canAdvance: boolean })
+  | { type: 'MAFIA'; phase: 'FINISHED'; result: MafiaResult }
+  | { type: 'MAFIA'; phase: 'CANCELLED'; reason?: string }
+export type GameType = 'LIAR' | 'BLIND' | 'MAFIA'
+export type GameState = LiarGameState | BlindGameState | MafiaGameState
 export type RoomState = { room: { roomId: number; roomCode: string; status: 'WAITING' | 'ACTIVE' | 'CLOSED'; hostPlayerId: number }; me: Player; players: Player[]; gameSession: null | { gameSessionId: number; gameType: GameType; status: 'READY' | 'PLAYING' | 'FINISHED' | 'CANCELLED'; gameState: GameState } }
 export type GameCatalog = { games: { gameType: GameType; name: string; minPlayers: number; maxPlayers: number; enabled: boolean }[] }
 export type CategoryCatalog = { categories: { code: string; name: string; virtual: boolean }[] }
@@ -44,5 +63,10 @@ export interface NoopiApi {
   submitVote(roomId: number, gameSessionId: number, input: { voteRound: number; targetPlayerId: number }): Promise<void>
   submitGuess(roomId: number, gameSessionId: number, answer: string): Promise<{ correct: boolean }>
   submitBlindGuess(roomId: number, gameSessionId: number, answer: string): Promise<{ correct: boolean }>
+  confirmMafiaRole(roomId: number, gameSessionId: number): Promise<void>
+  submitMafiaNightAction(roomId: number, gameSessionId: number, input: { actionType: MafiaNightActionType; targetPlayerId?: number }): Promise<{ actionType: MafiaNightActionType; result?: { targetPlayerId: number; mafia: boolean } }>
+  startMafiaVote(roomId: number, gameSessionId: number): Promise<{ voteRound: number }>
+  submitMafiaVote(roomId: number, gameSessionId: number, input: { voteRound: number; targetPlayerId: number }): Promise<void>
+  advanceMafia(roomId: number, gameSessionId: number): Promise<void>
   subscribe(roomId: number, listener: (event: RealtimeEvent) => void, connection: (connected: boolean) => void): () => void
 }

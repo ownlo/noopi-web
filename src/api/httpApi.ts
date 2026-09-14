@@ -24,6 +24,11 @@ export const httpApi: NoopiApi = {
   submitVote: (id, gameSessionId, input) => request(`/rooms/${id}/game-sessions/${gameSessionId}/liar/votes`, { method: 'POST', body: JSON.stringify(input) }),
   submitGuess: (id, gameSessionId, answer) => request(`/rooms/${id}/game-sessions/${gameSessionId}/liar/guess`, { method: 'POST', body: JSON.stringify({ answer }) }),
   submitBlindGuess: (id, gameSessionId, answer) => request(`/rooms/${id}/game-sessions/${gameSessionId}/blind/guesses`, { method: 'POST', body: JSON.stringify({ answer }) }),
+  confirmMafiaRole: (id, gameSessionId) => request(`/rooms/${id}/game-sessions/${gameSessionId}/mafia/role-check`, { method: 'POST' }),
+  submitMafiaNightAction: (id, gameSessionId, input) => request(`/rooms/${id}/game-sessions/${gameSessionId}/mafia/night-actions`, { method: 'POST', body: JSON.stringify(input) }),
+  startMafiaVote: (id, gameSessionId) => request(`/rooms/${id}/game-sessions/${gameSessionId}/mafia/votes/start`, { method: 'POST' }),
+  submitMafiaVote: (id, gameSessionId, input) => request(`/rooms/${id}/game-sessions/${gameSessionId}/mafia/votes`, { method: 'POST', body: JSON.stringify(input) }),
+  advanceMafia: (id, gameSessionId) => request(`/rooms/${id}/game-sessions/${gameSessionId}/mafia/advance`, { method: 'POST' }),
   subscribe(roomId, listener, connection) {
     const wsUrl = import.meta.env.VITE_WS_URL
     if (!wsUrl) throw new Error('VITE_WS_URL 환경 변수가 설정되지 않았습니다.')

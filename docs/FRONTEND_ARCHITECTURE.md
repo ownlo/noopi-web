@@ -13,6 +13,7 @@ Frontend 구현 시 다음 문서를 Source of Truth로 사용한다.
 -   `UI_SPEC.md`
 -   `games/LIAR_GAME_SPEC.md`
 -   `games/BLIND_GAME_SPEC.md`
+-   `games/MAFIA_GAME_SPEC.md`
 
 Frontend는 서버가 결정한 Room/Game 상태를 표현하고 사용자의 행동을
 서버에 전달하는 역할을 담당한다.
@@ -266,6 +267,8 @@ switch (gameSession.gameType) {
     return <LiarGame />
   case 'BLIND':
     return <BlindGame />
+  case 'MAFIA':
+    return <MafiaGame />
 }
 ```
 
@@ -313,6 +316,18 @@ features/games/blind/
     ├── BlindReadyView.tsx
     ├── BlindGuessingView.tsx
     └── BlindResultView.tsx
+```
+
+마피아 게임도 동일한 경계 아래에 두고 역할별 행동과 phase별 View를
+분리한다.
+
+``` text
+features/games/mafia/
+├── components/
+├── hooks/
+├── api/
+├── types/
+└── views/
 ```
 
 ------------------------------------------------------------------------
@@ -568,6 +583,14 @@ GET /state
   `VOTE_RESULT`            room state invalidate
   `REVOTE_STARTED`         room state invalidate
   `LIAR_GUESS_STARTED`     room state invalidate
+  `MAFIA_ROLE_CHECKED`     room state invalidate 또는 카운트 갱신
+  `MAFIA_NIGHT_ACTION_SUBMITTED` room state invalidate 또는 완료 수 갱신
+  `MAFIA_PHASE_CHANGED`    room state invalidate
+  `MAFIA_VOTE_STARTED`     room state invalidate
+  `MAFIA_PLAYER_VOTED`     room state invalidate 또는 완료 수 갱신
+  `MAFIA_VOTE_RESULT`      room state invalidate
+  `MAFIA_REVOTE_STARTED`   room state invalidate
+  `MAFIA_PLAYER_DIED`      room state invalidate
   `GAME_FINISHED`          room state invalidate
   `GAME_CANCELLED`         room state invalidate
 
@@ -1109,7 +1132,7 @@ API DTO와 Game State는 명시적으로 타입을 정의한다.
 ``` ts
 type Gender = 'MALE' | 'FEMALE'
 
-type GameType = 'LIAR' | 'BLIND'
+type GameType = 'LIAR' | 'BLIND' | 'MAFIA'
 
 type LiarPhase =
   | 'ROLE_REVEAL'
@@ -1123,6 +1146,18 @@ type LiarPhase =
 
 type BlindPhase =
   | 'GUESSING'
+  | 'FINISHED'
+
+type MafiaPhase =
+  | 'ROLE_REVEAL'
+  | 'FIRST_NIGHT'
+  | 'DAY'
+  | 'VOTING'
+  | 'REVOTING'
+  | 'VOTE_RESULT'
+  | 'EXECUTION'
+  | 'NIGHT'
+  | 'NIGHT_RESULT'
   | 'FINISHED'
 ```
 
@@ -1140,6 +1175,7 @@ type BlindPhase =
 type GameState =
   | LiarGameState
   | BlindGameState
+  | MafiaGameState
 ```
 
 ``` ts
@@ -1154,7 +1190,18 @@ type BlindGameState = {
   phase: BlindPhase
   // phase별 개인화 데이터
 }
+
+type MafiaGameState = {
+  type: 'MAFIA'
+  phase: MafiaPhase
+  // phase별 개인화 데이터와 서버가 계산한 공개 결과
+}
 ```
+
+마피아 밤 행동 Mutation은 역할별 Endpoint로 나누지 않고
+`actionType` discriminated union을 사용하는 단일 `night-actions` API를
+호출한다. 화면은 서버의 `nightAction.actionType`과 `eligibleTargets`를
+기준으로 렌더링하며 역할로 후보를 재계산하지 않는다.
 
 게임 타입 확장 시 타입 안정성을 유지한다.
 

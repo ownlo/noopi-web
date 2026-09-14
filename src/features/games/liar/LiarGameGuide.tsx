@@ -17,7 +17,7 @@ export function LiarGameGuide({ game, actionLabel, onClose, onAction, showCloseB
   }, [onClose])
 
   return createPortal(<div className="dialogBackdrop gameGuideBackdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
-    <section className="gameGuideDialog" role="dialog" aria-modal="true" aria-labelledby="game-guide-title" aria-describedby="game-guide-summary">
+    <section className="gameGuideDialog liarGameGuideDialog" role="dialog" aria-modal="true" aria-labelledby="game-guide-title" aria-describedby="game-guide-summary">
       <header className="gameGuideHeader">
         <div><p>NOOPI GAME GUIDE</p><h2 id="game-guide-title">{game.name}</h2></div>
         {showCloseButton && <button type="button" autoFocus onClick={onClose} aria-label="게임 방법 닫기">×</button>}
