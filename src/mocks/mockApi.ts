@@ -44,14 +44,25 @@ function requireConnectedHost(state: RoomState) {
   if (!host || host.connectionStatus !== 'CONNECTED') throw { code: 'ROOM_NOT_FOUND', message: '방을 찾을 수 없습니다.' }
 }
 
-function emit(type: string) {
+function emit(type: string, payload: Record<string, unknown> = {}) {
   const state = room()
   const event: RealtimeEvent = {
     eventId: crypto.randomUUID(), type, roomId: state.room.roomId,
     gameSessionId: state.gameSession?.gameSessionId ?? null,
-    occurredAt: new Date().toISOString(), payload: {},
+    occurredAt: new Date().toISOString(), payload,
   }
   listeners.forEach(listener => listener(event))
+}
+
+function shuffledPlayerIds(players: Player[]): number[] {
+  const playerIds = players.map(player => player.playerId)
+  for (let index = playerIds.length - 1; index > 0; index -= 1) {
+    const targetIndex = Math.floor(Math.random() * (index + 1))
+    const currentPlayerId = playerIds[index]
+    playerIds[index] = playerIds[targetIndex]
+    playerIds[targetIndex] = currentPlayerId
+  }
+  return playerIds
 }
 
 function setGameState(gameState: GameState, status: NonNullable<RoomState['gameSession']>['status'] = 'PLAYING') {
@@ -134,8 +145,9 @@ export const mockApi: NoopiApi = {
   },
   async confirmRole() {
     await wait()
-    setGameState({ type: 'LIAR', phase: 'DISCUSSION', myRole: 'CITIZEN', keyword: '떡볶이', firstSpeakerPlayerId: 2 })
-    emit('DISCUSSION_STARTED')
+    const speakingOrderPlayerIds = shuffledPlayerIds(room().players)
+    setGameState({ type: 'LIAR', phase: 'DISCUSSION', myRole: 'CITIZEN', keyword: '떡볶이', speakingOrderPlayerIds })
+    emit('DISCUSSION_STARTED', { speakingOrderPlayerIds })
   },
   async startVote() {
     await wait()

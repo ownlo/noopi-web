@@ -2,6 +2,84 @@
   margin: 18px 0;
 }
 
+.speakingOrderCard {
+  margin: 20px 0;
+}
+
+.speakingOrderCard ol {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.speakingOrderCard li {
+  display: grid;
+  grid-template-columns: 30px 40px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 7px 10px;
+  border: 1px solid #ffffff0d;
+  border-radius: 16px;
+  background: #0e112a66;
+}
+
+.speakingOrderCard li > b {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: #292d5b;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.speakingOrderName {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.speakingOrderName > strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.speakingOrderName > small {
+  flex: 0 0 auto;
+  color: var(--cyan);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.speakingOrderCard li.first {
+  border-color: #64e7ff55;
+  background: linear-gradient(135deg, #17395a99, #25245a99);
+  box-shadow: inset 0 0 0 1px #57dfff18;
+}
+
+.speakingOrderCard li.first > b {
+  background: var(--cyan);
+  color: #10142e;
+}
+
+.speakingOrderCard > p {
+  margin: 15px 2px 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.speakingOrderCard > p strong {
+  color: #fff;
+}
+
 .roleRecall > button {
   width: 100%;
   min-height: 48px;

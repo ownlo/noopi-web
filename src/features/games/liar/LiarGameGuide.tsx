@@ -26,7 +26,7 @@ export function LiarGameGuide({ game, actionLabel, onClose, onAction, showCloseB
       <div className="gameGuideMeta"><span>👥 {game.minPlayers}–{game.maxPlayers}명</span><span>라이어 1명</span></div>
       <ol className="gameGuideSteps">
         <li><div className="guideScene guideSceneSecret" aria-hidden><img className="guideCitizen" src={citizenCharacter} alt="" /><img className="guideLiar" src={liarCharacter} alt="" /><i>?</i></div><div><small>STEP 1</small><h3>나만의 역할을 확인해요</h3><p>시민은 모두 같은 제시어를 받아요. 단 한 명의 라이어만 제시어를 모른답니다.</p></div></li>
-        <li><div className="guideScene guideSceneTalk" aria-hidden><img src={animalDuo} alt="" /><i>···</i></div><div><small>STEP 2</small><h3>한마디씩 이야기해요</h3><p>첫 발언자부터 제시어를 너무 티 나지 않게 설명해요. 질문하고 반응을 살피며 수상한 사람을 찾아보세요.</p></div></li>
+        <li><div className="guideScene guideSceneTalk" aria-hidden><img src={animalDuo} alt="" /><i>···</i></div><div><small>STEP 2</small><h3>순서대로 이야기해요</h3><p>서버가 정한 발언 순서대로 제시어를 너무 티 나지 않게 설명해요. 질문하고 반응을 살피며 수상한 사람을 찾아보세요.</p></div></li>
         <li><div className="guideScene guideSceneVote" aria-hidden><img src={citizenCharacter} alt="" /><i>✓</i></div><div><small>STEP 3</small><h3>비밀투표로 지목해요</h3><p>자신을 제외하고 라이어 같은 한 명에게 투표해요. 동률이면 동률 후보만 두고 다시 투표합니다.</p></div></li>
         <li><div className="guideScene guideSceneFinal" aria-hidden><img src={liarGameChoiceCharacter} alt="" /><i>!</i></div><div><small>STEP 4</small><h3>라이어에게도 마지막 기회!</h3><p>라이어를 찾아도 끝은 아니에요. 라이어가 제시어를 맞히면 역전하고, 틀리면 시민이 승리해요.</p></div></li>
       </ol>

@@ -99,7 +99,7 @@ function LiarGameContent({ game, state, pending, act }: { game:LiarGameState; st
   switch(game.phase) {
     case 'READY': return <ReadyView state={game} host={state.me.host} pending={pending} onStart={()=>act('START')} />
     case 'ROLE_REVEAL': return <RoleView state={game} players={state.players} pending={pending} onConfirm={()=>act('ROLE')} />
-    case 'DISCUSSION': return <DiscussionView state={game} first={state.players.find(p=>p.playerId===game.firstSpeakerPlayerId)!} host={state.me.host} pending={pending} onVote={()=>act('START_VOTE')} />
+    case 'DISCUSSION': return <DiscussionView state={game} players={state.players} currentPlayerId={state.me.playerId} host={state.me.host} pending={pending} onVote={()=>act('START_VOTE')} />
     case 'VOTING': case 'REVOTING': return <VotingView key={game.vote.round} state={game} players={state.players} pending={pending} onSubmit={id=>act('VOTE',id)} />
     case 'VOTE_RESULT': return <VoteResultView state={game} />
     case 'LIAR_REVEAL': return <RevealView state={game} />
