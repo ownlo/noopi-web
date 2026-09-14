@@ -11,7 +11,7 @@ import { DiscussionView, FinalView, GuessView, ReadyView, RevealView, RoleView, 
 import { BlindGameGuide } from '../features/games/blind/BlindGameGuide'
 import { BlindFinalView, BlindGuessingView, BlindReadyView } from '../features/games/blind/BlindViews'
 import { MafiaGameGuide } from '../features/games/mafia/MafiaGameGuide'
-import { MafiaDayView, MafiaExecutionView, MafiaFinalView, MafiaNightResultView, MafiaNightView, MafiaReadyView, MafiaRoleView, MafiaVoteResultView, MafiaVotingView } from '../features/games/mafia/MafiaViews'
+import { MafiaDayView, MafiaExecutionView, MafiaFinalView, MafiaInvestigationResultView, MafiaNightResultView, MafiaNightView, MafiaReadyView, MafiaRoleView, MafiaVoteResultView, MafiaVotingView } from '../features/games/mafia/MafiaViews'
 import liarCharacter from '../assets/characters/noopi-liar-cat.png'
 import liarGameChoiceCharacter from '../assets/characters/noopi-liar-cat-game-choice.png'
 import blindGameChoiceCharacter from '../assets/characters/noopi-blind-game-choice.png'
@@ -123,10 +123,14 @@ function BlindGameContent({ game, state, pending, act }: { game:BlindGameState; 
 }
 
 function MafiaGameContent({ game, state, pending, act }: { game:MafiaGameState; state:State; pending:boolean; act:(type:string,payload?:number|string|'REPLAY'|'OTHER'|{ gameType: GameType }|{ actionType: MafiaNightActionType; targetPlayerId?: number })=>Promise<unknown> }) {
+  const [investigationResult, setInvestigationResult] = useState<{ targetNickname: string; mafia: boolean }>()
+
+  if (investigationResult) return <MafiaInvestigationResultView targetNickname={investigationResult.targetNickname} mafia={investigationResult.mafia} onConfirm={() => setInvestigationResult(undefined)} />
+
   switch (game.phase) {
     case 'READY': return <MafiaReadyView state={game} host={state.me.host} pending={pending} onStart={() => void act('START')} />
     case 'ROLE_REVEAL': return <MafiaRoleView state={game} pending={pending} onConfirm={() => void act('MAFIA_ROLE')} />
-    case 'FIRST_NIGHT': case 'NIGHT': return <MafiaNightView state={game} pending={pending} onAction={async input => { const result = await act('MAFIA_NIGHT', input); return typeof result === 'object' && result !== null ? result as { result?: { targetPlayerId: number; mafia: boolean } } : undefined }} />
+    case 'FIRST_NIGHT': case 'NIGHT': return <MafiaNightView state={game} pending={pending} onAction={async input => { const targetNickname = game.nightAction?.eligibleTargets?.find(target => target.playerId === input.targetPlayerId)?.nickname ?? '선택한 플레이어'; const result = await act('MAFIA_NIGHT', input); const response = typeof result === 'object' && result !== null ? result as { result?: { targetPlayerId: number; mafia: boolean } } : undefined; if (response?.result) setInvestigationResult({ targetNickname, mafia: response.result.mafia }); return response }} />
     case 'DAY': return <MafiaDayView state={game} host={state.me.host} pending={pending} onVote={() => void act('MAFIA_START_VOTE')} />
     case 'VOTING': case 'REVOTING': return <MafiaVotingView key={game.vote.round} state={game} pending={pending} onSubmit={id => void act('MAFIA_VOTE', id)} />
     case 'VOTE_RESULT': return <MafiaVoteResultView state={game} pending={pending} onAdvance={() => void act('MAFIA_ADVANCE')} />
