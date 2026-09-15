@@ -9,17 +9,11 @@ import { YutActionDock } from './YutActionDock'
 import { useYutCaptureAnimation } from './useYutCaptureAnimation'
 import { useYutStepAnimation } from './useYutStepAnimation'
 import { YutBoardDecorations } from './YutBoardDecorations'
+import { boardNodes, outerNodes } from './yutBoardPresentation'
 
 type PlayingState = Extract<YutGameState, { phase: 'PLAYING' }>
 const resultNames = { DO: '도', GAE: '개', GEOL: '걸', YUT: '윷', MO: '모' } as const
 const colors = ['#b66bff', '#369cff', '#c1ff24', '#ff4d5e']
-// Presentation coordinates only. Movement and route selection remain server-owned.
-const outerNodes = Array.from({ length: 20 }, (_, index) => {
-  const side = Math.floor(index / 5)
-  const step = (index % 5 + 1) * 15.2
-  const [x, y] = side === 0 ? [88, 88 - step] : side === 1 ? [88 - step, 12] : side === 2 ? [12, 12 + step] : [12 + step, 88]
-  return { id: `OUTER_${index + 1}`, x, y, corner: (index + 1) % 5 === 0 }
-})
 const position = (x: number, y: number): CSSProperties => ({ left: `${x}%`, top: `${y}%` })
 
 function ownerLabel(ownerId: string, players: Player[]) {
@@ -48,12 +42,12 @@ function YutHomeGate() {
 function Board({ state, players, pending, onPiece }: { state: PlayingState; players: Player[]; pending: boolean; onPiece: (id: string) => void }) {
   const woodFillId = useId()
   const boardRef = useRef<HTMLDivElement>(null)
-  useYutStepAnimation(boardRef, state.pieces, outerNodes)
+  useYutStepAnimation(boardRef, state.pieces)
   const capture = useYutCaptureAnimation(state.pieces, boardRef)
   const owners = state.finishedPieceCounts.map(item => item.ownerId)
   const eligible = state.myAction?.type === 'SELECT_PIECE' ? state.myAction.eligiblePieceIds : []
   const groups = state.pieces.filter((piece, index, pieces) => piece.status === 'ON_BOARD' && !pieces.slice(0, index).some(other => other.groupPieceIds.includes(piece.pieceId)))
-  const unplaced = groups.filter(piece => !outerNodes.some(node => node.id === piece.nodeId))
+  const unplaced = groups.filter(piece => !boardNodes.some(node => node.id === piece.nodeId))
   function renderPiece(piece: YutPiece, x: number, y: number, ghost = false) {
     const ownerIndex = Math.max(0, owners.indexOf(piece.ownerId))
     const selectableId = ghost ? undefined : [piece.pieceId, ...piece.groupPieceIds].find(id => eligible.includes(id))
@@ -84,8 +78,8 @@ function Board({ state, players, pending, onPiece }: { state: PlayingState; play
       {outerNodes.map(node => <span key={node.id} className={`yutBoardSpot ${node.corner ? 'corner' : ''} ${node.id === 'OUTER_20' ? 'home' : ''}`} style={position(node.x, node.y)} aria-hidden="true">{node.id === 'OUTER_20' ? <YutHomeGate /> : node.id === 'OUTER_5' ? '☾' : node.id === 'OUTER_10' ? '✿' : node.id === 'OUTER_15' ? '♡' : ''}</span>)}
 
 
-      {groups.map(piece => { const node = outerNodes.find(item => item.id === piece.nodeId); return node ? renderPiece(piece, node.x, node.y) : null })}
-      {capture.captured.map(piece => { const node = outerNodes.find(item => item.id === piece.nodeId); return node ? renderPiece(piece, node.x, node.y, true) : null })}
+      {groups.map(piece => { const node = boardNodes.find(item => item.id === piece.nodeId); return node ? renderPiece(piece, node.x, node.y) : null })}
+      {capture.captured.map(piece => { const node = boardNodes.find(item => item.id === piece.nodeId); return node ? renderPiece(piece, node.x, node.y, true) : null })}
     </div>
     {capture.captured.length > 0 && <span className="srOnly" role="status">상대 말을 잡았어요!</span>}
     {unplaced.length > 0 && <p className="yutBoardNote">지름길 위의 말: {unplaced.map(piece => ownerLabel(piece.ownerId, players)).join(', ')}</p>}

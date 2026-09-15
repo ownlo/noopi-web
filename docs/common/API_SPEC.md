@@ -2281,6 +2281,11 @@ Room broadcast:
 아닌 서버 보드 그래프의 안정적인 Node ID다. `READY`와 `FINISHED` 말의
 `nodeId`는 `null`이다. 같은 그룹의 각 말은 동일한 `groupPieceIds`를 가진다.
 
+전체 Node/Path ID와 도착점 통과 기준은 `games/YUT_GAME_SPEC.md` 9.1절을
+따른다. 문자열 ID인 `pieceId`, `ownerId`, `moveTokenId`, `nodeId`, `pathId`는
+숫자형 Room/Player/GameSession ID와 구분한다. 개인전 `ownerId`는 Player ID의
+문자열 표현이며 팀전은 `NOOPI` 또는 `DAY`다.
+
 `myAction`은 현재 요청 Player가 행동할 수 없으면 `null`이며, 다음 중 하나다.
 
 ``` text
@@ -2338,6 +2343,15 @@ Request body는 없다. Response `200 OK`:
 
 서버가 현재 턴과 phase를 검증하고 윷가락 4개의 결과로 최종 결과를 정한다.
 
+길게 누르는 시간/파워는 Client 연출이며 Request에 포함하지 않는다.
+서버는 각 윷가락의 앞뒤를 독립적으로 결정한다. 앞면 수가 1/2/3/4이면
+DO/GAE/GEOL/YUT, 0이면 MO다.
+
+중복 요청은 Room 단위 잠금과 현재 행동 단계 검증으로 보호한다. 이 body
+없는 계약만으로는 같은 Player의 연속 추가 던지기와 이전 요청의 지연 재전송을
+완전히 구분할 수 없다. Client는 처리 중 중복 입력과 던지기 자동 재시도를
+하지 않고, 응답이 유실되면 `/state`부터 조회한다. 요청 식별자 계약은 V1에 추가하지 않는다.
+
 ## 이동권 선택
 
 ``` http
@@ -2364,6 +2378,9 @@ POST /api/rooms/{roomId}/game-sessions/{gameSessionId}/yut/piece-selections
 경로 선택이 없으면 서버가 이동을 즉시 확정하고 `200 OK`로 결과를 반환한다.
 경로 선택이 필요하면 `202 Accepted`로 현재 선택만 저장하며 `/state`의
 `myAction = SELECT_PATH`에서 경로 후보를 제공한다.
+
+`202 Accepted` 응답 body는 비어 있다. Client는 이를 JSON으로 파싱하지 않는다.
+이동권 선택과 경로 대기 상태도 `/state`로 복구한다.
 
 ## 경로 선택
 
@@ -2400,6 +2417,13 @@ PIECE_NOT_ELIGIBLE
 PATH_NOT_ELIGIBLE
 ACTION_ALREADY_PROCESSED
 ```
+
+윷놀이 오류 HTTP Status: `NOT_GAME_PARTICIPANT`/`NOT_CURRENT_TURN`은 403,
+`INVALID_TEAM`은 400, `MOVE_TOKEN_NOT_FOUND`는 404,
+`PIECE_NOT_ELIGIBLE`/`PATH_NOT_ELIGIBLE`은 422다.
+`TEAM_FULL`, `GAME_ALREADY_STARTED`, `INVALID_GAME_PHASE`, `INVALID_TURN_PHASE`,
+`MOVE_TOKEN_ALREADY_USED`, `ACTION_ALREADY_PROCESSED`는 409다.
+종료 후 행동은 공통 `GAME_SESSION_ALREADY_FINISHED`(409)를 사용한다.
 
 ## 윷놀이 WebSocket 이벤트
 

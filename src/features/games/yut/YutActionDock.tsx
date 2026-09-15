@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom'
 import type { YutGameState } from '../../../api/types'
 import { YutThrowButton } from './YutThrowButton'
+import { pathLabels } from './yutBoardPresentation'
 import './yut-actions.css'
 
 type PlayingState = Extract<YutGameState, { phase: 'PLAYING' }>
@@ -40,7 +41,7 @@ export function YutActionDock({ state, pending, animating, onThrow, onToken, onP
     </div>}
     {action.type === 'SELECT_PATH' && <div className="yutDockStep" key="paths">
       <p className="yutDockHint" role="status">{pending ? '말을 움직이고 있어요…' : '어느 길로 갈까요?'}</p>
-      <div className="yutDockPaths">{action.eligiblePathIds.map(id => <button key={id} type="button" disabled={pending} onClick={() => onPath(id)}>{id.includes('SHORTCUT') ? '지름길로 가요' : '바깥길로 가요'}</button>)}</div>
+      <div className="yutDockPaths">{action.eligiblePathIds.map(id => <button key={id} type="button" disabled={pending} onClick={() => onPath(id)}>{pathLabels[id] ?? '이 경로로 가요'}</button>)}</div>
     </div>}
   </section>, document.body)
 }

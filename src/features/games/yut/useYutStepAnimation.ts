@@ -1,12 +1,11 @@
 import { useLayoutEffect, useRef, type RefObject } from 'react'
 import type { YutPiece } from '../../../api/types'
+import { confirmedMovePoints } from './yutBoardPresentation'
 
-type Point = { id: string; x: number; y: number }
 const hopMs = 170
 
-// Draw intermediate positions on the displayed outer track only after the server
-// confirms a move. Unknown routes are never guessed from coordinates.
-export function useYutStepAnimation(board: RefObject<HTMLDivElement | null>, pieces: YutPiece[], nodes: Point[]) {
+// Only animate between confirmed server endpoints, including shortcut nodes.
+export function useYutStepAnimation(board: RefObject<HTMLDivElement | null>, pieces: YutPiece[]) {
   const previous = useRef(pieces)
   const previousFaces = useRef(new Map<string, HTMLElement>())
   useLayoutEffect(() => {
@@ -29,9 +28,9 @@ export function useYutStepAnimation(board: RefObject<HTMLDivElement | null>, pie
     for (const piece of pieces) {
       const old = before.find(item => item.pieceId === piece.pieceId)
       if (!old || old.nodeId === piece.nodeId || piece.status === 'READY') continue
-      const from = old.status === 'READY' ? -1 : nodes.findIndex(node => node.id === old.nodeId)
-      const to = piece.status === 'FINISHED' ? nodes.length - 1 : nodes.findIndex(node => node.id === piece.nodeId)
-      if ((old.status !== 'READY' && from < 0) || to < 0 || to <= from) continue
+      const path = confirmedMovePoints(old.nodeId, piece.nodeId)
+      const end = path.at(-1)
+      if (!end || path.length < 2) continue
       const groupKey = [...piece.groupPieceIds].sort().join(',')
       if (renderedGroups.has(groupKey)) continue
       renderedGroups.add(groupKey)
@@ -44,15 +43,13 @@ export function useYutStepAnimation(board: RefObject<HTMLDivElement | null>, pie
           target.setAttribute('tabindex', '-1')
           target.className = 'yutBoardPiece'
           target.style.pointerEvents = 'none'
-          target.style.left = `${nodes[to].x}%`
-          target.style.top = `${nodes[to].y}%`
+          target.style.left = `${end.x}%`
+          target.style.top = `${end.y}%`
           element.append(target)
           ghosts.push(target)
         }
       }
       if (!target) continue
-      const end = nodes[to]
-      const path = [from < 0 ? nodes[nodes.length - 1] : nodes[from], ...nodes.slice(from + 1, to + 1)]
       const frames: Keyframe[] = []
       const steps = path.length - 1
       const translate = (x: number, y: number, lift = 0) => `${(x - end.x) * element.clientWidth / 100}px ${(y - end.y) * element.clientHeight / 100 - lift}px`
@@ -71,5 +68,5 @@ export function useYutStepAnimation(board: RefObject<HTMLDivElement | null>, pie
       animations.push(animation)
     }
     return () => { animations.forEach(animation => animation.cancel()); ghosts.forEach(ghost => ghost.remove()) }
-  }, [board, pieces, nodes])
+  }, [board, pieces])
 }

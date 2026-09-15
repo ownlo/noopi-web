@@ -9,7 +9,9 @@ if (!base) {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${base}${path}`, { ...init, headers: { 'Content-Type': 'application/json', 'X-Client-Id': getClientId(), ...init?.headers } })
   if (!response.ok) throw await response.json()
-  return response.status === 204 ? undefined as T : response.json()
+  // Path selection may return 202 with no body; successful empty responses are valid.
+  const body = await response.text()
+  return body ? JSON.parse(body) as T : undefined as T
 }
 export const httpApi: NoopiApi = {
   createRoom: input => request('/rooms', { method: 'POST', body: JSON.stringify(input) }),
