@@ -14,6 +14,7 @@ Frontend 구현 시 다음 문서를 Source of Truth로 사용한다.
 -   `games/LIAR_GAME_SPEC.md`
 -   `games/BLIND_GAME_SPEC.md`
 -   `games/MAFIA_GAME_SPEC.md`
+-   `games/YUT_GAME_SPEC.md`
 
 Frontend는 서버가 결정한 Room/Game 상태를 표현하고 사용자의 행동을
 서버에 전달하는 역할을 담당한다.
@@ -157,8 +158,9 @@ src/
 ``` text
 features/games/
 ├── liar/
-├── balance/
-└── bomb/
+├── blind/
+├── mafia/
+└── yut/
 ```
 
 처럼 확장할 수 있어야 한다.
@@ -269,6 +271,8 @@ switch (gameSession.gameType) {
     return <BlindGame />
   case 'MAFIA':
     return <MafiaGame />
+  case 'YUT':
+    return <YutGame />
 }
 ```
 
@@ -323,6 +327,18 @@ features/games/blind/
 
 ``` text
 features/games/mafia/
+├── components/
+├── hooks/
+├── api/
+├── types/
+└── views/
+```
+
+윷놀이도 동일한 경계 아래에 두며 윷판 렌더링과 서버 행동 후보 표현을
+분리한다.
+
+``` text
+features/games/yut/
 ├── components/
 ├── hooks/
 ├── api/
@@ -1132,7 +1148,7 @@ API DTO와 Game State는 명시적으로 타입을 정의한다.
 ``` ts
 type Gender = 'MALE' | 'FEMALE'
 
-type GameType = 'LIAR' | 'BLIND' | 'MAFIA'
+type GameType = 'LIAR' | 'BLIND' | 'MAFIA' | 'YUT'
 
 type LiarPhase =
   | 'ROLE_REVEAL'
@@ -1159,6 +1175,15 @@ type MafiaPhase =
   | 'NIGHT'
   | 'NIGHT_RESULT'
   | 'FINISHED'
+
+type YutPhase = 'READY' | 'TEAM_SELECT' | 'PLAYING' | 'FINISHED'
+
+type YutTurnPhase =
+  | 'WAITING_THROW'
+  | 'THROWING'
+  | 'WAITING_MOVE'
+  | 'WAITING_PATH_SELECTION'
+  | 'MOVING'
 ```
 
 무분별한 `any` 사용을 금지한다.
@@ -1176,6 +1201,7 @@ type GameState =
   | LiarGameState
   | BlindGameState
   | MafiaGameState
+  | YutGameState
 ```
 
 ``` ts
@@ -1195,6 +1221,12 @@ type MafiaGameState = {
   type: 'MAFIA'
   phase: MafiaPhase
   // phase별 개인화 데이터와 서버가 계산한 공개 결과
+}
+
+type YutGameState = {
+  type: 'YUT'
+  phase: YutPhase
+  // 윷판과 현재 Player에게 허용된 서버 계산 행동
 }
 ```
 

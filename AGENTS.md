@@ -35,6 +35,7 @@ FRONTEND_ARCHITECTURE.md
 games/LIAR_GAME_SPEC.md
 games/BLIND_GAME_SPEC.md
 games/MAFIA_GAME_SPEC.md
+games/YUT_GAME_SPEC.md
 ```
 
 우선순위:
@@ -44,6 +45,7 @@ games/MAFIA_GAME_SPEC.md
 → games/LIAR_GAME_SPEC.md
 → games/BLIND_GAME_SPEC.md
 → games/MAFIA_GAME_SPEC.md
+→ games/YUT_GAME_SPEC.md
 
 REST / WebSocket 계약
 → API_SPEC.md
@@ -179,7 +181,8 @@ src/
 │   └── games/
 │       ├── liar/
 │       ├── blind/
-│       └── mafia/
+│       ├── mafia/
+│       └── yut/
 ├── components/
 ├── api/
 ├── realtime/
@@ -850,6 +853,9 @@ Discussion
 방장의 결과 단계 진행
 사망자 관전
 마피아팀/시민팀 승리와 전체 역할 공개
+윷놀이 개인전 / 팀전 설정과 팀 선택
+윷 던지기 / 추가 던지기 / 이동권 소비
+윷놀이 경로 선택 / 업기 / 잡기 / 완주 / 승리
 연결 끊김
 재접속
 Host 변경
@@ -1073,6 +1079,7 @@ Frontend에서 제시어 선정
 마피아 공격 대상, 치료 성공, 사망자를 Frontend에서 판정
 시민 의심을 Frontend에서 집계하거나 타인의 의심 정보를 노출
 마피아 게임의 승패를 Frontend에서 판정
+윷 결과, 이동 후보, 경로, 업기, 잡기, 완주 또는 승자를 Frontend에서 판정
 재투표 횟수 제한 추가
 동률 랜덤 지목 추가
 카테고리 하드코딩

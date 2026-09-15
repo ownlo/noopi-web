@@ -14,6 +14,7 @@
 -   `games/LIAR_GAME_SPEC.md`
 -   `games/BLIND_GAME_SPEC.md`
 -   `games/MAFIA_GAME_SPEC.md`
+-   `games/YUT_GAME_SPEC.md`
 
 Frontend는 게임 규칙과 승패를 자체 판단하지 않는다. 서버가 반환한 현재
 상태를 기준으로 화면을 렌더링한다.
@@ -350,6 +351,14 @@ MVP에서 활성화된 게임만 표시한다.
 │ 4~12명             │
 │ 밤의 단서를 모아    │
 │ 마피아를 찾아보세요 │
+└────────────────────┘
+
+┌────────────────────┐
+│ 🎲 윷놀이           │
+│                    │
+│ 2~4명              │
+│ 윷을 던지고 말을    │
+│ 먼저 완주해보세요   │
 └────────────────────┘
 ```
 
@@ -1200,6 +1209,10 @@ MAFIA_EXECUTION
 MAFIA_NIGHT
 MAFIA_NIGHT_RESULT
 MAFIA_RESULT
+YUT_READY
+YUT_TEAM_SELECT
+YUT_PLAYING
+YUT_RESULT
 ROOM_NEXT_GAME
 ROOM_NOT_FOUND
 ROOM_CLOSED
@@ -1278,6 +1291,35 @@ B의 실제 제시어
 `VOTE_RESULT`, `JUDGMENT_RESULT`, `EXECUTION`, `NIGHT_RESULT`에서는 방장에게만 다음 단계
 버튼을 제공한다. 비방장은 방장이 진행하기를 기다리는 안내를 본다. 첫 번째
 밤은 전원의 필수 행동이 끝나면 자동으로 첫 번째 `DAY`로 이동한다.
+
+## 윷놀이 화면 규칙
+
+윷놀이 선택 카드에는 `2~4명`을 표시한다. 방장은 `개인전` 또는 `2:2 팀전`을
+선택하며 개인전은 2~4명, 팀전은 정확히 4명일 때만 생성할 수 있다.
+
+팀전의 `TEAM_SELECT`에서는 누피팀과 데이팀의 현재 인원과 Player 이름을 모두
+표시한다. 현재 Player는 서버의 `selectableTeams`에 포함된 팀만 선택하거나
+변경할 수 있다. 방장은 양 팀이 2명씩 채워지기 전까지 시작 버튼을
+비활성화한다.
+
+`PLAYING`에서는 모든 Player에게 동일한 윷판, 말과 업힌 그룹, 완주 수,
+현재 턴, 확정된 윷 결과와 남은 이동권을 표시한다. 조작 UI는 `/state`의
+`myAction`에 따라 현재 Player에게만 제공한다.
+
+``` text
+THROW_YUT         → [윷 던지기]
+SELECT_MOVE_TOKEN → 이동권 목록
+SELECT_PIECE      → 서버가 제공한 말/그룹 후보
+SELECT_PATH       → 서버가 제공한 경로 후보
+myAction = null   → 현재 턴 Player 안내와 대기 UI
+```
+
+이동 중 짧은 윷 던지기·말 이동·잡기·완주 연출을 사용할 수 있으나 서버의
+최신 상태 적용을 지연시키지 않는다. Frontend에서 좌표를 이용해 이동 결과,
+지름길, 업기, 잡기, 추가 던지기, 완주 또는 승자를 판정하지 않는다.
+
+`FINISHED`에서는 개인전이면 승리 Player, 팀전이면 승리 팀과 팀원을
+표시한다. 방장에게만 공통 다시하기와 다른 게임 선택 행동을 제공한다.
 
 ------------------------------------------------------------------------
 
