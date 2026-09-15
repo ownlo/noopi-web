@@ -271,13 +271,13 @@ export const mockApi: NoopiApi = {
     const target = state.players.find(player => player.playerId === input.targetPlayerId)
     const result = input.actionType === 'INVESTIGATE' && target ? { targetPlayerId: target.playerId, mafia: target.playerId === 2 } : undefined
     if (game.phase === 'FIRST_NIGHT') {
-      setGameState({ type: 'MAFIA', phase: 'DAY', dayNo: 1, myRole: game.myRole, alive: true, mafiaTeammates: game.mafiaTeammates, players: game.players, investigationHistory: target && result ? [{ nightNo: 1, targetPlayerId: target.playerId, targetNickname: target.nickname, mafia: result.mafia }] : game.investigationHistory, lastNightResult: { nightNo: 1, deadPlayer: null, mySuspicionCount: 1 } })
+      const mafiaCount = mafiaRoleComposition(state.players.length).mafia
+      setGameState({ type: 'MAFIA', phase: 'DAY', dayNo: 1, myRole: game.myRole, alive: true, mafiaTeammates: game.mafiaTeammates, players: game.players, investigationHistory: target && result ? [{ nightNo: 1, targetPlayerId: target.playerId, targetNickname: target.nickname, mafia: result.mafia }] : game.investigationHistory, remainingTeamCounts: { mafia: mafiaCount, citizenTeam: state.players.length - mafiaCount }, lastNightResult: { nightNo: 1, deadPlayer: null, mySuspicionCount: 1 } })
       emit('MAFIA_PHASE_CHANGED', { phase: 'DAY' })
     } else {
       const victim = state.players[3]
-      const attackTied = input.actionType === 'ATTACK' && (game.mafiaTeammates?.length ?? 0) > 0
       const history = target && result ? [...(game.investigationHistory ?? []), { nightNo: 2, targetPlayerId: target.playerId, targetNickname: target.nickname, mafia: result.mafia }] : game.investigationHistory
-      setGameState({ type: 'MAFIA', phase: 'NIGHT_RESULT', myRole: game.myRole, alive: true, mafiaTeammates: game.mafiaTeammates, players: attackTied ? game.players : game.players?.map(player => player.playerId === victim.playerId ? { ...player, alive: false, revealedRole: 'CITIZEN' } : player), investigationHistory: history, nightResult: { nightNo: 2, deadPlayer: attackTied ? null : { playerId: victim.playerId, nickname: victim.nickname, revealedRole: 'CITIZEN' }, mySuspicionCount: 0 }, canAdvance: true })
+      setGameState({ type: 'MAFIA', phase: 'NIGHT_RESULT', myRole: game.myRole, alive: true, mafiaTeammates: game.mafiaTeammates, players: game.players?.map(player => player.playerId === victim.playerId ? { ...player, alive: false, revealedRole: 'CITIZEN' } : player), investigationHistory: history, nightResult: { nightNo: 2, deadPlayer: { playerId: victim.playerId, nickname: victim.nickname, revealedRole: 'CITIZEN' }, mySuspicionCount: 0 }, canAdvance: true })
       emit('MAFIA_PHASE_CHANGED', { phase: 'NIGHT_RESULT' })
     }
     return { actionType: input.actionType, result }
@@ -307,8 +307,33 @@ export const mockApi: NoopiApi = {
       emit('MAFIA_REVOTE_STARTED', { voteRound: 2 })
       return
     }
-    setGameState({ type: 'MAFIA', phase: 'VOTE_RESULT', myRole: game.myRole, alive: game.alive, players: game.players, mafiaTeammates: game.mafiaTeammates, investigationHistory: game.investigationHistory, voteResult: { round: input.voteRound, tied: false, counts: [{ playerId: target.playerId, nickname: target.nickname, voteCount: game.vote.requiredVoteCount }], executionTargetPlayerId: target.playerId }, canAdvance: true })
+    const otherCandidates = game.vote.eligibleCandidates.filter(candidate => candidate.playerId !== target.playerId)
+    const targetVoteCount = Math.floor(game.vote.requiredVoteCount / 2) + 1
+    const remainingVoteCount = Math.max(0, game.vote.requiredVoteCount - targetVoteCount)
+    const counts = [
+      { playerId: target.playerId, nickname: target.nickname, voteCount: targetVoteCount },
+      ...otherCandidates.map((candidate, index) => ({ ...candidate, voteCount: index === 0 ? remainingVoteCount : 0 })),
+    ]
+    setGameState({ type: 'MAFIA', phase: 'VOTE_RESULT', myRole: game.myRole, alive: game.alive, players: game.players, mafiaTeammates: game.mafiaTeammates, investigationHistory: game.investigationHistory, voteResult: { round: input.voteRound, tied: false, counts, executionTargetPlayerId: target.playerId }, canAdvance: true })
     emit('MAFIA_VOTE_RESULT')
+  },
+  async submitMafiaJudgment(_roomId, _gameSessionId, choice) {
+    await wait()
+    const game = room().gameSession?.gameState
+    if (!game || game.type !== 'MAFIA' || game.phase !== 'JUDGMENT' || !game.judgment.canVote || game.judgment.myVoteSubmitted) throw new Error('INVALID_GAME_PHASE')
+    const executeCount = game.judgment.executeCount + (choice === 'EXECUTE' ? 1 : 0)
+    const saveCount = game.judgment.saveCount + (choice === 'SAVE' ? 1 : 0)
+    setGameState({ ...game, judgment: { ...game.judgment, executeCount, saveCount, completedVoteCount: 1, myVoteSubmitted: true } })
+    emit('MAFIA_JUDGMENT_VOTED')
+    window.setTimeout(() => {
+      const currentGame = room().gameSession?.gameState
+      if (!currentGame || currentGame.type !== 'MAFIA' || currentGame.phase !== 'JUDGMENT' || !currentGame.judgment.myVoteSubmitted) return
+      const remainingVoteCount = Math.max(0, currentGame.judgment.requiredVoteCount - currentGame.judgment.completedVoteCount)
+      const finalExecuteCount = currentGame.judgment.executeCount + Math.floor(remainingVoteCount / 2)
+      const finalSaveCount = currentGame.judgment.saveCount + Math.ceil(remainingVoteCount / 2)
+      setGameState({ type: 'MAFIA', phase: 'JUDGMENT_RESULT', myRole: currentGame.myRole, alive: currentGame.alive, players: currentGame.players, mafiaTeammates: currentGame.mafiaTeammates, investigationHistory: currentGame.investigationHistory, accusedPlayer: currentGame.accusedPlayer, executeCount: finalExecuteCount, saveCount: finalSaveCount, executed: finalExecuteCount > finalSaveCount, canAdvance: true })
+      emit('MAFIA_PHASE_CHANGED', { phase: 'JUDGMENT_RESULT' })
+    }, PHASE_TRANSITION_DELAY_MS)
   },
   async advanceMafia() {
     await wait()
@@ -317,6 +342,18 @@ export const mockApi: NoopiApi = {
     if (game.phase === 'VOTE_RESULT') {
       const targetId = game.voteResult.executionTargetPlayerId ?? 3
       const target = state.players.find(player => player.playerId === targetId) ?? state.players[2]
+      const requiredVoteCount = Math.max(0, (game.players?.filter(player => player.alive).length ?? state.players.length) - 1)
+      setGameState({ type: 'MAFIA', phase: 'JUDGMENT', myRole: game.myRole, alive: game.alive, players: game.players, mafiaTeammates: game.mafiaTeammates, investigationHistory: game.investigationHistory, accusedPlayer: { playerId: target.playerId, nickname: target.nickname }, judgment: { executeCount: 0, saveCount: 0, requiredVoteCount, completedVoteCount: 0, canVote: target.playerId !== state.me.playerId, myVoteSubmitted: false } })
+    } else if (game.phase === 'JUDGMENT_RESULT') {
+      if (!game.executed) {
+        mafiaDayNo = 2
+        const actionType = mafiaAction(game.myRole, false)
+        const aliveCount = (game.players ?? []).filter(player => player.alive).length
+        setGameState({ type: 'MAFIA', phase: 'NIGHT', nightNo: 2, myRole: game.myRole, alive: game.alive, mafiaTeammates: game.mafiaTeammates, players: game.players, investigationHistory: game.investigationHistory, nightAction: { actionType, submitted: false, eligibleTargets: mafiaCandidates(state, game.myRole) }, nightProgress: { completedActionCount: aliveCount - 1, requiredActionCount: aliveCount } })
+        emit('MAFIA_PHASE_CHANGED', { phase: 'NIGHT' })
+        return
+      }
+      const target = state.players.find(player => player.playerId === game.accusedPlayer.playerId) ?? state.players[2]
       const role = mafiaDayNo === 1 ? 'CITIZEN' : 'MAFIA'
       setGameState({ type: 'MAFIA', phase: 'EXECUTION', myRole: game.myRole, alive: game.alive, players: game.players?.map(player => player.playerId === target.playerId ? { ...player, alive: false, revealedRole: role } : player), mafiaTeammates: game.mafiaTeammates, investigationHistory: game.investigationHistory, executionResult: { playerId: target.playerId, nickname: target.nickname, revealedRole: role }, canAdvance: true })
     } else if (game.phase === 'EXECUTION') {
@@ -330,7 +367,9 @@ export const mockApi: NoopiApi = {
       const aliveCount = (game.players ?? []).filter(player => player.alive).length
       setGameState({ type: 'MAFIA', phase: 'NIGHT', nightNo: 2, myRole: game.myRole, alive: game.alive, mafiaTeammates: game.mafiaTeammates, players: game.players, investigationHistory: game.investigationHistory, nightAction: { actionType, submitted: false, eligibleTargets: mafiaCandidates(state, game.myRole) }, nightProgress: { completedActionCount: aliveCount - 1, requiredActionCount: aliveCount } })
     } else if (game.phase === 'NIGHT_RESULT') {
-      setGameState({ type: 'MAFIA', phase: 'DAY', dayNo: 2, myRole: game.myRole, alive: game.alive, players: game.players, mafiaTeammates: game.mafiaTeammates, investigationHistory: game.investigationHistory, lastNightResult: game.nightResult })
+      const mafiaCount = mafiaRoleComposition(state.players.length).mafia
+      const deadCitizenTeamCount = game.players?.filter(player => !player.alive && player.revealedRole !== 'MAFIA').length ?? 0
+      setGameState({ type: 'MAFIA', phase: 'DAY', dayNo: 2, myRole: game.myRole, alive: game.alive, players: game.players, mafiaTeammates: game.mafiaTeammates, investigationHistory: game.investigationHistory, remainingTeamCounts: { mafia: mafiaCount, citizenTeam: state.players.length - mafiaCount - deadCitizenTeamCount }, lastNightResult: game.nightResult })
     } else throw new Error('INVALID_GAME_PHASE')
     emit('MAFIA_PHASE_CHANGED')
   },

@@ -29,14 +29,19 @@ export type Investigation = { nightNo: number; targetPlayerId: number; targetNic
 export type MafiaVoteResult = Omit<VoteResult, 'accusedPlayerId'> & { executionTargetPlayerId?: number | null }
 export type MafiaResult = { winnerTeam: 'MAFIA_TEAM' | 'CITIZEN_TEAM'; players: (Candidate & { role: MafiaRole; alive: boolean })[] }
 export type MafiaRoleComposition = { mafia: number; police: number; doctor: number; citizen: number }
+export type MafiaRemainingTeamCounts = { mafia: number; citizenTeam: number }
+export type MafiaJudgmentChoice = 'EXECUTE' | 'SAVE'
+export type MafiaJudgment = { executeCount: number; saveCount: number; requiredVoteCount: number; completedVoteCount: number; canVote: boolean; myVoteSubmitted: boolean }
 type MafiaCommon = { type: 'MAFIA'; myRole: MafiaRole; alive: boolean; players?: MafiaPlayer[]; mafiaTeammates?: (Candidate & { alive: boolean })[]; investigationHistory?: Investigation[] }
 export type MafiaGameState =
   | { type: 'MAFIA'; phase: 'READY'; participantCount: number; roleComposition: MafiaRoleComposition }
   | (MafiaCommon & { phase: 'ROLE_REVEAL'; roleChecked: boolean; roleCheckedCount: number; participantCount: number })
   | (MafiaCommon & { phase: 'FIRST_NIGHT' | 'NIGHT'; nightNo: number; nightAction?: { actionType: MafiaNightActionType; submitted: boolean; eligibleTargets?: Candidate[] }; nightProgress?: { completedActionCount: number; requiredActionCount: number } })
-  | (MafiaCommon & { phase: 'DAY'; dayNo: number; lastNightResult: { nightNo: number; deadPlayer: (Candidate & { revealedRole: MafiaRole }) | null; mySuspicionCount: number | null }; canAdvance?: boolean })
+  | (MafiaCommon & { phase: 'DAY'; dayNo: number; remainingTeamCounts: MafiaRemainingTeamCounts; lastNightResult: { nightNo: number; deadPlayer: (Candidate & { revealedRole: MafiaRole }) | null; mySuspicionCount: number | null }; canAdvance?: boolean })
   | (MafiaCommon & { phase: 'VOTING' | 'REVOTING'; vote: Omit<VoteState, 'playerVoteStatuses'>; previousVoteResult?: MafiaVoteResult })
   | (MafiaCommon & { phase: 'VOTE_RESULT'; voteResult: MafiaVoteResult; canAdvance: boolean })
+  | (MafiaCommon & { phase: 'JUDGMENT'; accusedPlayer: Candidate; judgment: MafiaJudgment })
+  | (MafiaCommon & { phase: 'JUDGMENT_RESULT'; accusedPlayer: Candidate; executeCount: number; saveCount: number; executed: boolean; canAdvance: boolean })
   | (MafiaCommon & { phase: 'EXECUTION'; executionResult: Candidate & { revealedRole: MafiaRole }; canAdvance: boolean })
   | (MafiaCommon & { phase: 'NIGHT_RESULT'; nightResult: { nightNo: number; deadPlayer: (Candidate & { revealedRole: MafiaRole }) | null; mySuspicionCount: number | null }; canAdvance: boolean })
   | { type: 'MAFIA'; phase: 'FINISHED'; result: MafiaResult }
@@ -67,6 +72,7 @@ export interface NoopiApi {
   submitMafiaNightAction(roomId: number, gameSessionId: number, input: { actionType: MafiaNightActionType; targetPlayerId?: number }): Promise<{ actionType: MafiaNightActionType; result?: { targetPlayerId: number; mafia: boolean } }>
   startMafiaVote(roomId: number, gameSessionId: number): Promise<{ voteRound: number }>
   submitMafiaVote(roomId: number, gameSessionId: number, input: { voteRound: number; targetPlayerId: number }): Promise<void>
+  submitMafiaJudgment(roomId: number, gameSessionId: number, choice: MafiaJudgmentChoice): Promise<void>
   advanceMafia(roomId: number, gameSessionId: number): Promise<void>
   subscribe(roomId: number, listener: (event: RealtimeEvent) => void, connection: (connected: boolean) => void): () => void
 }

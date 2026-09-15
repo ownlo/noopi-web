@@ -28,6 +28,7 @@ export const httpApi: NoopiApi = {
   submitMafiaNightAction: (id, gameSessionId, input) => request(`/rooms/${id}/game-sessions/${gameSessionId}/mafia/night-actions`, { method: 'POST', body: JSON.stringify(input) }),
   startMafiaVote: (id, gameSessionId) => request(`/rooms/${id}/game-sessions/${gameSessionId}/mafia/votes/start`, { method: 'POST' }),
   submitMafiaVote: (id, gameSessionId, input) => request(`/rooms/${id}/game-sessions/${gameSessionId}/mafia/votes`, { method: 'POST', body: JSON.stringify(input) }),
+  submitMafiaJudgment: (id, gameSessionId, choice) => request(`/rooms/${id}/game-sessions/${gameSessionId}/mafia/judgment-votes`, { method: 'POST', body: JSON.stringify({ choice }) }),
   advanceMafia: (id, gameSessionId) => request(`/rooms/${id}/game-sessions/${gameSessionId}/mafia/advance`, { method: 'POST' }),
   subscribe(roomId, listener, connection) {
     const wsUrl = import.meta.env.VITE_WS_URL
