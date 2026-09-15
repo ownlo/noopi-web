@@ -27,7 +27,7 @@ export function YutSetupView({ playerCount, pending, onCreate }: { playerCount: 
       <button className="yutSetupChoice individual" type="button" disabled={pending || playerCount < 2 || playerCount > 4} onClick={() => onCreate('INDIVIDUAL')}><strong className="yutSetupChoiceTitle">개인전</strong><span className="yutSetupChoiceCaption">우정은 잠시 접어두고</span><img src={yutMove} alt="" /></button>
       <button className="yutSetupChoice teams" type="button" disabled={pending || playerCount !== 4} onClick={() => onCreate('TEAM')}><strong className="yutSetupChoiceTitle">2 vs 2 팀전</strong><span className="yutSetupChoiceCaption">내 편 하나면 든든하지</span><img src={yutTeam} alt="" /></button>
     </div>
-    <p className="yutSetupHint" role="status">{pending ? '윷판을 준비하고 있어요…' : playerCount !== 4 ? '2:2 팀전은 딱 4명이 모이면 할 수 있어요.' : '팀전에서는 누피팀과 데이팀을 직접 고를 수 있어요.'}</p>
+    {(pending || playerCount === 4) && <p className="yutSetupHint" role="status">{pending ? '윷판을 준비하고 있어요…' : '팀전에서는 누피팀과 데이팀을 직접 고를 수 있어요.'}</p>}
   </div>
 }
 
@@ -44,4 +44,3 @@ export function YutFinalView({ state, host, pending, onReplay, onOther }: { stat
   const winner = state.mode === 'TEAM' ? state.winnerTeam?.name : state.winnerPlayer?.nickname
   return <div className="centerState yutFinal"><div className="confetti">🎉 🏆 🎉</div><p className="eyebrow">게임 종료</p><h1>{winner} 승리!</h1><p className="sub">말 4개를 모두 완주했어요!</p>{host ? <div className="stack"><Button disabled={pending} onClick={onReplay}>같은 모드로 다시하기</Button><Button className="secondary" disabled={pending} onClick={onOther}>다른 게임 선택</Button></div> : <div className="waiting"><span className="dots">•••</span><p>방장이 다음 게임을 선택하고 있어요</p></div>}</div>
 }
-

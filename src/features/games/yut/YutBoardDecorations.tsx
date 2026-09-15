@@ -6,11 +6,12 @@ function Paw({ className }: { className: string }) {
 
 export function YutBoardDecorations() {
   return <div className="yutBoardDecorations" aria-hidden="true">
+    <svg className="yutGrassTufts" viewBox="0 0 100 100" fill="none">
+      {[[25, 24], [68, 22], [18, 64], [72, 68], [42, 78], [51, 16], [35, 57], [65, 43]].map(([x, y]) => <g key={`${x}-${y}`} transform={`translate(${x} ${y})`}><path d="M0 3Q-1 0-2-1M0 3Q0 0 1-3M0 3Q2 0 3 0" /></g>)}
+    </svg>
     <Paw className="yutBoardPaw left" /><Paw className="yutBoardPaw right" />
     <span className="yutBoardTwinkle t1">✧</span><span className="yutBoardTwinkle t2">✦</span>
     <span className="yutBoardTwinkle t3">✧</span><span className="yutBoardTwinkle t4">✦</span>
     <span className="yutBoardMoon">☾</span>
-    <span className="yutBoardStitch top" /><span className="yutBoardStitch bottom" />
   </div>
 }
-

@@ -10,7 +10,7 @@
 .yutScore.active{border-color:var(--piece-color);background:linear-gradient(#ffffff12,#ffffff05);box-shadow:0 0 18px #a66bfa18}
 .yutScore strong{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:5px;font-size:12px}
 .yutScore small{font-size:9px;margin-top:3px;color:#bfbad7;text-align:center}
-.yutPieceFace{position:relative;display:block;width:34px;height:34px;border:2px solid var(--piece-color);border-radius:50%;background:radial-gradient(circle at 40% 20%,#686180,#29243e);box-shadow:0 3px 0 #0005;overflow:hidden;flex-shrink:0}
+.yutPieceFace{position:relative;display:block;width:34px;height:34px;border:3px solid var(--piece-color);border-radius:50%;background:linear-gradient(145deg,#ffffff35,#00000020),var(--piece-color);box-shadow:0 3px 0 #0005;overflow:hidden;flex-shrink:0}
 .yutPieceFace img{position:absolute;width:145%;height:145%;max-width:none;object-fit:contain;left:-22%;top:-9%}
 .yutPlayBoard{position:relative;aspect-ratio:1;margin:17px 0 0;border:1px solid #a892d069;border-radius:32px;background:radial-gradient(ellipse at 50% 45%,#64508538,transparent 65%),linear-gradient(150deg,#353050,#201f3b);box-shadow:inset 0 0 0 6px #ffffff04,inset 0 1px 0 #e2cdff40,0 8px 0 #101024,0 16px 28px #0004}
 .yutBoardArt{position:absolute;inset:0;width:100%;height:100%;fill:var(--board-surface);stroke:var(--board-line);stroke-width:.65}
@@ -22,11 +22,19 @@
 .yutBoardSpot.home{background:#c99cea;color:#2b1e47;border-color:#f0d5ff;font-size:21px}
 
 
-.yutBoardPiece{position:absolute;z-index:2;display:grid;place-items:center;width:40px;height:40px;transform:translate(-50%,-50%);padding:0;border:0;background:none;transition:left .48s ease,top .48s ease}
+.yutBoardPiece{position:absolute;z-index:2;display:grid;place-items:center;width:40px;height:40px;transform:translate(-50%,-50%);padding:0;border:0;background:none}
 .yutBoardPiece .yutPieceFace{width:30px;height:30px}
 .yutBoardPiece.selectable{cursor:pointer;border:1px dashed var(--piece-color);border-radius:50%;box-shadow:0 0 14px #edb8ff55}
 .yutBoardPiece.selectable .yutPieceFace{animation:yutPieceHop 1.1s ease-in-out 3}
-.yutStackCount{position:absolute;right:0;bottom:0;display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--piece-color);color:#171326;font-size:11px;border:1px solid #fff}
+.yutBoardPiece.isStacked{z-index:3;isolation:isolate}
+.yutPlayBoard .yutBoardPiece.isCapturing{z-index:5}
+.yutPlayBoard .yutBoardPiece.isCapturing .yutPieceFace{animation:yutCapturePush .48s ease-out var(--capture-delay,0ms) both}
+.yutPlayBoard .yutBoardPiece.captureGhost{z-index:6;pointer-events:none;animation:yutCaptureKnockback .8s ease-in var(--capture-delay,0ms) both}
+.yutPlayBoard .captureGhost .yutPieceFace{animation:none}
+@keyframes yutCapturePush{0%{translate:0 16px;scale:.92}38%{translate:0 -7px;scale:1.12}65%{translate:0 3px;scale:1.03}100%{translate:0 0;scale:1}}
+@keyframes yutCaptureKnockback{0%,22%{opacity:1;translate:0 0;rotate:0deg;scale:1}45%{opacity:1;translate:-17px -26px;rotate:-25deg;scale:1.05}100%{opacity:0;translate:-40px -62px;rotate:-100deg;scale:.25}}
+@media(prefers-reduced-motion:reduce){.yutPlayBoard .yutBoardPiece.captureGhost{display:none}}
+.yutStackCount{position:absolute;z-index:4;left:calc(100% - 10px);top:-2px;color:#fff;font-size:13px;font-weight:900;line-height:1;white-space:nowrap;text-shadow:-1px -1px 0 #302418,1px -1px 0 #302418,-1px 1px 0 #302418,1px 1px 0 #302418,0 2px 3px #0008;pointer-events:none}
 .yutThrowStage{position:relative;display:flex;justify-content:center;align-items:center;gap:18px;min-height:115px;padding:8px 10px;margin:4px 0 8px;border-radius:24px;background:radial-gradient(ellipse at 25% 65%,#a47adf19,transparent 64%)}
 .yutPlay .yutThrowButton{display:flex;align-items:center;justify-content:center;gap:18px;width:100%;min-height:62px;border-radius:22px;font-size:19px;background:linear-gradient(115deg,#b567e5,#8555e4 55%,#697beb);box-shadow:inset 0 2px 0 #ffffff40,0 5px 0 #49327b,0 12px 25px #784fe433}
 .yutThrowButton>span{font-size:26px}
@@ -85,5 +93,3 @@
 .yutScore.active.myTurn{border-color:#c9ff69;background:linear-gradient(145deg,#495d3766,#232f3966);box-shadow:inset 0 0 0 1px #d7ff8a50,0 0 17px #baff623d,0 4px 0 #17232b}
 .yutScore.myTurn em{top:-7px;padding:2px 6px;background:#c9ff69;color:#233315;font-size:8px;line-height:1.2;border-radius:5px;box-shadow:0 0 7px #bdff6860,0 1px 0 #7caa48}
 .yutScore.myTurn strong{color:#e7ffc5}
-
-

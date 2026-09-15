@@ -1,3 +1,5 @@
+.yutGameGuideDialog{scrollbar-width:none}
+.yutGameGuideDialog::-webkit-scrollbar{display:none}
 .yutSetupHeading{text-align:center;padding-top:8px;position:relative;z-index:1}
 .yutSetupTitle{margin:0;font-size:13px;font-weight:900;line-height:1.2;letter-spacing:2px;color:#69efff;text-shadow:0 0 10px #3edfff,0 0 20px #2ccaf088}
 .yutSetupScene{position:relative;height:270px;overflow:hidden;margin:2px -22px 12px;isolation:isolate;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 24%,#000 68%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0%,#000 24%,#000 68%,transparent 100%)}

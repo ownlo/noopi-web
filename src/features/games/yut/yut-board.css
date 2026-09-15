@@ -1,27 +1,48 @@
 /* Decorations sit in the four open areas, away from all playable nodes. */
-.yutPlayBoard{isolation:isolate;border-color:#8b6da3;background:radial-gradient(ellipse at 25% 18%,#b18ed633,transparent 48%),radial-gradient(ellipse at 80% 80%,#719cdc20,transparent 48%),radial-gradient(circle,#ebd5ff0b 1px,transparent 1.5px),linear-gradient(145deg,#57436c,#302841);background-size:auto,auto,13px 13px,auto;box-shadow:inset 0 0 0 2px #e7c3ff55,inset 0 0 25px #1e163b55,0 7px 0 #382746,0 9px 0 #bd91c566,0 18px 28px #0006}
-.yutPlayBoard:before{inset:5px;border:1px dashed #f2ceff45;border-radius:18px}
+.yutPlay .yutPlayBoard{
+  isolation:isolate;
+  margin-bottom:26px;
+  border:6px solid;
+  border-color:#f3ce94 #ba7845 #8b512f #dfaa6c;
+  background:radial-gradient(ellipse at 22% 12%,#e5f5a54d,transparent 55%),repeating-linear-gradient(75deg,#d9ed9620 0 1px,transparent 1px 7px),repeating-linear-gradient(-65deg,#29481d14 0 1px,transparent 1px 9px),linear-gradient(145deg,#a7c76e,#7da44f 65%,#62883c);
+  box-shadow:inset 0 0 0 2px #fff0ca90,inset 0 5px 12px #81461e45,inset 0 -2px 0 #fff0ca70,0 2px 0 #edc58d,0 5px 0 #bc804b,0 8px 0 #aa6c3e,0 11px 0 #955a32,0 14px 0 #734329,0 16px 0 #4f2d20,0 22px 12px -5px #160b0690,0 30px 32px -8px #160b0680;
+}
+.yutPlay .yutPlayBoard::before{
+  content:'';
+  position:absolute;
+  inset:7px;
+  z-index:-1;
+  border:1px solid;
+  border-color:#3c592b80 #d9e8a470 #d9e8a490 #3c592b80;
+  border-radius:17px;
+  background:radial-gradient(ellipse at 30% 20%,#fff7df20,transparent 65%);
+  box-shadow:inset 3px 5px 10px #30451b4d,inset -1px -2px 2px #e7f2b260;
+  pointer-events:none;
+}
+.yutPlay .yutPlayBoard::after{content:'';position:absolute;left:8%;right:8%;top:-5px;height:2px;border-radius:50%;background:linear-gradient(90deg,transparent,#fff6dcb0 30%,#fff6dc50 70%,transparent);pointer-events:none}
+.yutPlayBoard .yutBoardArt .yutOuterLine{stroke:#edcf92;stroke-width:1.2;filter:drop-shadow(0 1px 0 #456032)}
+.yutPlayBoard .yutBoardArt .yutDiagonalLine{stroke:#e1c68b;stroke-width:.7;filter:drop-shadow(0 1px 0 #456032)}
+.yutPlayBoard .yutBoardArt .yutDirection{stroke:#754322}
+.yutPlayBoard .yutBoardSpot:not(.corner){border-color:#9b6539 #714826 #603b22 #af7747;background:repeating-radial-gradient(ellipse at 44% 42%,#f2d29a 0 2px,#bb884c 2.5px 3px,#edc58b 3.5px 5px);box-shadow:inset 0 1px 1px #fff0cba0,0 2px 0 #946034,0 5px 0 #684024,2px 8px 5px #26341770}
+.yutGrassTufts{position:absolute;inset:0;width:100%;height:100%;stroke:#466d2d;stroke-width:.6;stroke-linecap:round;opacity:.6;filter:drop-shadow(0 1px 0 #d0e79980)}
+.yutPlayBoard .yutBoardPiece .yutPieceFace{box-shadow:inset 0 2px 1px #ffffff60,0 2px 0 #b9895b,0 5px 0 #6e452c,2px 9px 7px #45230f80}
 .yutBoardDecorations{position:absolute;inset:0;pointer-events:none;user-select:none;overflow:hidden;border-radius:20px}
-.yutBoardPaw{position:absolute;width:9%;height:9%;fill:#d7b0ea;opacity:.26}
+.yutBoardPaw{position:absolute;width:9%;height:9%;fill:#3b612c;opacity:.26}
 .yutBoardPaw.left{left:23%;top:43%;transform:rotate(-25deg)}
-.yutBoardPaw.right{right:23%;top:49%;transform:rotate(25deg);fill:#9cdaf6}
-.yutBoardTwinkle{position:absolute;color:#ecd8ff;font-size:17px;line-height:1;opacity:.55}
+.yutBoardPaw.right{right:23%;top:49%;transform:rotate(25deg);fill:#507b34}
+.yutBoardTwinkle{position:absolute;color:#fff3cc;font-size:17px;line-height:1;opacity:.65}
 .yutBoardTwinkle.t1{left:21%;top:34%;color:#ffe6b0;transform:rotate(-12deg)}
 .yutBoardTwinkle.t2{left:31%;top:55%;font-size:10px}
-.yutBoardTwinkle.t3{right:21%;bottom:31%;color:#8edcfa;transform:rotate(15deg)}
-.yutBoardTwinkle.t4{right:30%;top:37%;font-size:9px;color:#ffd8ed}
-.yutBoardMoon{position:absolute;left:20%;bottom:34%;font-size:24px;color:#c7adf2;opacity:.35;transform:rotate(-15deg)}
-.yutBoardStitch{position:absolute;left:40%;width:20%;height:4px;border-radius:10px;background:linear-gradient(90deg,#ffd29c77 0 25%,transparent 25% 37%,#dda0ea77 37% 63%,transparent 63% 75%,#9edbf477 75%)}
-.yutBoardStitch.top{top:4%}.yutBoardStitch.bottom{bottom:4%}
-.yutPlayBoard .yutBoardSpot.corner{border-color:#f6ddf6;color:#744871;background:linear-gradient(145deg,#ffe7f7,#dba6cf);box-shadow:0 4px 0 #70425f,inset 0 2px 1px #ffffffa0;font-size:19px}
-.yutPlayBoard .yutBoardSpot.corner:nth-of-type(5){background:linear-gradient(#dfe9ff,#aebcea);color:#505c98;box-shadow:0 4px 0 #48577e,inset 0 2px 1px #ffffffa0}
+.yutBoardTwinkle.t3{right:21%;bottom:31%;color:#fff3cf;transform:rotate(15deg)}
+.yutBoardTwinkle.t4{right:30%;top:37%;font-size:9px;color:#ffe6bc}
+.yutBoardMoon{position:absolute;left:20%;bottom:34%;font-size:24px;color:#9b6236;opacity:.35;transform:rotate(-15deg)}
+.yutPlayBoard .yutBoardSpot.corner{border:3px solid;border-color:#ac7744 #7a4c28 #623a20 #bc8750;color:#754422;background:repeating-radial-gradient(ellipse at 44% 42%,#f7dba4 0 3px,#bc884d 3.5px 4px,#efc68b 4.5px 7px);box-shadow:inset 0 1px 1px #fff0cba0,0 3px 0 #956136,0 7px 0 #694023,2px 10px 6px #26341780;font-size:19px;text-shadow:0 1px #ffecc9}
 .yutPlayBoard .yutBoardSpot.home{background:linear-gradient(#fff0c5,#efc984);border-color:#fff4cf;color:#825b47;box-shadow:0 4px 0 #92694b,inset 0 2px 1px #ffffffa0;font-size:22px}
-.yutPlayBoard .yutBoardArt>g circle{fill:#624a77;stroke:#d6b8e7}
+.yutPlayBoard .yutBoardArt>g circle{fill:var(--wood-fill);stroke:#80532e;stroke-width:.65;filter:drop-shadow(0 .65px 0 #946034) drop-shadow(0 .65px 0 #684024) drop-shadow(.4px .8px .5px #26341770)}
 @media(max-width:360px){.yutPlayBoard .yutBoardSpot.corner{font-size:16px}.yutPlayBoard .yutBoardSpot.home{font-size:19px}.yutBoardTwinkle{font-size:13px}.yutBoardMoon{font-size:19px}}
 
 /* A raised finish gate marks the shared starting and finishing node. */
-.yutPlayBoard .yutBoardSpot.home{width:40px;height:40px;border:2px solid #ffe8a8;background:radial-gradient(circle at 50% 30%,#fff5d6,#efc47d 65%,#d69a55);box-shadow:0 4px 0 #916144,inset 0 0 0 3px #f5d594,0 0 16px #ffd08b42;overflow:visible}
-.yutHomeGate{position:absolute;width:56px;height:56px;left:50%;bottom:-3px;transform:translateX(-50%);filter:drop-shadow(0 2px 1px #5a345342);pointer-events:none}
+.yutPlayBoard .yutBoardSpot.home{width:40px;height:40px;border:3px solid #936033;background:repeating-radial-gradient(ellipse at 44% 42%,#ffe2a7 0 4px,#bf8d4d 4.5px 5px,#efc68b 5.5px 8px);box-shadow:inset 0 1px 1px #fff0cba0,0 3px 0 #956136,0 7px 0 #694023,2px 10px 7px #26341780;overflow:visible}
+.yutHomeGate{position:absolute;width:56px;height:56px;left:50%;bottom:-3px;transform:translateX(-50%);filter:drop-shadow(0 2px 1px #78472442);pointer-events:none}
 
 @media(max-width:360px){.yutPlayBoard .yutBoardSpot.home{width:33px;height:33px}.yutHomeGate{width:47px;height:47px}}
-

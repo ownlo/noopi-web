@@ -5,8 +5,19 @@ import './yut-throw.css'
 const names = { DO: '도', GAE: '개', GEOL: '걸', YUT: '윷', MO: '모' }
 // Illustrative faces express the confirmed result; the API does not provide individual stick faces.
 const flatFaces = { DO: 1, GAE: 2, GEOL: 3, YUT: 4, MO: 0 }
-export function YutThrowScene({ result, active, animationId }: { result?: YutResultCode; active: boolean; animationId: number }) {
-  return <div className={`yutThrowScene ${active ? 'isTossing' : ''}`} aria-hidden="true">
+export function YutThrowScene({ result, active, animationId, power = 0.5 }: { result?: YutResultCode; active: boolean; animationId: number; power?: number }) {
+  // Power controls presentation only; the confirmed result always comes from the server.
+  const strength = Math.max(0, Math.min(1, power))
+  const style = {
+    '--throw-height': `${-45 - strength * 115}px`,
+    '--throw-fall': `${-30 - strength * 95}px`,
+    '--throw-scale': 1.05 + strength * 0.3,
+    '--throw-spin': `${strength >= 0.6 ? 360 : 0}deg`,
+    '--throw-bounce': `${8 + strength * 22}px`,
+    '--impact-scale': 1.2 + strength * 1.4,
+    '--spark-rise': `${-14 - strength * 34}px`,
+  } as CSSProperties
+  return <div className={`yutThrowScene ${active ? 'isTossing' : ''}`} style={style} aria-hidden="true">
     <div className="yutThrowMat" />
     <div className="yutFlyingSet" key={animationId}>
       {[0, 1, 2, 3].map(index => <div className="yutFlyingLane" key={index} style={{ '--i': index, '--angle': `${[-28, 21, -12, 38][index]}deg`, '--land-x': `${[-66, -21, 24, 65][index]}px`, '--land-y': `${[3, -13, 9, -3][index]}px` } as CSSProperties}>
@@ -18,5 +29,4 @@ export function YutThrowScene({ result, active, animationId }: { result?: YutRes
     <div className="yutSceneResult">{result ? <><strong>{names[result]}!</strong><span>{result === 'YUT' || result === 'MO' ? '한 번 더!' : '좋아, 가보자!'}</span></> : null}</div>
   </div>
 }
-
 
