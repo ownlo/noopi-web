@@ -30,6 +30,11 @@ export const httpApi: NoopiApi = {
   submitMafiaVote: (id, gameSessionId, input) => request(`/rooms/${id}/game-sessions/${gameSessionId}/mafia/votes`, { method: 'POST', body: JSON.stringify(input) }),
   submitMafiaJudgment: (id, gameSessionId, choice) => request(`/rooms/${id}/game-sessions/${gameSessionId}/mafia/judgment-votes`, { method: 'POST', body: JSON.stringify({ choice }) }),
   advanceMafia: (id, gameSessionId) => request(`/rooms/${id}/game-sessions/${gameSessionId}/mafia/advance`, { method: 'POST' }),
+  selectYutTeam: (id, gameSessionId, team) => request(`/rooms/${id}/game-sessions/${gameSessionId}/yut/team`, { method: 'PUT', body: JSON.stringify({ team }) }),
+  throwYut: (id, gameSessionId) => request(`/rooms/${id}/game-sessions/${gameSessionId}/yut/throws`, { method: 'POST' }),
+  selectYutMoveToken: (id, gameSessionId, moveTokenId) => request(`/rooms/${id}/game-sessions/${gameSessionId}/yut/move-selections`, { method: 'POST', body: JSON.stringify({ moveTokenId }) }),
+  selectYutPiece: (id, gameSessionId, pieceId) => request(`/rooms/${id}/game-sessions/${gameSessionId}/yut/piece-selections`, { method: 'POST', body: JSON.stringify({ pieceId }) }),
+  selectYutPath: (id, gameSessionId, pathId) => request(`/rooms/${id}/game-sessions/${gameSessionId}/yut/path-selections`, { method: 'POST', body: JSON.stringify({ pathId }) }),
   subscribe(roomId, listener, connection) {
     const wsUrl = import.meta.env.VITE_WS_URL
     if (!wsUrl) throw new Error('VITE_WS_URL 환경 변수가 설정되지 않았습니다.')

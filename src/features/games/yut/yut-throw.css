@@ -1,0 +1,55 @@
+.yutThrowScene{position:relative;height:152px;isolation:isolate;overflow:visible;pointer-events:none}
+.yutThrowMat{position:absolute;left:9%;right:9%;top:30px;bottom:6px;border:1px solid #a98de445;border-radius:50%;background:radial-gradient(ellipse,#7053a63b,#30254550 65%,transparent 70%);transform:rotateX(28deg);box-shadow:inset 0 0 25px #9072da13}
+
+.yutFlyingSet{position:absolute;inset:0;perspective:700px;transform-style:preserve-3d}
+.yutFlyingLane{position:absolute;left:50%;top:43%;width:0;height:0;transform-style:preserve-3d}
+.yutWoodStick{position:absolute;width:22px;height:87px;left:-11px;top:-43px;transform:translate(var(--land-x),var(--land-y)) rotateZ(var(--angle));transform-style:preserve-3d}
+.yutWoodFace,.yutWoodBack{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-evenly;flex-direction:column;border-radius:11px 11px 7px 7px;backface-visibility:hidden;border:1px solid #ffebc0;box-shadow:3px 4px 0 #925737,inset 2px 0 3px #fff6;background:repeating-linear-gradient(88deg,#0000 0 5px,#80522216 6px 7px),linear-gradient(90deg,#c48c50,#ffe3a6 40%,#e4b775);color:#8b512f;font-size:15px}
+.yutWoodFace i{font-style:normal;text-shadow:0 1px #fff8}
+.yutWoodFace.round{background:linear-gradient(90deg,#9c582e,#edbd7e 30%,#f9d49c 48%,#c88e4d 75%,#7f462d)}
+.yutWoodFace.round i{visibility:hidden}
+.yutWoodBack{transform:rotateY(180deg);background:linear-gradient(90deg,#9c582e,#edbd7e 30%,#f9d49c 48%,#b67b42 85%)}
+.yutGroundShadow{position:absolute;left:-12px;top:-20px;width:25px;height:70px;border-radius:50%;background:#07031380;filter:blur(5px);transform:translate(var(--land-x),calc(var(--land-y) + 12px)) rotate(var(--angle))}
+.yutSceneResult{position:absolute;right:2%;top:0;display:flex;flex-direction:column;align-items:center;gap:2px;transform:rotate(8deg)}
+.yutSceneResult strong{font-size:34px;color:#ffe3a3;text-shadow:0 3px 0 #773b81,0 0 20px #e17af35e;line-height:1}
+.yutSceneResult span{font-size:10px;font-weight:900;color:#e9cafa}
+.yutImpactRing{position:absolute;top:55%;left:50%;width:125px;height:45px;border:3px solid #d6a1ff;border-radius:50%;transform:translate(-50%,-50%);opacity:0}
+.yutSpark{position:absolute;color:#ffd790;opacity:0;font-size:25px}.yutSpark.s1{left:20%;top:30%}.yutSpark.s2{right:18%;top:22%}.yutSpark.s3{right:30%;bottom:3%}
+.isTossing .yutFlyingSet{animation:yutThrowLifetime 1.35s linear}
+.isTossing .yutWoodStick{animation:yutFullThrow 1.3s cubic-bezier(.28,.1,.35,1) both;animation-delay:calc(var(--i)*15ms)}
+.isTossing .yutGroundShadow{animation:yutShadowThrow 1.3s ease-in-out both}
+.isTossing .yutImpactRing{animation:yutImpact .4s ease-out .86s both}
+.isTossing .yutSpark{animation:yutSparkBurst .5s ease-out .9s both}
+.isTossing .yutSceneResult{animation:yutResultArrival 1.35s ease-out both}
+@keyframes yutThrowLifetime{from{opacity:1}to{opacity:1}}
+@keyframes yutFullThrow{
+  0%{transform:translate(calc(var(--i)*8px - 12px),48px) rotateZ(-15deg) rotateY(0) scale(.8)}
+  15%{transform:translate(calc(var(--i)*5px - 8px),58px) rotateZ(-25deg) rotateY(30deg) scale(.75)}
+  44%{transform:translate(calc(var(--land-x)*.7),-85px) rotateZ(calc(var(--angle) + 130deg)) rotateY(480deg) rotateX(25deg) scale(1.23)}
+  65%{transform:translate(var(--land-x),-68px) rotateZ(calc(var(--angle) + 280deg)) rotateY(650deg) scale(1.1)}
+  79%{transform:translate(var(--land-x),var(--land-y)) rotateZ(calc(var(--angle) + 360deg)) rotateY(720deg) scale(1)}
+  87%{transform:translate(var(--land-x),calc(var(--land-y) - 16px)) rotateZ(calc(var(--angle) + 370deg)) rotateY(742deg)}
+  94%{transform:translate(var(--land-x),calc(var(--land-y) + 2px)) rotateZ(calc(var(--angle) + 354deg)) rotateY(720deg)}
+  100%{transform:translate(var(--land-x),var(--land-y)) rotateZ(calc(var(--angle) + 360deg)) rotateY(720deg)}
+}
+@keyframes yutShadowThrow{0%,100%{opacity:.65;filter:blur(5px)}45%,65%{opacity:.16;filter:blur(12px);scale:.6}80%{opacity:.85;filter:blur(3px)}}
+@keyframes yutImpact{from{opacity:.8;scale:.4}to{opacity:0;scale:1.9}}
+@keyframes yutSparkBurst{0%{opacity:0;translate:0 8px;scale:.4}25%{opacity:1}100%{opacity:0;translate:0 -24px;scale:1.3}}
+@keyframes yutResultArrival{0%,78%{opacity:0;scale:.5}90%{opacity:1;scale:1.2}100%{opacity:1;scale:1}}
+@media(prefers-reduced-motion:reduce){.yutThrowScene *{animation:none!important;transition:none!important}}
+
+.yutPlay.hasFloatingThrow{padding-bottom:calc(154px + env(safe-area-inset-bottom))}
+.yutFloatingThrow{position:fixed;z-index:30;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);width:calc(100% - 44px);max-width:386px;pointer-events:none}
+.yutFloatingThrow .yutThrowButton{pointer-events:auto;display:flex;align-items:center;justify-content:center;gap:18px;width:100%;min-height:60px;border-radius:22px;font-size:19px;background:linear-gradient(115deg,#258cde,#2869d5 45%,#3553c7);border:1px solid #a4d8ff80;text-shadow:0 2px 0 #204b91;box-shadow:inset 0 2px 0 #ffffff50,0 5px 0 #233c80,0 12px 30px #0008}
+.yutFloatingThrow .yutThrowButton>span{font-size:26px}
+.yutFloatingThrow button:focus-visible{outline:3px solid #93e8ff;outline-offset:4px}
+.yutThrowOverlay{position:fixed;inset:0;z-index:40;display:grid;place-items:center;pointer-events:none;background:radial-gradient(ellipse at center,#26143970,#08051538 65%,transparent);animation:yutOverlayAppear .15s ease-out}
+.yutThrowOverlayScene{width:min(90vw,390px);padding:55px 12px 30px;border-radius:50%;background:radial-gradient(ellipse,#70419c66,transparent 70%)}
+.yutThrowOverlayScene .yutThrowScene{height:200px}
+.yutThrowOverlayScene .yutWoodStick{width:26px;height:100px}
+.yutThrowOverlayScene .yutSceneResult{right:7%;top:-25px}
+.yutThrowOverlayScene .yutSceneResult strong{font-size:46px}
+@keyframes yutOverlayAppear{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.yutThrowOverlay{animation:none}.yutFloatingThrow button{transition:none}}
+
+

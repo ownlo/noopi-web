@@ -1,0 +1,27 @@
+/* Decorations sit in the four open areas, away from all playable nodes. */
+.yutPlayBoard{isolation:isolate;border-color:#8b6da3;background:radial-gradient(ellipse at 25% 18%,#b18ed633,transparent 48%),radial-gradient(ellipse at 80% 80%,#719cdc20,transparent 48%),radial-gradient(circle,#ebd5ff0b 1px,transparent 1.5px),linear-gradient(145deg,#57436c,#302841);background-size:auto,auto,13px 13px,auto;box-shadow:inset 0 0 0 2px #e7c3ff55,inset 0 0 25px #1e163b55,0 7px 0 #382746,0 9px 0 #bd91c566,0 18px 28px #0006}
+.yutPlayBoard:before{inset:5px;border:1px dashed #f2ceff45;border-radius:18px}
+.yutBoardDecorations{position:absolute;inset:0;pointer-events:none;user-select:none;overflow:hidden;border-radius:20px}
+.yutBoardPaw{position:absolute;width:9%;height:9%;fill:#d7b0ea;opacity:.26}
+.yutBoardPaw.left{left:23%;top:43%;transform:rotate(-25deg)}
+.yutBoardPaw.right{right:23%;top:49%;transform:rotate(25deg);fill:#9cdaf6}
+.yutBoardTwinkle{position:absolute;color:#ecd8ff;font-size:17px;line-height:1;opacity:.55}
+.yutBoardTwinkle.t1{left:21%;top:34%;color:#ffe6b0;transform:rotate(-12deg)}
+.yutBoardTwinkle.t2{left:31%;top:55%;font-size:10px}
+.yutBoardTwinkle.t3{right:21%;bottom:31%;color:#8edcfa;transform:rotate(15deg)}
+.yutBoardTwinkle.t4{right:30%;top:37%;font-size:9px;color:#ffd8ed}
+.yutBoardMoon{position:absolute;left:20%;bottom:34%;font-size:24px;color:#c7adf2;opacity:.35;transform:rotate(-15deg)}
+.yutBoardStitch{position:absolute;left:40%;width:20%;height:4px;border-radius:10px;background:linear-gradient(90deg,#ffd29c77 0 25%,transparent 25% 37%,#dda0ea77 37% 63%,transparent 63% 75%,#9edbf477 75%)}
+.yutBoardStitch.top{top:4%}.yutBoardStitch.bottom{bottom:4%}
+.yutPlayBoard .yutBoardSpot.corner{border-color:#f6ddf6;color:#744871;background:linear-gradient(145deg,#ffe7f7,#dba6cf);box-shadow:0 4px 0 #70425f,inset 0 2px 1px #ffffffa0;font-size:19px}
+.yutPlayBoard .yutBoardSpot.corner:nth-of-type(5){background:linear-gradient(#dfe9ff,#aebcea);color:#505c98;box-shadow:0 4px 0 #48577e,inset 0 2px 1px #ffffffa0}
+.yutPlayBoard .yutBoardSpot.home{background:linear-gradient(#fff0c5,#efc984);border-color:#fff4cf;color:#825b47;box-shadow:0 4px 0 #92694b,inset 0 2px 1px #ffffffa0;font-size:22px}
+.yutPlayBoard .yutBoardArt>g circle{fill:#624a77;stroke:#d6b8e7}
+@media(max-width:360px){.yutPlayBoard .yutBoardSpot.corner{font-size:16px}.yutPlayBoard .yutBoardSpot.home{font-size:19px}.yutBoardTwinkle{font-size:13px}.yutBoardMoon{font-size:19px}}
+
+/* A raised finish gate marks the shared starting and finishing node. */
+.yutPlayBoard .yutBoardSpot.home{width:40px;height:40px;border:2px solid #ffe8a8;background:radial-gradient(circle at 50% 30%,#fff5d6,#efc47d 65%,#d69a55);box-shadow:0 4px 0 #916144,inset 0 0 0 3px #f5d594,0 0 16px #ffd08b42;overflow:visible}
+.yutHomeGate{position:absolute;width:56px;height:56px;left:50%;bottom:-3px;transform:translateX(-50%);filter:drop-shadow(0 2px 1px #5a345342);pointer-events:none}
+
+@media(max-width:360px){.yutPlayBoard .yutBoardSpot.home{width:33px;height:33px}.yutHomeGate{width:47px;height:47px}}
+

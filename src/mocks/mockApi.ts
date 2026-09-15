@@ -1,10 +1,10 @@
-import type { BlindGameState, Candidate, CategoryCatalog, GameCatalog, GameState, MafiaGameState, MafiaNightActionType, MafiaRole, NoopiApi, Player, RealtimeEvent, RoomState } from '../api/types'
+import type { BlindGameState, Candidate, CategoryCatalog, GameCatalog, GameState, MafiaGameState, MafiaNightActionType, MafiaRole, NoopiApi, Player, RealtimeEvent, RoomState, YutGameState, YutMode, YutPiece, YutResultCode, YutTeam, YutTeamId } from '../api/types'
 
 const wait = (ms = 180) => new Promise(resolve => window.setTimeout(resolve, ms))
 const PHASE_TRANSITION_DELAY_MS = 3_000
 const listeners = new Set<(event: RealtimeEvent) => void>()
 
-const games: GameCatalog = { games: [{ gameType: 'LIAR', name: '라이어 게임', minPlayers: 3, maxPlayers: 12, enabled: true }, { gameType: 'BLIND', name: '블라인드 게임', minPlayers: 2, maxPlayers: 2, enabled: true }, { gameType: 'MAFIA', name: '마피아 게임', minPlayers: 4, maxPlayers: 12, enabled: true }] }
+const games: GameCatalog = { games: [{ gameType: 'LIAR', name: '라이어 게임', minPlayers: 3, maxPlayers: 12, enabled: true }, { gameType: 'BLIND', name: '블라인드 게임', minPlayers: 2, maxPlayers: 2, enabled: true }, { gameType: 'MAFIA', name: '마피아 게임', minPlayers: 4, maxPlayers: 12, enabled: true }, { gameType: 'YUT', name: '윷놀이', minPlayers: 2, maxPlayers: 4, enabled: true }] }
 const categories: CategoryCatalog = { categories: [
   { code: 'RANDOM', name: '랜덤', virtual: true },
   { code: 'FOOD', name: '음식', virtual: false },
@@ -15,6 +15,9 @@ let nextRoomId = 100
 let nextSessionId = 500
 let currentRoom: RoomState | null = null
 let mafiaDayNo = 1
+let yutSelectedTokenId: string | null = null
+let yutSelectedPieceId: string | null = null
+let yutThrowIndex = 0
 
 const mockPlayerNames = ['모모', '두부', '보리', '콩이', '호두', '초코', '구름', '단추', '라떼', '망고', '쿠키']
 const mockPlayers = (nickname: string, gender: Player['gender']): Player[] => [
@@ -105,6 +108,54 @@ function setGameState(gameState: GameState, status: NonNullable<RoomState['gameS
   state.gameSession = { ...state.gameSession, status, gameState }
 }
 
+function yutTeams(state: RoomState, myTeam: YutTeamId | null = null): YutTeam[] {
+  const others = state.players.filter(player => player.playerId !== state.me.playerId)
+  const noopiPlayers = [others[0], ...(myTeam === 'NOOPI' ? [state.me] : [])].filter(Boolean).map(({ playerId, nickname }) => ({ playerId, nickname }))
+  const dayPlayers = [others[1], others[2], ...(myTeam === 'DAY' ? [state.me] : [])].filter(Boolean).slice(0, 2).map(({ playerId, nickname }) => ({ playerId, nickname }))
+  return [{ team: 'NOOPI', name: '누피팀', capacity: 2, players: noopiPlayers }, { team: 'DAY', name: '데이팀', capacity: 2, players: dayPlayers }]
+}
+
+function yutPieces(state: RoomState, mode: YutMode): YutPiece[] {
+  const owners = mode === 'TEAM' ? ['NOOPI', 'DAY'] : state.players.map(player => String(player.playerId))
+  return owners.flatMap(ownerId => Array.from({ length: 4 }, (_, index) => ({ pieceId: `${ownerId}-${index + 1}`, ownerType: mode === 'TEAM' ? 'TEAM' as const : 'PLAYER' as const, ownerId, status: 'READY' as const, nodeId: null, groupPieceIds: [`${ownerId}-${index + 1}`] })))
+}
+
+function activeYut(): Extract<YutGameState, { phase: 'PLAYING' }> {
+  const game = room().gameSession?.gameState
+  if (!game || game.type !== 'YUT' || game.phase !== 'PLAYING') throw new Error('INVALID_GAME_PHASE')
+  return game
+}
+
+function yutOwnerId(state: RoomState, game: Extract<YutGameState, { phase: 'PLAYING' }>) {
+  if (game.mode === 'INDIVIDUAL') return String(state.me.playerId)
+  return game.teams?.find(team => team.players.some(player => player.playerId === state.me.playerId))?.team ?? 'NOOPI'
+}
+
+function finishYutMove(game: Extract<YutGameState, { phase: 'PLAYING' }>, pieceId: string) {
+  const state = room()
+  const token = game.turn.moveTokens.find(item => item.moveTokenId === yutSelectedTokenId)
+  if (!token) throw new Error('MOVE_TOKEN_NOT_FOUND')
+  const pieces = game.pieces.map(piece => {
+    if (piece.pieceId !== pieceId) return piece
+    const currentIndex = piece.status === 'READY' ? -1 : Number(piece.nodeId?.replace('OUTER_', '') ?? 0) - 1
+    const nextIndex = currentIndex + token.steps
+    return nextIndex >= 19 ? { ...piece, status: 'FINISHED' as const, nodeId: null } : { ...piece, status: 'ON_BOARD' as const, nodeId: `OUTER_${nextIndex + 1}` }
+  })
+  const ownerId = yutOwnerId(state, game)
+  const finishedCount = pieces.filter(piece => piece.ownerId === ownerId && piece.status === 'FINISHED').length
+  if (finishedCount === 4) {
+    const winnerTeam = game.mode === 'TEAM' ? game.teams?.find(team => team.team === ownerId) : undefined
+    setGameState({ type: 'YUT', phase: 'FINISHED', mode: game.mode, winnerPlayer: game.mode === 'INDIVIDUAL' ? { playerId: state.me.playerId, nickname: state.me.nickname } : undefined, winnerTeam }, 'FINISHED')
+    emit('GAME_FINISHED')
+    return
+  }
+  const moveTokens = game.turn.moveTokens.filter(item => item.moveTokenId !== token.moveTokenId)
+  const myAction = moveTokens.length > 0 ? { type: 'SELECT_MOVE_TOKEN' as const, moveTokenIds: moveTokens.map(item => item.moveTokenId) } : { type: 'THROW_YUT' as const }
+  setGameState({ ...game, pieces, finishedPieceCounts: game.finishedPieceCounts.map(item => item.ownerId === ownerId ? { ...item, count: finishedCount } : item), turn: { ...game.turn, turnNo: game.turn.turnNo + 1, turnPhase: myAction.type === 'THROW_YUT' ? 'WAITING_THROW' : 'WAITING_MOVE', throwResults: moveTokens.map(item => item.result), moveTokens }, myAction })
+  yutSelectedTokenId = null; yutSelectedPieceId = null
+  emit('YUT_PIECE_MOVED', { playerId: state.me.playerId, pieceIds: [pieceId] })
+}
+
 function scheduleVoteReveal() {
   window.setTimeout(() => {
     setGameState({ type: 'LIAR', phase: 'LIAR_REVEAL', myRole: 'CITIZEN', accusedPlayer: { playerId: 2, nickname: '모모' }, accusedWasLiar: true })
@@ -159,6 +210,12 @@ export const mockApi: NoopiApi = {
       mafiaDayNo = 1
       const participantCount = state.players.length
       state.gameSession = { gameSessionId, gameType, status: 'READY', gameState: { type: 'MAFIA', phase: 'READY', participantCount, roleComposition: mafiaRoleComposition(participantCount) } }
+    } else if (gameType === 'YUT') {
+      const mode = config.mode
+      if (mode !== 'INDIVIDUAL' && mode !== 'TEAM') throw new Error('INVALID_GAME_CONFIG')
+      if (mode === 'TEAM' && state.players.length !== 4) throw new Error('INVALID_PLAYER_COUNT')
+      const teams = yutTeams(state)
+      state.gameSession = { gameSessionId, gameType, status: 'READY', gameState: mode === 'TEAM' ? { type: 'YUT', phase: 'TEAM_SELECT', mode, teams, myTeam: null, selectableTeams: teams.filter(team => team.players.length < team.capacity).map(team => team.team), canStart: false } : { type: 'YUT', phase: 'READY', mode } }
     } else {
       const categoryCode = config.categoryCode ?? ''
       const selected = categories.categories.find(category => category.code === categoryCode)
@@ -181,6 +238,19 @@ export const mockApi: NoopiApi = {
       const players = state.players
       const role = mockMafiaRole()
       setGameState({ type: 'MAFIA', phase: 'ROLE_REVEAL', myRole: role, alive: true, roleChecked: false, roleCheckedCount: players.length - 1, participantCount: players.length, mafiaTeammates: mafiaTeammates(state, role), players: players.map(player => ({ playerId: player.playerId, nickname: player.nickname, alive: true, revealedRole: null })) })
+      emit('GAME_STARTED')
+      return
+    }
+    if (state.gameSession?.gameType === 'YUT') {
+      const current = state.gameSession.gameState
+      if (current.type !== 'YUT' || (current.phase !== 'READY' && current.phase !== 'TEAM_SELECT')) throw new Error('INVALID_GAME_PHASE')
+      if (current.phase === 'TEAM_SELECT' && !current.canStart) throw new Error('TEAM_SELECTION_INCOMPLETE')
+      const mode = current.mode
+      const teams = current.phase === 'TEAM_SELECT' ? current.teams : undefined
+      const pieces = yutPieces(state, mode)
+      const ownerIds = mode === 'TEAM' ? ['NOOPI', 'DAY'] : state.players.map(player => String(player.playerId))
+      yutThrowIndex = 0; yutSelectedTokenId = null; yutSelectedPieceId = null
+      setGameState({ type: 'YUT', phase: 'PLAYING', mode, teams, turn: { turnNo: 1, currentPlayerId: state.me.playerId, turnPhase: 'WAITING_THROW', throwResults: [], moveTokens: [], pendingBonusThrows: 0 }, pieces, finishedPieceCounts: ownerIds.map(ownerId => ({ ownerId, count: 0 })), myAction: { type: 'THROW_YUT' } })
       emit('GAME_STARTED')
       return
     }
@@ -372,6 +442,57 @@ export const mockApi: NoopiApi = {
       setGameState({ type: 'MAFIA', phase: 'DAY', dayNo: 2, myRole: game.myRole, alive: game.alive, players: game.players, mafiaTeammates: game.mafiaTeammates, investigationHistory: game.investigationHistory, remainingTeamCounts: { mafia: mafiaCount, citizenTeam: state.players.length - mafiaCount - deadCitizenTeamCount }, lastNightResult: game.nightResult })
     } else throw new Error('INVALID_GAME_PHASE')
     emit('MAFIA_PHASE_CHANGED')
+  },
+  async selectYutTeam(_roomId, _gameSessionId, team) {
+    await wait()
+    const state = room(); const game = state.gameSession?.gameState
+    if (!game || game.type !== 'YUT' || game.phase !== 'TEAM_SELECT') throw new Error('INVALID_GAME_PHASE')
+    const teams = yutTeams(state, team)
+    const selected = teams.find(item => item.team === team)
+    if (!selected || !selected.players.some(player => player.playerId === state.me.playerId)) throw new Error('TEAM_FULL')
+    setGameState({ ...game, teams, myTeam: team, selectableTeams: teams.filter(item => item.players.length < item.capacity || item.team === team).map(item => item.team), canStart: teams.every(item => item.players.length === item.capacity) }, 'READY')
+    emit('YUT_TEAM_CHANGED', { playerId: state.me.playerId, team })
+  },
+  async throwYut() {
+    await wait(420)
+    const game = activeYut(); const state = room()
+    if (game.myAction?.type !== 'THROW_YUT') throw new Error('INVALID_TURN_PHASE')
+    const sequence: YutResultCode[] = ['GAE', 'GEOL', 'DO', 'YUT', 'MO']
+    const result = sequence[yutThrowIndex++ % sequence.length]
+    const steps = { DO: 1, GAE: 2, GEOL: 3, YUT: 4, MO: 5 }[result]
+    const moveTokenId = `mock-yut-${yutThrowIndex}`
+    const bonusThrowGranted = result === 'YUT' || result === 'MO'
+    const moveTokens = [...game.turn.moveTokens, { moveTokenId, result, steps }]
+    setGameState({ ...game, turn: { ...game.turn, turnPhase: bonusThrowGranted ? 'WAITING_THROW' : 'WAITING_MOVE', throwResults: [...game.turn.throwResults, result], moveTokens, pendingBonusThrows: bonusThrowGranted ? 1 : 0 }, myAction: bonusThrowGranted ? { type: 'THROW_YUT' } : { type: 'SELECT_MOVE_TOKEN', moveTokenIds: moveTokens.map(item => item.moveTokenId) } })
+    emit('YUT_THROW_RESOLVED', { playerId: state.me.playerId, result, steps, bonusThrowGranted })
+    return { result, steps, moveTokenId, bonusThrowGranted }
+  },
+  async selectYutMoveToken(_roomId, _gameSessionId, moveTokenId) {
+    await wait()
+    const game = activeYut(); const state = room()
+    if (game.myAction?.type !== 'SELECT_MOVE_TOKEN' || !game.myAction.moveTokenIds.includes(moveTokenId)) throw new Error('MOVE_TOKEN_NOT_FOUND')
+    yutSelectedTokenId = moveTokenId
+    const ownerId = yutOwnerId(state, game)
+    const eligiblePieceIds = game.pieces.filter(piece => piece.ownerId === ownerId && piece.status !== 'FINISHED').map(piece => piece.pieceId)
+    setGameState({ ...game, myAction: { type: 'SELECT_PIECE', moveTokenId, eligiblePieceIds } })
+  },
+  async selectYutPiece(_roomId, _gameSessionId, pieceId) {
+    await wait()
+    const game = activeYut()
+    if (game.myAction?.type !== 'SELECT_PIECE' || !game.myAction.eligiblePieceIds.includes(pieceId)) throw new Error('PIECE_NOT_ELIGIBLE')
+    const piece = game.pieces.find(item => item.pieceId === pieceId)
+    yutSelectedPieceId = pieceId
+    if (piece?.nodeId === 'OUTER_4') {
+      setGameState({ ...game, turn: { ...game.turn, turnPhase: 'WAITING_PATH_SELECTION' }, myAction: { type: 'SELECT_PATH', moveTokenId: game.myAction.moveTokenId, pieceId, eligiblePathIds: ['OUTER_ROUTE', 'CENTER_SHORTCUT_A'] } })
+      return
+    }
+    finishYutMove(game, pieceId)
+  },
+  async selectYutPath(_roomId, _gameSessionId, pathId) {
+    await wait()
+    const game = activeYut()
+    if (game.myAction?.type !== 'SELECT_PATH' || !game.myAction.eligiblePathIds.includes(pathId) || !yutSelectedPieceId) throw new Error('PATH_NOT_ELIGIBLE')
+    finishYutMove(game, yutSelectedPieceId)
   },
   subscribe(_roomId, listener, connection) {
     listeners.add(listener)

@@ -8,6 +8,8 @@ import './styles/global.css'
 import './styles/ads.css'
 import './styles/liar.css'
 import './styles/mafia.css'
+import './styles/yut.css'
+import './styles/yut-character.css'
 import './styles/theme.css'
 
 loadAdSenseScript()

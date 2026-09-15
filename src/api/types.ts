@@ -46,8 +46,26 @@ export type MafiaGameState =
   | (MafiaCommon & { phase: 'NIGHT_RESULT'; nightResult: { nightNo: number; deadPlayer: (Candidate & { revealedRole: MafiaRole }) | null; mySuspicionCount: number | null }; canAdvance: boolean })
   | { type: 'MAFIA'; phase: 'FINISHED'; result: MafiaResult }
   | { type: 'MAFIA'; phase: 'CANCELLED'; reason?: string }
-export type GameType = 'LIAR' | 'BLIND' | 'MAFIA'
-export type GameState = LiarGameState | BlindGameState | MafiaGameState
+export type YutMode = 'INDIVIDUAL' | 'TEAM'
+export type YutTeamId = 'NOOPI' | 'DAY'
+export type YutResultCode = 'DO' | 'GAE' | 'GEOL' | 'YUT' | 'MO'
+export type YutPiece = { pieceId: string; ownerType: 'PLAYER' | 'TEAM'; ownerId: string; status: 'READY' | 'ON_BOARD' | 'FINISHED'; nodeId: string | null; groupPieceIds: string[] }
+export type YutMoveToken = { moveTokenId: string; result: YutResultCode; steps: number }
+export type YutAction =
+  | { type: 'THROW_YUT' }
+  | { type: 'SELECT_MOVE_TOKEN'; moveTokenIds: string[] }
+  | { type: 'SELECT_PIECE'; moveTokenId: string; eligiblePieceIds: string[] }
+  | { type: 'SELECT_PATH'; moveTokenId: string; pieceId: string; eligiblePathIds: string[] }
+  | null
+export type YutTeam = { team: YutTeamId; name: string; capacity: number; players: Candidate[] }
+export type YutGameState =
+  | { type: 'YUT'; phase: 'READY'; mode: 'INDIVIDUAL' }
+  | { type: 'YUT'; phase: 'TEAM_SELECT'; mode: 'TEAM'; teams: YutTeam[]; myTeam: YutTeamId | null; selectableTeams: YutTeamId[]; canStart: boolean }
+  | { type: 'YUT'; phase: 'PLAYING'; mode: YutMode; teams?: YutTeam[]; turn: { turnNo: number; currentPlayerId: number; turnPhase: 'WAITING_THROW' | 'THROWING' | 'WAITING_MOVE' | 'WAITING_PATH_SELECTION' | 'MOVING'; throwResults: YutResultCode[]; moveTokens: YutMoveToken[]; pendingBonusThrows: number }; pieces: YutPiece[]; finishedPieceCounts: { ownerId: string; count: number }[]; myAction: YutAction }
+  | { type: 'YUT'; phase: 'FINISHED'; mode: YutMode; winnerPlayer?: Candidate; winnerTeam?: YutTeam }
+  | { type: 'YUT'; phase: 'CANCELLED'; reason?: string }
+export type GameType = 'LIAR' | 'BLIND' | 'MAFIA' | 'YUT'
+export type GameState = LiarGameState | BlindGameState | MafiaGameState | YutGameState
 export type RoomState = { room: { roomId: number; roomCode: string; status: 'WAITING' | 'ACTIVE' | 'CLOSED'; hostPlayerId: number }; me: Player; players: Player[]; gameSession: null | { gameSessionId: number; gameType: GameType; status: 'READY' | 'PLAYING' | 'FINISHED' | 'CANCELLED'; gameState: GameState } }
 export type GameCatalog = { games: { gameType: GameType; name: string; minPlayers: number; maxPlayers: number; enabled: boolean }[] }
 export type CategoryCatalog = { categories: { code: string; name: string; virtual: boolean }[] }
@@ -61,7 +79,7 @@ export interface NoopiApi {
   getRoomState(roomId: number, signal?: AbortSignal): Promise<RoomState>
   getGames(): Promise<GameCatalog>
   getCategories(): Promise<CategoryCatalog>
-  createGameSession(roomId: number, gameType: GameType, config: { categoryCode?: string }): Promise<{ gameSessionId: number; gameType: GameType; status: 'READY' }>
+  createGameSession(roomId: number, gameType: GameType, config: { categoryCode?: string; mode?: YutMode }): Promise<{ gameSessionId: number; gameType: GameType; status: 'READY' }>
   startGame(roomId: number, gameSessionId: number): Promise<void>
   confirmRole(roomId: number, gameSessionId: number): Promise<void>
   startVote(roomId: number, gameSessionId: number): Promise<{ voteRound: number }>
@@ -74,5 +92,10 @@ export interface NoopiApi {
   submitMafiaVote(roomId: number, gameSessionId: number, input: { voteRound: number; targetPlayerId: number }): Promise<void>
   submitMafiaJudgment(roomId: number, gameSessionId: number, choice: MafiaJudgmentChoice): Promise<void>
   advanceMafia(roomId: number, gameSessionId: number): Promise<void>
+  selectYutTeam(roomId: number, gameSessionId: number, team: YutTeamId): Promise<void>
+  throwYut(roomId: number, gameSessionId: number): Promise<{ result: YutResultCode; steps: number; moveTokenId: string; bonusThrowGranted: boolean }>
+  selectYutMoveToken(roomId: number, gameSessionId: number, moveTokenId: string): Promise<void>
+  selectYutPiece(roomId: number, gameSessionId: number, pieceId: string): Promise<void>
+  selectYutPath(roomId: number, gameSessionId: number, pathId: string): Promise<void>
   subscribe(roomId: number, listener: (event: RealtimeEvent) => void, connection: (connected: boolean) => void): () => void
 }

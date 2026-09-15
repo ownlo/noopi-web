@@ -1,0 +1,46 @@
+.yutGuideSteps .yutGuideIcon {
+  overflow: hidden;
+  background-color: #20234b;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: transparent;
+  filter: drop-shadow(0 7px 10px #0008);
+  will-change: transform;
+}
+
+.yutGuideSteps li:nth-child(1) .yutGuideIcon {
+  background-image: url('../assets/characters/noopi-yut-sticks.png');
+  background-size: 112%;
+  animation: yutSticksFly 1.5s cubic-bezier(.4, 0, .2, 1) infinite;
+}
+
+.yutGuideSteps li:nth-child(2) .yutGuideIcon {
+  background-image: url('../assets/characters/noopi-yut-move.png');
+  background-size: 108%;
+  animation: yutPiecePush 1.8s ease-in-out infinite;
+}
+
+.yutGuideSteps li:nth-child(3) .yutGuideIcon {
+  background-image: url('../assets/characters/noopi-yut-victory.png');
+  background-size: 106%;
+  animation: yutVictoryBounce 1.9s ease-in-out infinite;
+}
+
+@keyframes yutSticksFly {
+  0%, 100% { background-position: 48% 57%; transform: translateY(3px) rotate(-2deg) scale(.94); }
+  48% { background-position: 52% 43%; transform: translateY(-4px) rotate(3deg) scale(1.03); }
+}
+
+@keyframes yutPiecePush {
+  0%, 100% { background-position: 46% 50%; transform: translateX(-2px) rotate(-1deg); }
+  55% { background-position: 54% 50%; transform: translateX(3px) rotate(1deg); }
+}
+
+@keyframes yutVictoryBounce {
+  0%, 100% { transform: translateY(2px) scale(.97); }
+  45% { transform: translateY(-4px) scale(1.03); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yutGuideSteps .yutGuideIcon { animation: none; }
+}
