@@ -6,8 +6,10 @@ import type { GameCatalog } from '../api/types'
 import { Brand, Button, Card, CharacterStage, Page } from '../components/ui'
 import { LiarGameGuide } from '../features/games/liar/LiarGameGuide'
 import { BlindGameGuide } from '../features/games/blind/BlindGameGuide'
+import { MafiaGameGuide } from '../features/games/mafia/MafiaGameGuide'
 import liarGameChoiceCharacter from '../assets/characters/noopi-liar-cat-game-choice.png'
 import blindGameChoiceCharacter from '../assets/characters/noopi-blind-game-choice.png'
+import mafiaGameChoiceCharacter from '../assets/characters/noopi-mafia-cat-game-choice.png'
 
 export function HomePage() {
   const navigate = useNavigate()
@@ -21,7 +23,7 @@ export function HomePage() {
     window.addEventListener('keydown', closeOnEscape)
     return () => window.removeEventListener('keydown', closeOnEscape)
   }, [guideGame, showGameCatalog])
-  return <Page className="home"><header className="homeHeader"><Brand /><button className="homeGuideLink" type="button" disabled={games.isLoading} onClick={() => setShowGameCatalog(true)}>게임 안내</button></header><div className="hero"><p className="eyebrow">같이 있을 때 더 재밌는</p><h1>우리끼리 모이면,<br /><em>바로 게임 시작!</em></h1><p className="sub">설치도, 가입도 없이<br />친구들과 바로 플레이하세요.</p><CharacterStage /></div><Card className="actionCard"><Button onClick={() => navigate('/create')}>방 만들기</Button><Button className="secondary" onClick={() => navigate('/join')}>방 코드로 참가</Button></Card><p className="footnote">게임은 사람끼리, 진행은 누피가.</p>{showGameCatalog && !guideGame && <HomeGameCatalog games={availableGames} onClose={() => setShowGameCatalog(false)} onSelect={game => setGuideGame(game)} />}{guideGame && (guideGame.gameType === 'LIAR' ? <LiarGameGuide game={guideGame} actionLabel="닫기" actionVariant="secondary" showCloseButton={false} onClose={() => setGuideGame(null)} onAction={() => setGuideGame(null)} /> : <BlindGameGuide game={guideGame} actionLabel="닫기" actionVariant="secondary" showCloseButton={false} onClose={() => setGuideGame(null)} onAction={() => setGuideGame(null)} />)}</Page>
+  return <Page className="home"><header className="homeHeader"><Brand /><button className="homeGuideLink" type="button" disabled={games.isLoading} onClick={() => setShowGameCatalog(true)}>게임 안내</button></header><div className="hero"><p className="eyebrow">같이 있을 때 더 재밌는</p><h1>우리끼리 모이면,<br /><em>바로 게임 시작!</em></h1><p className="sub">설치도, 가입도 없이<br />친구들과 바로 플레이하세요.</p><CharacterStage /></div><Card className="actionCard"><Button onClick={() => navigate('/create')}>방 만들기</Button><Button className="secondary" onClick={() => navigate('/join')}>방 코드로 참가</Button></Card><p className="footnote">게임은 사람끼리, 진행은 누피가.</p>{showGameCatalog && !guideGame && <HomeGameCatalog games={availableGames} onClose={() => setShowGameCatalog(false)} onSelect={game => setGuideGame(game)} />}{guideGame && (guideGame.gameType === 'LIAR' ? <LiarGameGuide game={guideGame} actionLabel="닫기" actionVariant="secondary" showCloseButton={false} onClose={() => setGuideGame(null)} onAction={() => setGuideGame(null)} /> : guideGame.gameType === 'BLIND' ? <BlindGameGuide game={guideGame} actionLabel="닫기" actionVariant="secondary" showCloseButton={false} onClose={() => setGuideGame(null)} onAction={() => setGuideGame(null)} /> : <MafiaGameGuide game={guideGame} actionLabel="닫기" actionVariant="secondary" showCloseButton={false} onClose={() => setGuideGame(null)} onAction={() => setGuideGame(null)} />)}</Page>
 }
 
 function HomeGameCatalog({ games, onClose, onSelect }: { games: GameCatalog['games']; onClose: () => void; onSelect: (game: GameCatalog['games'][number]) => void }) {
@@ -38,6 +40,7 @@ function getGameSummary(game: GameCatalog['games'][number]) {
   switch (game.gameType) {
     case 'LIAR': return '제시어를 숨긴 라이어를 찾아보세요'
     case 'BLIND': return '질문하면서 내 제시어를 먼저 맞춰보세요'
+    case 'MAFIA': return '밤의 능력과 낮의 토론으로 마피아를 찾아보세요'
   }
 }
 
@@ -45,5 +48,6 @@ function getGameArtwork(game: GameCatalog['games'][number]) {
   switch (game.gameType) {
     case 'LIAR': return liarGameChoiceCharacter
     case 'BLIND': return blindGameChoiceCharacter
+    case 'MAFIA': return mafiaGameChoiceCharacter
   }
 }
