@@ -91,16 +91,28 @@ export function YutPlayingView({ state, players, myPlayerId, pending, onThrow, o
   const [animating, setAnimating] = useState(false)
   const [throwStart, setThrowStart] = useState('')
   const [throwPower, setThrowPower] = useState(0)
+  const latestResult = state.turn.throwResults.at(-1)
+  const resultKey = `${state.turn.turnNo}:${state.turn.throwResults.length}`
+  const observedThrow = useRef({ turnNo: state.turn.turnNo, resultCount: state.turn.throwResults.length })
   useEffect(() => {
     if (!animating) return
     const timer = window.setTimeout(() => setAnimating(false), 1800)
     return () => window.clearTimeout(timer)
   }, [animating, throwAnimation])
+  useEffect(() => {
+    const previous = observedThrow.current
+    const resultCount = state.turn.throwResults.length
+    observedThrow.current = { turnNo: state.turn.turnNo, resultCount }
+    const newThrow = state.turn.turnNo === previous.turnNo && resultCount > previous.resultCount && latestResult
+    if (!newThrow || animating) return
+    setThrowPower(.65)
+    setThrowStart(`${previous.turnNo}:${previous.resultCount}`)
+    setThrowAnimation(value => value + 1)
+    setAnimating(true)
+  }, [animating, latestResult, state.turn.throwResults.length, state.turn.turnNo])
   const current = players.find(player => player.playerId === state.turn.currentPlayerId)
   const isMyTurn = state.turn.currentPlayerId === myPlayerId
   const action = state.myAction
-  const latestResult = state.turn.throwResults.at(-1)
-  const resultKey = `${state.turn.turnNo}:${state.turn.throwResults.length}`
   return <div className={`yutPlay ${action ? 'hasFloatingAction' : ''}`}>
     <div className="yutScoreboard" aria-label="참가자와 현재 차례">{state.finishedPieceCounts.map((owner, index) => {
       const active = state.mode === 'TEAM' ? state.teams?.find(team => team.team === owner.ownerId)?.players.some(player => player.playerId === state.turn.currentPlayerId) : owner.ownerId === String(state.turn.currentPlayerId)
@@ -110,7 +122,7 @@ export function YutPlayingView({ state, players, myPlayerId, pending, onThrow, o
     <div className="yutPieceDocks" aria-label="참가자별 말 대기석">{state.finishedPieceCounts.map((owner, index) => <div className="yutPieceDock" key={owner.ownerId} style={{ '--piece-color': colors[index % colors.length] } as CSSProperties}>
       <strong>{ownerLabel(owner.ownerId, players)}<small>의 말</small></strong>
       <div>{state.pieces.filter(piece => piece.ownerId === owner.ownerId).map((piece, pieceIndex) => {
-        const allowed = action?.type === 'SELECT_PIECE' && action.eligiblePieceIds.includes(piece.pieceId)
+        const allowed = piece.status === 'READY' && action?.type === 'SELECT_PIECE' && action.eligiblePieceIds.includes(piece.pieceId)
         const label = `${ownerLabel(owner.ownerId, players)} ${pieceIndex + 1}번 말 ${piece.status === 'READY' ? '출발' : piece.status === 'FINISHED' ? '완주' : allowed ? '이동' : '이동 중'}${piece.groupPieceIds.length > 1 ? `, ${piece.groupPieceIds.length}개 업음` : ''}`
         const face = <><PieceFace index={index} /><small>{piece.status === 'FINISHED' ? '✓' : pieceIndex + 1}</small></>
         return allowed ? <button type="button" key={piece.pieceId} disabled={pending} aria-label={label} onClick={() => onPiece(piece.pieceId)}>{face}</button> : <span key={piece.pieceId} className={piece.status !== 'READY' ? 'away' : ''} role="img" aria-label={label}>{face}</span>

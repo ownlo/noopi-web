@@ -22,7 +22,7 @@ export function YutThrowScene({ result, active, animationId, power = 0.5 }: { re
     <div className="yutFlyingSet" key={animationId}>
       {[0, 1, 2, 3].map(index => <div className="yutFlyingLane" key={index} style={{ '--i': index, '--angle': `${[-28, 21, -12, 38][index]}deg`, '--land-x': `${[-66, -21, 24, 65][index]}px`, '--land-y': `${[3, -13, 9, -3][index]}px` } as CSSProperties}>
         <span className="yutGroundShadow" />
-        <div className="yutWoodStick"><span className={`yutWoodFace ${result && index >= flatFaces[result] ? 'round' : ''}`}><i>×</i><i>×</i><i>×</i></span><span className="yutWoodBack" /></div>
+        <div className="yutWoodStick"><span className={`yutWoodFace ${result && index >= flatFaces[result] ? 'round' : ''}`}><i>×</i><i>×</i><i>×</i><b className="yutWoodLogo">NOOPI</b></span><span className="yutWoodBack"><b className="yutWoodLogo">NOOPI</b></span></div>
       </div>)}
       <div className="yutImpactRing" /><span className="yutSpark s1">✦</span><span className="yutSpark s2">✧</span><span className="yutSpark s3">✦</span>
     </div>

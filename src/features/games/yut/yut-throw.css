@@ -4,11 +4,15 @@
 .yutFlyingSet{position:absolute;inset:0;perspective:700px;transform-style:preserve-3d}
 .yutFlyingLane{position:absolute;left:50%;top:43%;width:0;height:0;transform-style:preserve-3d}
 .yutWoodStick{position:absolute;width:22px;height:87px;left:-11px;top:-43px;transform:translate(var(--land-x),var(--land-y)) rotateZ(var(--angle));transform-style:preserve-3d}
-.yutWoodFace,.yutWoodBack{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-evenly;flex-direction:column;border-radius:11px 11px 7px 7px;backface-visibility:hidden;border:1px solid #ffebc0;box-shadow:3px 4px 0 #925737,inset 2px 0 3px #fff6;background:repeating-linear-gradient(88deg,#0000 0 5px,#80522216 6px 7px),linear-gradient(90deg,#c48c50,#ffe3a6 40%,#e4b775);color:#8b512f;font-size:15px}
+.yutWoodFace,.yutWoodBack{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-evenly;flex-direction:column;overflow:hidden;border-radius:11px 11px 7px 7px;backface-visibility:hidden;border:1px solid #ffebc0;box-shadow:3px 4px 0 #925737,inset 2px 0 3px #fff6;background:repeating-linear-gradient(88deg,#0000 0 5px,#80522216 6px 7px),linear-gradient(90deg,#bd8045,#ffe2a2 32%,#f5ce8b 72%,#b8753f);color:#8b512f;font-size:15px}
 .yutWoodFace i{font-style:normal;text-shadow:0 1px #fff8}
-.yutWoodFace.round{background:linear-gradient(90deg,#9c582e,#edbd7e 30%,#f9d49c 48%,#c88e4d 75%,#7f462d)}
+.yutWoodFace.round{border-color:#d79a5f;box-shadow:4px 5px 0 #6d3723,inset 4px 0 5px #63331f99,inset -4px 0 5px #63331faa,inset 0 1px 2px #ffe4b0;background:repeating-linear-gradient(88deg,#0000 0 6px,#5f321c18 7px 8px),linear-gradient(90deg,#6d351f 0%,#a96235 13%,#e5aa69 34%,#ffd595 50%,#d78d50 68%,#8c4829 88%,#5b2b1c 100%)}
 .yutWoodFace.round i{visibility:hidden}
-.yutWoodBack{transform:rotateY(180deg);background:linear-gradient(90deg,#9c582e,#edbd7e 30%,#f9d49c 48%,#b67b42 85%)}
+.yutWoodFace.round::after,.yutWoodBack::after{content:'';position:absolute;top:5%;bottom:5%;left:36%;width:20%;border-radius:50%;background:linear-gradient(90deg,#fff0,#ffe6b05c,#fff0);filter:blur(1px);pointer-events:none}
+.yutWoodLogo{z-index:1;display:none;font-size:7px;font-weight:900;letter-spacing:1.4px;color:#5d2e20;opacity:.46;text-shadow:0 1px #ffe7bd70;transform:rotate(90deg)}
+.yutWoodFace.round .yutWoodLogo{display:block;position:absolute}
+.yutWoodBack{transform:rotateY(180deg);border-color:#d79a5f;box-shadow:4px 5px 0 #6d3723,inset 4px 0 5px #63331f99,inset -4px 0 5px #63331faa,inset 0 1px 2px #ffe4b0;background:repeating-linear-gradient(88deg,#0000 0 6px,#5f321c18 7px 8px),linear-gradient(90deg,#6d351f 0%,#a96235 13%,#e5aa69 34%,#ffd595 50%,#d78d50 68%,#8c4829 88%,#5b2b1c 100%)}
+.yutWoodBack .yutWoodLogo{display:block}
 .yutGroundShadow{position:absolute;left:-12px;top:-20px;width:25px;height:70px;border-radius:50%;background:#07031380;filter:blur(5px);transform:translate(var(--land-x),calc(var(--land-y) + 12px)) rotate(var(--angle))}
 .yutSceneResult{position:absolute;right:2%;top:0;display:flex;flex-direction:column;align-items:center;gap:2px;transform:rotate(8deg)}
 .yutSceneResult strong{font-size:34px;color:#ffe3a3;text-shadow:0 3px 0 #773b81,0 0 20px #e17af35e;line-height:1}

@@ -61,7 +61,7 @@ export type YutTeam = { team: YutTeamId; name: string; capacity: number; players
 export type YutGameState =
   | { type: 'YUT'; phase: 'READY'; mode: 'INDIVIDUAL' }
   | { type: 'YUT'; phase: 'TEAM_SELECT'; mode: 'TEAM'; teams: YutTeam[]; myTeam: YutTeamId | null; selectableTeams: YutTeamId[]; canStart: boolean }
-  | { type: 'YUT'; phase: 'PLAYING'; mode: YutMode; teams?: YutTeam[]; turn: { turnNo: number; currentPlayerId: number; turnPhase: 'WAITING_THROW' | 'THROWING' | 'WAITING_MOVE' | 'WAITING_PATH_SELECTION' | 'MOVING'; throwResults: YutResultCode[]; moveTokens: YutMoveToken[]; pendingBonusThrows: number }; pieces: YutPiece[]; finishedPieceCounts: { ownerId: string; count: number }[]; myAction: YutAction }
+  | { type: 'YUT'; phase: 'PLAYING'; mode: YutMode; teams?: YutTeam[]; turn: { turnNo: number; currentPlayerId: number; turnPhase: 'WAITING_THROW' | 'THROWING' | 'WAITING_MOVE' | 'WAITING_PATH_SELECTION' | 'MOVING'; throwResults: YutResultCode[]; moveTokens: YutMoveToken[]; pendingBonusThrows: number }; pieces: YutPiece[]; finishedPieceCounts: { ownerId: string; count: number }[]; myAction: YutAction | null }
   | { type: 'YUT'; phase: 'FINISHED'; mode: YutMode; winnerPlayer?: Candidate; winnerTeam?: YutTeam }
   | { type: 'YUT'; phase: 'CANCELLED'; reason?: string }
 export type GameType = 'LIAR' | 'BLIND' | 'MAFIA' | 'YUT'

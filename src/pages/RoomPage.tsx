@@ -12,7 +12,7 @@ import { BlindGameGuide } from '../features/games/blind/BlindGameGuide'
 import { BlindFinalView, BlindGuessingView, BlindReadyView } from '../features/games/blind/BlindViews'
 import { MafiaGameGuide } from '../features/games/mafia/MafiaGameGuide'
 import { MafiaDayView, MafiaExecutionView, MafiaFinalView, MafiaInvestigationResultView, MafiaJudgmentResultView, MafiaJudgmentView, MafiaNightResultView, MafiaNightView, MafiaReadyView, MafiaRoleView, MafiaVoteResultView, MafiaVotingView } from '../features/games/mafia/MafiaViews'
-import { YutFinalView, YutGameGuide, YutPlayingView, YutReadyView, YutSetupView, YutTeamSelectView } from '../features/games/yut/YutViews'
+import { YutFinalView, YutGameGuide, YutPlayingView, YutSetupView, YutTeamSelectView } from '../features/games/yut/YutViews'
 import liarCharacter from '../assets/characters/noopi-liar-cat.png'
 import liarGameChoiceCharacter from '../assets/characters/noopi-liar-cat-game-choice.png'
 import blindGameChoiceCharacter from '../assets/characters/noopi-blind-game-choice.png'
@@ -86,10 +86,6 @@ export function RoomPage() {
         if (!s?.me.host || !selectedGame || getGameUnavailableReason(selectedGame, s.players.length)) throw new Error('Game unavailable')
         const config = input.gameType === 'LIAR' ? { categoryCode: input.categoryCode ?? '' } : input.gameType === 'YUT' ? { mode: input.mode } : {}
         const created = await api.createGameSession(roomId, input.gameType, config)
-        if (input.gameType === 'YUT' && input.mode === 'INDIVIDUAL') {
-          await api.startGame(roomId, created.gameSessionId)
-          await sync()
-        }
         return created
       }
       case 'START': return api.startGame(roomId, session!.gameSessionId)
@@ -105,7 +101,13 @@ export function RoomPage() {
       case 'MAFIA_JUDGMENT': return api.submitMafiaJudgment(roomId, session!.gameSessionId, action.payload as MafiaJudgmentChoice)
       case 'MAFIA_ADVANCE': return api.advanceMafia(roomId, session!.gameSessionId)
       case 'YUT_TEAM': return api.selectYutTeam(roomId, session!.gameSessionId, action.payload as YutTeamId)
-      case 'YUT_THROW': return api.throwYut(roomId, session!.gameSessionId)
+      case 'YUT_THROW': {
+        const game = session!.gameState
+        const existingMoveTokenCount = game.type === 'YUT' && game.phase === 'PLAYING' ? game.turn.moveTokens.length : 0
+        const result = await api.throwYut(roomId, session!.gameSessionId)
+        if (!result.bonusThrowGranted && existingMoveTokenCount === 0) await api.selectYutMoveToken(roomId, session!.gameSessionId, result.moveTokenId)
+        return result
+      }
       case 'YUT_TOKEN': return api.selectYutMoveToken(roomId, session!.gameSessionId, String(action.payload))
       case 'YUT_PIECE': return api.selectYutPiece(roomId, session!.gameSessionId, String(action.payload))
       case 'YUT_PATH': return api.selectYutPath(roomId, session!.gameSessionId, String(action.payload))
@@ -195,12 +197,22 @@ function MafiaGameContent({ game, state, pending, act }: { game:MafiaGameState; 
 
 function YutGameContent({ game, state, pending, act }: { game:YutGameState; state:State; pending:boolean; act:(type:string,payload?:number|string|'REPLAY'|'OTHER'|{ gameType: GameType; mode?: YutMode })=>Promise<unknown> }) {
   switch (game.phase) {
-    case 'READY': return <YutReadyView host={state.me.host} pending={pending} onStart={() => void act('START')} />
+    case 'READY': return <YutStartingView host={state.me.host} pending={pending} onStart={() => void act('START')} />
     case 'TEAM_SELECT': return <YutTeamSelectView state={game} host={state.me.host} pending={pending} onTeam={team => void act('YUT_TEAM', team)} onStart={() => void act('START')} />
     case 'PLAYING': return <YutPlayingView state={game} players={state.players} myPlayerId={state.me.playerId} pending={pending} onThrow={() => void act('YUT_THROW')} onToken={id => void act('YUT_TOKEN', id)} onPiece={id => void act('YUT_PIECE', id)} onPath={id => void act('YUT_PATH', id)} />
     case 'FINISHED': return <YutFinalView state={game} host={state.me.host} pending={pending} onReplay={() => void act('CREATE', { gameType: 'YUT', mode: game.mode })} onOther={() => void act('FINISH', 'OTHER')} />
     case 'CANCELLED': return <><div className="gameIcon">🫧</div><h1>게임이 취소됐어요</h1><p className="sub">Room은 그대로 유지됩니다.</p></>
   }
+}
+
+function YutStartingView({ host, pending, onStart }: { host: boolean; pending: boolean; onStart: () => void }) {
+  const requested = useRef(false)
+  useEffect(() => {
+    if (!host || pending || requested.current) return
+    requested.current = true
+    onStart()
+  }, [host, onStart, pending])
+  return <div className="centerState" role="status"><div className="loader" /><p>{host ? '윷놀이를 시작하고 있어요…' : '방장이 윷놀이를 시작하고 있어요…'}</p></div>
 }
 
 function Game({ game, state, pending, act }: { game: GameState; state: State; pending: boolean; act: (type:string,payload?:number|string|'REPLAY'|'OTHER'|{ gameType: GameType; mode?: YutMode }|{ actionType: MafiaNightActionType; targetPlayerId?: number })=>Promise<unknown> }) {

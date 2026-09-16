@@ -31,11 +31,6 @@ export function YutSetupView({ playerCount, pending, onCreate }: { playerCount: 
   </div>
 }
 
-export function YutReadyView({ host, pending, onStart }: { host: boolean; pending: boolean; onStart: () => void }) {
-  if (pending || !host) return <div className="centerState yutReady" role="status"><div className="loader" /><p>윷놀이를 시작하고 있어요…</p></div>
-  return <div className="centerState yutReady"><div className="gameIcon">🎲</div><p className="eyebrow">개인전</p><h1>윷판이 준비됐어요!</h1><p className="sub">각자 말 4개를 먼저 완주하면 승리해요.</p>{host ? <Button disabled={pending} onClick={onStart}>{pending ? '시작 중...' : '게임 시작'}</Button> : <div className="waiting"><span className="dots">•••</span><p>방장이 게임을 시작하기를 기다리고 있어요</p></div>}</div>
-}
-
 export function YutTeamSelectView({ state, host, pending, onTeam, onStart }: { state: Extract<YutGameState, { phase: 'TEAM_SELECT' }>; host: boolean; pending: boolean; onTeam: (team: YutTeamId) => void; onStart: () => void }) {
   return <div className="yutTeamSelect"><p className="eyebrow">2:2 팀전</p><h1>어느 팀으로 갈까요?</h1><div className="yutTeams">{state.teams.map(team => { const selectable = state.selectableTeams.includes(team.team); return <Card className={`yutTeamCard ${team.team.toLowerCase()} ${state.myTeam === team.team ? 'selected' : ''}`} key={team.team}><header><strong>{team.team === 'NOOPI' ? '🐈‍⬛' : '🔵'} {team.name}</strong><span>{team.players.length}/{team.capacity}</span></header><ul>{team.players.map(player => <li key={player.playerId}>{player.nickname}</li>)}</ul><Button className="secondary" disabled={pending || !selectable || state.myTeam === team.team} onClick={() => onTeam(team.team)}>{state.myTeam === team.team ? '선택한 팀' : selectable ? '선택하기' : '마감'}</Button></Card> })}</div>{host ? <Button disabled={pending || !state.canStart} onClick={onStart}>{state.canStart ? '팀전 시작' : '모두 팀을 선택해주세요'}</Button> : <p className="hint">팀이 모두 정해지면 방장이 시작할 수 있어요.</p>}</div>
 }
