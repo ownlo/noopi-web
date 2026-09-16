@@ -60,7 +60,7 @@ test('NAK is rendered as a server result and uses the out-of-bounds throw animat
   assert.match(scene, /result === 'NAK' \? '이번 던지기는 무효!'/)
   assert.match(readFileSync(new URL('../src/features/games/yut/YutPlayingView.tsx', import.meta.url), 'utf8'), /active=\{displayedResult !== undefined\}/)
   assert.match(styles, /@keyframes yutNakThrow/)
-  assert.match(styles, /animation-duration:2\.25s/)
+  assert.match(styles, /animation-duration:1\.45s/)
   assert.match(styles, /translate\(var\(--nak-x\),-72vh\)/)
   assert.match(page, /result\.result === 'NAK' && existingMoveTokens\.length === 1/)
   assert.match(page, /api\.selectYutMoveToken\(roomId, session!\.gameSessionId, onlyMoveTokenId\)/)
@@ -77,8 +77,15 @@ test('throw animation waits for confirmed state and replaces an older animation 
 
 test('mock waits for the NAK animation before the opponent auto-throws', () => {
   const mock = readFileSync(new URL('../src/mocks/mockApi.ts', import.meta.url), 'utf8')
-  assert.match(mock, /YUT_NAK_HANDOFF_DELAY_MS = 3_200/)
+  assert.match(mock, /YUT_NAK_HANDOFF_DELAY_MS = 2_000/)
   assert.match(mock, /scheduleYutOpponentTurn\(turnNo, currentPlayerId, YUT_NAK_HANDOFF_DELAY_MS\)/)
+})
+
+test('mock makes the opponent first throw land as NAK', () => {
+  const mock = readFileSync(new URL('../src/mocks/mockApi.ts', import.meta.url), 'utf8')
+  assert.match(mock, /const firstThrowByOpponent = !thrownByMe && yutOpponentThrowCount === 1/)
+  assert.match(mock, /thirdThrowByMe \|\| firstThrowByOpponent \? 'NAK'/)
+  assert.match(mock, /yutOpponentThrowCount = 0/)
 })
 
 test('mock starts with MO, YUT, then NAK', async () => {

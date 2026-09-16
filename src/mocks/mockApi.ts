@@ -3,7 +3,7 @@ import type { BlindGameState, Candidate, CategoryCatalog, GameCatalog, GameState
 const wait = (ms = 180) => new Promise(resolve => window.setTimeout(resolve, ms))
 const PHASE_TRANSITION_DELAY_MS = 3_000
 const YUT_OPPONENT_THROW_DELAY_MS = 900
-const YUT_NAK_HANDOFF_DELAY_MS = 3_200
+const YUT_NAK_HANDOFF_DELAY_MS = 2_000
 const YUT_OPPONENT_MOVE_DELAY_MS = 1_900
 const listeners = new Set<(event: RealtimeEvent) => void>()
 
@@ -23,6 +23,7 @@ let yutSelectedPieceId: string | null = null
 let yutThrowIndex = 0
 let yutThrowSequence = 0
 let yutMyThrowCount = 0
+let yutOpponentThrowCount = 0
 
 const mockPlayerNames = ['모모', '두부', '보리', '콩이', '호두', '초코', '구름', '단추', '라떼', '망고', '쿠키']
 const mockPlayers = (nickname: string, gender: Player['gender']): Player[] => [
@@ -148,8 +149,10 @@ function resolveYutThrow(game: Extract<YutGameState, { phase: 'PLAYING' }>) {
     && game.pieces.some(piece => piece.ownerId === ownerId && piece.status === 'ON_BOARD' && piece.nodeId === 'OUTER_1')
   const thrownByMe = game.turn.currentPlayerId === room().me.playerId
   if (thrownByMe) yutMyThrowCount++
+  else yutOpponentThrowCount++
   const thirdThrowByMe = thrownByMe && yutMyThrowCount === 3
-  const result: YutResultCode = thirdThrowByMe ? 'NAK' : hasBackDoPreview ? 'BACK_DO' : sequence[yutThrowIndex % sequence.length]
+  const firstThrowByOpponent = !thrownByMe && yutOpponentThrowCount === 1
+  const result: YutResultCode = thirdThrowByMe || firstThrowByOpponent ? 'NAK' : hasBackDoPreview ? 'BACK_DO' : sequence[yutThrowIndex % sequence.length]
   yutThrowIndex++
   yutThrowSequence++
   const steps = { NAK: 0, BACK_DO: -1, DO: 1, GAE: 2, GEOL: 3, YUT: 4, MO: 5 }[result]
@@ -366,7 +369,7 @@ export const mockApi: NoopiApi = {
       const teams = current.phase === 'TEAM_SELECT' ? current.teams : undefined
       const pieces = yutPieces(state, mode)
       const ownerIds = mode === 'TEAM' ? ['NOOPI', 'DAY'] : state.players.map(player => String(player.playerId))
-      yutThrowIndex = 0; yutThrowSequence = 0; yutMyThrowCount = 0; yutSelectedTokenId = null; yutSelectedPieceId = null
+      yutThrowIndex = 0; yutThrowSequence = 0; yutMyThrowCount = 0; yutOpponentThrowCount = 0; yutSelectedTokenId = null; yutSelectedPieceId = null
       setGameState({ type: 'YUT', phase: 'PLAYING', mode, teams, lastThrow: null, turn: { turnNo: 1, currentPlayerId: state.me.playerId, turnPhase: 'WAITING_THROW', throwResults: [], moveTokens: [], pendingBonusThrows: 0 }, pieces, finishedPieceCounts: ownerIds.map(ownerId => ({ ownerId, count: 0 })), myAction: { type: 'THROW_YUT' } })
       emit('GAME_STARTED')
       return

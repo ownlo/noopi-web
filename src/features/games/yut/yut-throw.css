@@ -26,8 +26,8 @@
 .isTossing .yutImpactRing{animation:yutImpact .4s ease-out .86s both}
 .isTossing .yutSpark{animation:yutSparkBurst .5s ease-out .9s both}
 .isTossing .yutSceneResult{animation:yutResultArrival 1.35s ease-out both}
-.isTossing.isNak .yutWoodStick{animation-name:yutNakThrow;animation-duration:2.25s;animation-timing-function:cubic-bezier(.2,.04,.22,1)}
-.isTossing.isNak .yutGroundShadow{animation:yutNakShadow 2.25s ease-in-out both}
+.isTossing.isNak .yutWoodStick{animation-name:yutNakThrow;animation-duration:1.45s;animation-timing-function:cubic-bezier(.2,.04,.22,1)}
+.isTossing.isNak .yutGroundShadow{animation:yutNakShadow 1.45s ease-in-out both}
 .isNak .yutImpactRing,.isNak .yutSpark{display:none}
 .isNak .yutSceneResult{right:50%;top:-28px;transform:translateX(50%) rotate(-7deg)}
 .isNak .yutSceneResult strong{color:#ff7fbc;font-size:52px;text-shadow:0 4px 0 #63254d,0 0 24px #ff59b488}

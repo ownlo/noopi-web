@@ -95,7 +95,7 @@ export function YutPlayingView({ state, players, myPlayerId, pending, onThrow, o
   const pendingThrowPower = useRef<number | null>(null)
   useEffect(() => {
     if (!animating) return
-    const timer = window.setTimeout(() => setAnimating(false), displayedResult === 'NAK' ? 2800 : 1800)
+    const timer = window.setTimeout(() => setAnimating(false), 1800)
     return () => window.clearTimeout(timer)
   }, [animating, displayedResult, throwAnimation])
   useEffect(() => {
