@@ -1187,8 +1187,11 @@ type YutTurnPhase =
 ```
 
 윷 결과 코드는 `NAK | BACK_DO | DO | GAE | GEOL | YUT | MO`를 사용한다. `NAK`은
-이동권을 만들지 않고 서버가 즉시 다음 턴으로 전환한 결과다. Client는
+해당 던지기의 이동권을 만들지 않지만 기존 이동권은 유지하는 결과다. 기존
+이동권이 없을 때만 서버가 다음 턴으로 전환한다. Client는
 `lastThrow.sequence`로 결과 연출 중복을 막고 별도 턴 전환 요청을 보내지 않는다.
+낙 이후 기존 이동권이 하나뿐이면 Client가 해당 이동권 선택 API를 자동 호출하여
+서버가 제공하는 `SELECT_PIECE` 상태로 전환한다.
 `BACK_DO`의
 `steps`는 `-1`이며 Frontend는 서버가 제공한 후보와 확정 도착점만 표시한다.
 

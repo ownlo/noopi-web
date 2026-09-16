@@ -103,9 +103,14 @@ export function RoomPage() {
       case 'YUT_TEAM': return api.selectYutTeam(roomId, session!.gameSessionId, action.payload as YutTeamId)
       case 'YUT_THROW': {
         const game = session!.gameState
-        const existingMoveTokenCount = game.type === 'YUT' && game.phase === 'PLAYING' ? game.turn.moveTokens.length : 0
+        const existingMoveTokens = game.type === 'YUT' && game.phase === 'PLAYING' ? game.turn.moveTokens : []
         const result = await api.throwYut(roomId, session!.gameSessionId)
-        if (result.moveTokenId && !result.bonusThrowGranted && existingMoveTokenCount === 0) await api.selectYutMoveToken(roomId, session!.gameSessionId, result.moveTokenId)
+        const onlyMoveTokenId = result.result === 'NAK' && existingMoveTokens.length === 1
+          ? existingMoveTokens[0].moveTokenId
+          : result.moveTokenId && !result.bonusThrowGranted && existingMoveTokens.length === 0
+            ? result.moveTokenId
+            : null
+        if (onlyMoveTokenId) await api.selectYutMoveToken(roomId, session!.gameSessionId, onlyMoveTokenId)
         return result
       }
       case 'YUT_TOKEN': return api.selectYutMoveToken(roomId, session!.gameSessionId, String(action.payload))

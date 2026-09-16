@@ -29,7 +29,7 @@ export function YutThrowScene({ result, active, animationId, power = 0.5 }: { re
       </div>)}
       <div className="yutImpactRing" /><span className="yutSpark s1">✦</span><span className="yutSpark s2">✧</span><span className="yutSpark s3">✦</span>
     </div>
-    <div className="yutSceneResult">{result ? <><strong>{names[result]}!</strong><span>{result === 'NAK' ? '아쉽지만 다음 차례!' : result === 'YUT' || result === 'MO' ? '한 번 더!' : result === 'BACK_DO' ? '한 칸 뒤로!' : '좋아, 가보자!'}</span></> : null}</div>
+    <div className="yutSceneResult">{result ? <><strong>{names[result]}!</strong><span>{result === 'NAK' ? '이번 던지기는 무효!' : result === 'YUT' || result === 'MO' ? '한 번 더!' : result === 'BACK_DO' ? '한 칸 뒤로!' : '좋아, 가보자!'}</span></> : null}</div>
   </div>
 }
 

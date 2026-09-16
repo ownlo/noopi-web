@@ -57,17 +57,26 @@ test('NAK is rendered as a server result and uses the out-of-bounds throw animat
   const scene = readFileSync(new URL('../src/features/games/yut/YutThrowScene.tsx', import.meta.url), 'utf8')
   const styles = readFileSync(new URL('../src/features/games/yut/yut-throw.css', import.meta.url), 'utf8')
   const page = readFileSync(new URL('../src/pages/RoomPage.tsx', import.meta.url), 'utf8')
-  assert.match(scene, /result === 'NAK' \? '아쉽지만 다음 차례!'/)
+  assert.match(scene, /result === 'NAK' \? '이번 던지기는 무효!'/)
+  assert.match(readFileSync(new URL('../src/features/games/yut/YutPlayingView.tsx', import.meta.url), 'utf8'), /active=\{displayedResult !== undefined\}/)
   assert.match(styles, /@keyframes yutNakThrow/)
+  assert.match(styles, /animation-duration:2\.25s/)
   assert.match(styles, /translate\(var\(--nak-x\),-72vh\)/)
-  assert.match(page, /result\.moveTokenId && !result\.bonusThrowGranted/)
+  assert.match(page, /result\.result === 'NAK' && existingMoveTokens\.length === 1/)
+  assert.match(page, /api\.selectYutMoveToken\(roomId, session!\.gameSessionId, onlyMoveTokenId\)/)
 })
 
-test('mock starts with an empty board and grants a bonus throw for the first YUT', async () => {
+test('mock waits for the NAK animation before the opponent auto-throws', () => {
+  const mock = readFileSync(new URL('../src/mocks/mockApi.ts', import.meta.url), 'utf8')
+  assert.match(mock, /YUT_NAK_HANDOFF_DELAY_MS = 3_200/)
+  assert.match(mock, /scheduleYutOpponentTurn\(turnNo, currentPlayerId, YUT_NAK_HANDOFF_DELAY_MS\)/)
+})
+
+test('mock starts with MO, YUT, then NAK', async () => {
   const originalWindow = globalThis.window
   const originalSessionStorage = globalThis.sessionStorage
   const storage = new Map([['noopi.mockPlayerCount', '2'], ['noopi.mockYutQuickFinish', 'false']])
-  globalThis.window = { setTimeout, clearTimeout }
+  globalThis.window = { setTimeout: (callback, delay) => delay > 500 ? 0 : setTimeout(callback, delay), clearTimeout }
   globalThis.sessionStorage = {
     getItem: key => storage.get(key) ?? null,
     setItem: (key, value) => storage.set(key, value),
@@ -82,28 +91,39 @@ test('mock starts with an empty board and grants a bonus throw for the first YUT
     let state = await mockApi.getRoomState()
     assert.ok(state.gameSession.gameState.pieces.every(piece => piece.status === 'READY' && piece.nodeId === null))
     const thrown = await mockApi.throwYut()
-    assert.equal(thrown.result, 'YUT')
-    assert.equal(thrown.steps, 4)
+    assert.equal(thrown.result, 'MO')
+    assert.equal(thrown.steps, 5)
+    assert.notEqual(thrown.moveTokenId, null)
     assert.equal(thrown.bonusThrowGranted, true)
     state = await mockApi.getRoomState()
-    assert.equal(state.gameSession.gameState.myAction.type, 'THROW_YUT')
     assert.equal(state.gameSession.gameState.turn.currentPlayerId, 1)
-    assert.equal(state.gameSession.gameState.turn.pendingBonusThrows, 1)
-    assert.deepEqual(state.gameSession.gameState.turn.throwResults, ['YUT'])
+    assert.deepEqual(state.gameSession.gameState.turn.throwResults, ['MO'])
     assert.equal(state.gameSession.gameState.turn.moveTokens.length, 1)
 
-    const bonusThrow = await mockApi.throwYut()
-    assert.equal(bonusThrow.result, 'GAE')
+    const secondThrow = await mockApi.throwYut()
+    assert.equal(secondThrow.result, 'YUT')
+    assert.equal(secondThrow.steps, 4)
+    assert.notEqual(secondThrow.moveTokenId, null)
+    assert.equal(secondThrow.bonusThrowGranted, true)
     state = await mockApi.getRoomState()
-    assert.equal(state.gameSession.gameState.myAction.type, 'SELECT_MOVE_TOKEN')
+    assert.deepEqual(state.gameSession.gameState.turn.throwResults, ['MO', 'YUT'])
     assert.equal(state.gameSession.gameState.turn.moveTokens.length, 2)
+    assert.equal(state.gameSession.gameState.myAction.type, 'THROW_YUT')
 
-    await mockApi.selectYutMoveToken(100, 500, thrown.moveTokenId)
-    await mockApi.selectYutPiece(100, 500, '1-1')
+    const thirdThrow = await mockApi.throwYut()
+    assert.equal(thirdThrow.result, 'NAK')
+    assert.equal(thirdThrow.steps, 0)
+    assert.equal(thirdThrow.moveTokenId, null)
+    assert.equal(thirdThrow.bonusThrowGranted, false)
     state = await mockApi.getRoomState()
+    assert.equal(state.gameSession.gameState.turn.currentPlayerId, 1)
+    assert.equal(state.gameSession.gameState.turn.turnNo, 1)
+    assert.equal(state.gameSession.gameState.turn.pendingBonusThrows, 0)
+    assert.deepEqual(state.gameSession.gameState.turn.throwResults, ['MO', 'YUT'])
+    assert.deepEqual(state.gameSession.gameState.turn.moveTokens.map(token => token.result), ['MO', 'YUT'])
+    assert.equal(state.gameSession.gameState.turn.moveTokens.length, 2)
     assert.equal(state.gameSession.gameState.myAction.type, 'SELECT_MOVE_TOKEN')
-    assert.equal(state.gameSession.gameState.turn.moveTokens.length, 1)
-    assert.equal(state.gameSession.gameState.turn.moveTokens[0].moveTokenId, bonusThrow.moveTokenId)
+    assert.equal(state.gameSession.gameState.lastThrow.result, 'NAK')
   } finally {
     globalThis.window = originalWindow
     globalThis.sessionStorage = originalSessionStorage

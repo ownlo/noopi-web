@@ -26,8 +26,8 @@
 .isTossing .yutImpactRing{animation:yutImpact .4s ease-out .86s both}
 .isTossing .yutSpark{animation:yutSparkBurst .5s ease-out .9s both}
 .isTossing .yutSceneResult{animation:yutResultArrival 1.35s ease-out both}
-.isTossing.isNak .yutWoodStick{animation-name:yutNakThrow;animation-duration:1.6s}
-.isTossing.isNak .yutGroundShadow{animation:yutNakShadow 1.6s ease-in-out both}
+.isTossing.isNak .yutWoodStick{animation-name:yutNakThrow;animation-duration:2.25s;animation-timing-function:cubic-bezier(.2,.04,.22,1)}
+.isTossing.isNak .yutGroundShadow{animation:yutNakShadow 2.25s ease-in-out both}
 .isNak .yutImpactRing,.isNak .yutSpark{display:none}
 .isNak .yutSceneResult{right:50%;top:-28px;transform:translateX(50%) rotate(-7deg)}
 .isNak .yutSceneResult strong{color:#ff7fbc;font-size:52px;text-shadow:0 4px 0 #63254d,0 0 24px #ff59b488}
@@ -44,12 +44,13 @@
 }
 @keyframes yutNakThrow{
   0%{transform:translate(calc(var(--i)*8px - 12px),48px) rotateZ(-15deg) rotateY(0) scale(.8)}
-  18%{transform:translate(calc(var(--i)*5px - 8px),58px) rotateZ(-25deg) rotateY(30deg) scale(.75)}
-  52%{transform:translate(calc(var(--land-x)*.65),var(--throw-height)) rotateZ(calc(var(--angle) + 170deg)) rotateY(calc(560deg + var(--throw-spin))) scale(var(--throw-scale))}
-  68%{opacity:1;transform:translate(calc(var(--land-x)*1.4),calc(var(--throw-fall) - 20px)) rotateZ(calc(var(--angle) + 330deg)) rotateY(calc(760deg + var(--throw-spin))) scale(1.08)}
+  14%{transform:translate(calc(var(--i)*5px - 8px),58px) rotateZ(-25deg) rotateY(30deg) scale(.75)}
+  48%{transform:translate(calc(var(--land-x)*.65),var(--throw-height)) rotateZ(calc(var(--angle) + 170deg)) rotateY(calc(560deg + var(--throw-spin))) scale(var(--throw-scale))}
+  66%{opacity:1;transform:translate(calc(var(--land-x)*1.18),calc(var(--throw-fall) - 12px)) rotateZ(calc(var(--angle) + 315deg)) rotateY(calc(730deg + var(--throw-spin))) scale(1.12)}
+  76%{opacity:1;transform:translate(calc(var(--land-x)*1.35),calc(var(--throw-fall) - 4px)) rotateZ(calc(var(--angle) + 355deg)) rotateY(calc(790deg + var(--throw-spin))) scale(1.05)}
   100%{opacity:0;transform:translate(var(--nak-x),-72vh) rotateZ(calc(var(--angle) + 760deg)) rotateY(calc(1280deg + var(--throw-spin))) scale(.55)}
 }
-@keyframes yutNakShadow{0%,58%{opacity:.55}80%,100%{opacity:0;transform:translate(var(--nak-shadow-x),120px) scale(.25)}}
+@keyframes yutNakShadow{0%,66%{opacity:.55}76%{opacity:.35}100%{opacity:0;transform:translate(var(--nak-shadow-x),120px) scale(.25)}}
 @keyframes yutShadowThrow{0%,100%{opacity:.65;filter:blur(5px)}45%,65%{opacity:.16;filter:blur(12px);scale:.6}80%{opacity:.85;filter:blur(3px)}}
 @keyframes yutImpact{from{opacity:.8;scale:.4}to{opacity:0;scale:var(--impact-scale)}}
 @keyframes yutSparkBurst{0%{opacity:0;translate:0 8px;scale:.4}25%{opacity:1}100%{opacity:0;translate:0 var(--spark-rise);scale:1.3}}

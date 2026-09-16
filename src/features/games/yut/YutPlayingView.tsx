@@ -94,9 +94,9 @@ export function YutPlayingView({ state, players, myPlayerId, pending, onThrow, o
   const observedThrow = useRef(state.lastThrow?.sequence ?? 0)
   useEffect(() => {
     if (!animating) return
-    const timer = window.setTimeout(() => setAnimating(false), 1800)
+    const timer = window.setTimeout(() => setAnimating(false), displayedResult === 'NAK' ? 2800 : 1800)
     return () => window.clearTimeout(timer)
-  }, [animating, throwAnimation])
+  }, [animating, displayedResult, throwAnimation])
   useEffect(() => {
     const latest = state.lastThrow
     if (!latest || latest.sequence <= observedThrow.current) return
@@ -127,8 +127,8 @@ export function YutPlayingView({ state, players, myPlayerId, pending, onThrow, o
     </div>)}</div>
     {animating && createPortal(<div className="yutThrowOverlay">
       <div className="yutThrowOverlayScene">
-        <YutThrowScene result={displayedResult} active animationId={throwAnimation} power={throwPower} />
-        <p className="srOnly" role="status">{displayedResult ? `${resultNames[displayedResult]}!${displayedResult === 'NAK' ? ' 다음 차례로 넘어갑니다.' : ''}` : '윷을 던지고 있어요'}</p>
+        <YutThrowScene result={displayedResult} active={displayedResult !== undefined} animationId={throwAnimation} power={throwPower} />
+        <p className="srOnly" role="status">{displayedResult ? `${resultNames[displayedResult]}!${displayedResult === 'NAK' ? ' 이번 던지기는 무효예요.' : ''}` : '윷을 던지고 있어요'}</p>
       </div>
     </div>, document.body)}
     <YutActionDock state={state} pending={pending} animating={animating} onToken={onToken} onPath={onPath} onThrow={power => {
