@@ -24,7 +24,9 @@ test('confirmed outer and shortcut movement displays each hop', () => {
 })
 test('unknown/unreachable paths are not fabricated', () => {
   assert.deepEqual(ids('UNKNOWN', 'CENTER_3'), [])
-  assert.deepEqual(ids('OUTER_2', 'OUTER_1'), [])
+  assert.deepEqual(ids('OUTER_2', 'OUTER_1'), ['OUTER_2', 'OUTER_1'])
+  assert.deepEqual(ids('OUTER_1', 'OUTER_20'), ['OUTER_1', 'OUTER_20'])
+  assert.deepEqual(ids('OUTER_20', null), ['OUTER_20', 'OUTER_20'])
 })
 test('HTTP adapter accepts empty 202 responses and sends throws without body', async () => {
   const source = readFileSync(new URL('../src/api/httpApi.ts', import.meta.url), 'utf8')
@@ -45,7 +47,7 @@ test('HTTP adapter accepts empty 202 responses and sends throws without body', a
   } finally { globalThis.fetch = original }
 })
 
-test('mock keeps the local player fixed and automatically plays the opponent turn', async () => {
+test('mock forces back-do so two local pieces stack on the first node', async () => {
   const originalWindow = globalThis.window
   const originalSessionStorage = globalThis.sessionStorage
   const storage = new Map([['noopi.mockPlayerCount', '2'], ['noopi.mockYutQuickFinish', 'false']])
@@ -61,25 +63,28 @@ test('mock keeps the local player fixed and automatically plays the opponent tur
     await mockApi.createRoom({ nickname: '누피', gender: 'MALE' })
     await mockApi.createGameSession(100, 'YUT', { mode: 'INDIVIDUAL' })
     await mockApi.startGame()
-    const thrown = await mockApi.throwYut()
     let state = await mockApi.getRoomState()
+    const localPiece = state.gameSession.gameState.pieces.find(piece => piece.pieceId === '1-1')
+    const localPieceBehind = state.gameSession.gameState.pieces.find(piece => piece.pieceId === '1-2')
+    assert.equal(localPiece.nodeId, 'OUTER_2')
+    assert.equal(localPieceBehind.nodeId, 'OUTER_1')
+    const thrown = await mockApi.throwYut()
+    assert.equal(thrown.result, 'BACK_DO')
+    assert.equal(thrown.steps, -1)
+    state = await mockApi.getRoomState()
     assert.equal(state.gameSession.gameState.myAction.type, 'SELECT_MOVE_TOKEN')
     await mockApi.selectYutMoveToken(100, 500, thrown.moveTokenId)
     await mockApi.selectYutPiece(100, 500, '1-1')
 
     state = await mockApi.getRoomState()
+    assert.equal(state.gameSession.gameState.pieces.find(piece => piece.pieceId === '1-1').nodeId, 'OUTER_1')
+    assert.deepEqual(state.gameSession.gameState.pieces.find(piece => piece.pieceId === '1-1').groupPieceIds, ['1-1', '1-2'])
+    assert.deepEqual(state.gameSession.gameState.pieces.find(piece => piece.pieceId === '1-2').groupPieceIds, ['1-1', '1-2'])
     assert.equal(state.me.playerId, 1)
     assert.equal(state.gameSession.gameState.turn.currentPlayerId, 2)
     assert.equal(state.gameSession.gameState.myAction, null)
 
-    await new Promise(resolve => setTimeout(resolve, 1_100))
-    state = await mockApi.getRoomState()
-    assert.equal(state.me.playerId, 1)
-    assert.equal(state.gameSession.gameState.turn.currentPlayerId, 2)
-    assert.equal(state.gameSession.gameState.turn.throwResults.length, 1)
-    assert.equal(state.gameSession.gameState.myAction, null)
-
-    await new Promise(resolve => setTimeout(resolve, 2_000))
+    await new Promise(resolve => setTimeout(resolve, 3_000))
     state = await mockApi.getRoomState()
     assert.equal(state.gameSession.gameState.turn.currentPlayerId, 1)
     assert.equal(state.gameSession.gameState.myAction.type, 'THROW_YUT')

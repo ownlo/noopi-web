@@ -133,15 +133,19 @@ function yutOwnerId(game: Extract<YutGameState, { phase: 'PLAYING' }>) {
   return game.teams?.find(team => team.players.some(player => player.playerId === game.turn.currentPlayerId))?.team ?? 'NOOPI'
 }
 
-function yutEligiblePieceIds(game: Extract<YutGameState, { phase: 'PLAYING' }>) {
+function yutEligiblePieceIds(game: Extract<YutGameState, { phase: 'PLAYING' }>, result?: YutResultCode) {
   const ownerId = yutOwnerId(game)
-  return game.pieces.filter(piece => piece.ownerId === ownerId && piece.status !== 'FINISHED' && piece.groupPieceIds[0] === piece.pieceId).map(piece => piece.pieceId)
+  return game.pieces.filter(piece => piece.ownerId === ownerId && (result === 'BACK_DO' ? piece.status === 'ON_BOARD' : piece.status !== 'FINISHED') && piece.groupPieceIds[0] === piece.pieceId).map(piece => piece.pieceId)
 }
 
 function resolveYutThrow(game: Extract<YutGameState, { phase: 'PLAYING' }>) {
-  const sequence: YutResultCode[] = ['GAE', 'GEOL', 'DO', 'YUT', 'MO']
-  const result = sequence[yutThrowIndex++ % sequence.length]
-  const steps = { DO: 1, GAE: 2, GEOL: 3, YUT: 4, MO: 5 }[result]
+  const sequence: YutResultCode[] = ['GAE', 'BACK_DO', 'GEOL', 'DO', 'YUT', 'MO']
+  const ownerId = yutOwnerId(game)
+  const hasBackDoPreview = game.pieces.some(piece => piece.ownerId === ownerId && piece.status === 'ON_BOARD' && piece.nodeId === 'OUTER_2')
+    && game.pieces.some(piece => piece.ownerId === ownerId && piece.status === 'ON_BOARD' && piece.nodeId === 'OUTER_1')
+  const result = hasBackDoPreview ? 'BACK_DO' : sequence[yutThrowIndex % sequence.length]
+  yutThrowIndex++
+  const steps = { BACK_DO: -1, DO: 1, GAE: 2, GEOL: 3, YUT: 4, MO: 5 }[result]
   const moveTokenId = `mock-yut-${yutThrowIndex}`
   const bonusThrowGranted = result === 'YUT' || result === 'MO'
   const moveTokens = [...game.turn.moveTokens, { moveTokenId, result, steps }]
@@ -169,9 +173,14 @@ function scheduleYutOpponentTurn(turnNo: number, playerId: number) {
       const current = activeYut()
       if (current.turn.turnNo !== turnNo || current.turn.currentPlayerId !== playerId || (current.myAction?.type !== 'SELECT_MOVE_TOKEN' && current.myAction?.type !== 'SELECT_PIECE')) return
       const tokenId = current.myAction.type === 'SELECT_MOVE_TOKEN' ? current.myAction.moveTokenIds[0] : current.myAction.moveTokenId
-      const eligiblePieceIds = current.myAction.type === 'SELECT_PIECE' ? current.myAction.eligiblePieceIds : yutEligiblePieceIds(current)
+      const selectedToken = current.turn.moveTokens.find(item => item.moveTokenId === tokenId)
+      const eligiblePieceIds = current.myAction.type === 'SELECT_PIECE' ? current.myAction.eligiblePieceIds : yutEligiblePieceIds(current, selectedToken?.result)
       const piece = current.pieces.find(item => eligiblePieceIds.includes(item.pieceId))
-      if (!tokenId || !piece) return
+      if (!tokenId) return
+      if (!piece) {
+        if (selectedToken?.result === 'BACK_DO') void mockApi.selectYutMoveToken(0, 0, tokenId)
+        return
+      }
       yutSelectedTokenId = tokenId
       yutSelectedPieceId = piece.pieceId
       finishYutMove(current, piece.pieceId)
@@ -189,7 +198,10 @@ function finishYutMove(game: Extract<YutGameState, { phase: 'PLAYING' }>, pieceI
   const movingIds = selectedPiece.groupPieceIds
   const currentIndex = selectedPiece.status === 'READY' ? -1 : Number(selectedPiece.nodeId?.replace('OUTER_', '') ?? 0) - 1
   const nextIndex = currentIndex + token.steps
-  const destination = nextIndex > 19 ? null : `OUTER_${nextIndex + 1}`
+  const backDoFinished = token.result === 'BACK_DO' && selectedPiece.nodeId === 'OUTER_20'
+  const destination = token.result === 'BACK_DO' && selectedPiece.nodeId === 'OUTER_1'
+    ? 'OUTER_20'
+    : nextIndex > 19 || backDoFinished ? null : `OUTER_${nextIndex + 1}`
   const stackedPieceIds = destination === null ? [] : game.pieces.filter(piece => piece.ownerId === selectedPiece.ownerId && piece.status === 'ON_BOARD' && piece.nodeId === destination && !movingIds.includes(piece.pieceId)).map(piece => piece.pieceId)
   const groupPieceIds = [...movingIds, ...stackedPieceIds]
   const capturedPieceIds = destination === null ? [] : game.pieces.filter(piece => piece.ownerId !== selectedPiece.ownerId && piece.status === 'ON_BOARD' && piece.nodeId === destination).map(piece => piece.pieceId)
@@ -324,15 +336,13 @@ export const mockApi: NoopiApi = {
       const mode = current.mode
       const teams = current.phase === 'TEAM_SELECT' ? current.teams : undefined
       const pieces = yutPieces(state, mode)
-      // Quick finish preview: all four local pieces wait stacked on OUTER_20.
+      // Back-do stacking preview: two local pieces wait on the first two nodes.
       const myOwnerId = mode === 'TEAM' ? teams?.find(team => team.players.some(player => player.playerId === state.me.playerId))?.team : String(state.me.playerId)
-      const myPieceIds = pieces.filter(piece => piece.ownerId === myOwnerId).map(piece => piece.pieceId)
-      const quickFinish = sessionStorage.getItem('noopi.mockYutQuickFinish') !== 'false'
-      const target = pieces.find(piece => piece.ownerId === myOwnerId)
-      const previewPieces = pieces.map(piece => quickFinish && piece.ownerId === myOwnerId
-        ? { ...piece, status: 'ON_BOARD' as const, nodeId: 'OUTER_20', groupPieceIds: myPieceIds }
-        : !quickFinish && piece.pieceId === target?.pieceId
-          ? { ...piece, status: 'ON_BOARD' as const, nodeId: 'OUTER_19' }
+      const targets = pieces.filter(piece => piece.ownerId === myOwnerId).slice(0, 2)
+      const previewPieces = pieces.map(piece => piece.pieceId === targets[0]?.pieceId
+        ? { ...piece, status: 'ON_BOARD' as const, nodeId: 'OUTER_2' }
+        : piece.pieceId === targets[1]?.pieceId
+          ? { ...piece, status: 'ON_BOARD' as const, nodeId: 'OUTER_1' }
           : piece)
       const ownerIds = mode === 'TEAM' ? ['NOOPI', 'DAY'] : state.players.map(player => String(player.playerId))
       yutThrowIndex = 0; yutSelectedTokenId = null; yutSelectedPieceId = null
@@ -550,7 +560,28 @@ export const mockApi: NoopiApi = {
     const game = activeYut()
     if (game.myAction?.type !== 'SELECT_MOVE_TOKEN' || !game.myAction.moveTokenIds.includes(moveTokenId)) throw new Error('MOVE_TOKEN_NOT_FOUND')
     yutSelectedTokenId = moveTokenId
-    const eligiblePieceIds = yutEligiblePieceIds(game)
+    const token = game.turn.moveTokens.find(item => item.moveTokenId === moveTokenId)
+    const eligiblePieceIds = yutEligiblePieceIds(game, token?.result)
+    if (token?.result === 'BACK_DO' && eligiblePieceIds.length === 0) {
+      const moveTokens = game.turn.moveTokens.filter(item => item.moveTokenId !== moveTokenId)
+      const turnEnded = moveTokens.length === 0 && game.turn.pendingBonusThrows === 0
+      const state = room()
+      const order = game.mode === 'TEAM'
+        ? [0, 1].flatMap(index => (game.teams ?? []).flatMap(team => team.players[index] ? [team.players[index].playerId] : []))
+        : state.players.filter(player => game.pieces.some(piece => piece.ownerId === String(player.playerId))).map(player => player.playerId)
+      const currentPlayerId = turnEnded ? order[(order.indexOf(game.turn.currentPlayerId) + 1) % order.length] : game.turn.currentPlayerId
+      const turnNo = game.turn.turnNo + (turnEnded ? 1 : 0)
+      const myAction = moveTokens.length > 0
+        ? { type: 'SELECT_MOVE_TOKEN' as const, moveTokenIds: moveTokens.map(item => item.moveTokenId) }
+        : { type: 'THROW_YUT' as const }
+      setGameState({ ...game, turn: { ...game.turn, currentPlayerId, turnNo, throwResults: turnEnded ? [] : game.turn.throwResults, moveTokens, turnPhase: myAction.type === 'THROW_YUT' ? 'WAITING_THROW' : 'WAITING_MOVE' }, myAction })
+      yutSelectedTokenId = null
+      if (turnEnded) {
+        emit('YUT_TURN_CHANGED', { turnNo, currentPlayerId })
+        if (currentPlayerId !== state.me.playerId) scheduleYutOpponentTurn(turnNo, currentPlayerId)
+      }
+      return
+    }
     setGameState({ ...game, myAction: { type: 'SELECT_PIECE', moveTokenId, eligiblePieceIds } })
   },
   async selectYutPiece(_roomId, _gameSessionId, pieceId) {

@@ -48,7 +48,7 @@ export type MafiaGameState =
   | { type: 'MAFIA'; phase: 'CANCELLED'; reason?: string }
 export type YutMode = 'INDIVIDUAL' | 'TEAM'
 export type YutTeamId = 'NOOPI' | 'DAY'
-export type YutResultCode = 'DO' | 'GAE' | 'GEOL' | 'YUT' | 'MO'
+export type YutResultCode = 'BACK_DO' | 'DO' | 'GAE' | 'GEOL' | 'YUT' | 'MO'
 export type YutPiece = { pieceId: string; ownerType: 'PLAYER' | 'TEAM'; ownerId: string; status: 'READY' | 'ON_BOARD' | 'FINISHED'; nodeId: string | null; groupPieceIds: string[] }
 export type YutMoveToken = { moveTokenId: string; result: YutResultCode; steps: number }
 export type YutAction =

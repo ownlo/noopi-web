@@ -28,21 +28,29 @@ const tracks = [
 export function confirmedMovePoints(from: string | null, to: string | null) {
   const start = from ?? 'START'
   const end = to ?? 'FINISH'
+  if (start === 'OUTER_1' && end === 'OUTER_20') {
+    return ['OUTER_1', 'OUTER_20'].map(id => boardNodes.find(node => node.id === id)!)
+  }
   // At most five hops between confirmed endpoints. Ambiguous/unknown movement is
   // shown at the server destination rather than guessed or used as game state.
-  let paths = [[start]]
-  for (let depth = 0; depth < 5; depth++) {
-    paths = paths.flatMap(path => {
+  function find(direction: 1 | -1) {
+    let paths = [[start]]
+    for (let depth = 0; depth < 5; depth++) {
+      paths = paths.flatMap(path => {
       const last = path.at(-1)
       return [...new Set(tracks.flatMap(track => {
         const index = track.indexOf(last ?? '')
-        return index >= 0 && index < track.length - 1 ? [track[index + 1]] : []
+        const nextIndex = index + direction
+        return index >= 0 && nextIndex >= 0 && nextIndex < track.length ? [track[nextIndex]] : []
       }))].filter(node => !path.includes(node)).map(node => [...path, node])
-    })
-    const matches = paths.filter(path => path.at(-1) === end)
-    if (matches.length > 1) return []
-    if (matches.length === 1) return matches[0].map(id =>
-      boardNodes.find(node => node.id === (id === 'START' || id === 'FINISH' ? 'OUTER_20' : id))!)
+      })
+      const matches = paths.filter(path => path.at(-1) === end)
+      if (matches.length > 1) return []
+      if (matches.length === 1) return matches[0].map(id =>
+        boardNodes.find(node => node.id === (id === 'START' || id === 'FINISH' ? 'OUTER_20' : id))!)
+    }
+    return []
   }
-  return []
+  const forward = find(1)
+  return forward.length > 0 ? forward : find(-1)
 }

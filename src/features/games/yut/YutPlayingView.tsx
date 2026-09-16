@@ -12,7 +12,7 @@ import { YutBoardDecorations } from './YutBoardDecorations'
 import { boardNodes, outerNodes } from './yutBoardPresentation'
 
 type PlayingState = Extract<YutGameState, { phase: 'PLAYING' }>
-const resultNames = { DO: '도', GAE: '개', GEOL: '걸', YUT: '윷', MO: '모' } as const
+const resultNames = { BACK_DO: '빽도', DO: '도', GAE: '개', GEOL: '걸', YUT: '윷', MO: '모' } as const
 const colors = ['#b66bff', '#369cff', '#c1ff24', '#ff4d5e']
 const position = (x: number, y: number): CSSProperties => ({ left: `${x}%`, top: `${y}%` })
 

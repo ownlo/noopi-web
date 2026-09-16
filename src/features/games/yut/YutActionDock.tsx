@@ -5,7 +5,7 @@ import { pathLabels } from './yutBoardPresentation'
 import './yut-actions.css'
 
 type PlayingState = Extract<YutGameState, { phase: 'PLAYING' }>
-const resultNames = { DO: '도', GAE: '개', GEOL: '걸', YUT: '윷', MO: '모' } as const
+const resultNames = { BACK_DO: '빽도', DO: '도', GAE: '개', GEOL: '걸', YUT: '윷', MO: '모' } as const
 
 export function YutActionDock({ state, pending, animating, onThrow, onToken, onPath }: {
   state: PlayingState
@@ -32,7 +32,7 @@ export function YutActionDock({ state, pending, animating, onThrow, onToken, onP
       <p className="srOnly" role="status">{pending ? '이동을 준비하고 있어요…' : '눌러서 말을 움직여요'}</p>
       <div className={`yutDockTokens ${tokens.length === 1 ? 'single' : ''}`} aria-label="이동권 선택">
         {tokens.map(token => <button key={token.moveTokenId} type="button" className="yutDockToken" disabled={pending} onClick={() => onToken(token.moveTokenId)}>
-          <b>{resultNames[token.result]}</b><span>{token.steps}칸 이동</span>
+          <b>{resultNames[token.result]}</b><span>{token.result === 'BACK_DO' ? '1칸 뒤로' : `${token.steps}칸 이동`}</span>
         </button>)}
       </div>
     </div>}

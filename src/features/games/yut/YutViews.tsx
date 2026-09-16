@@ -5,6 +5,7 @@ import { Button, Card } from '../../../components/ui'
 import yutGroup from '../../../assets/characters/noopi-yut-group-transparent.png'
 import yutMove from '../../../assets/characters/noopi-yut-move.png'
 import yutTeam from '../../../assets/characters/noopi-yut-team-highfive.png'
+import yutVictory from '../../../assets/characters/noopi-yut-victory.png'
 import './yut-setup.css'
 
 export { YutPlayingView } from './YutPlayingView'
@@ -37,5 +38,5 @@ export function YutTeamSelectView({ state, host, pending, onTeam, onStart }: { s
 
 export function YutFinalView({ state, host, pending, onReplay, onOther }: { state: Extract<YutGameState, { phase: 'FINISHED' }>; host: boolean; pending: boolean; onReplay: () => void; onOther: () => void }) {
   const winner = state.mode === 'TEAM' ? state.winnerTeam?.name : state.winnerPlayer?.nickname
-  return <div className="centerState yutFinal"><div className="confetti">🎉 🏆 🎉</div><p className="eyebrow">게임 종료</p><h1>{winner} 승리!</h1><p className="sub">말 4개를 모두 완주했어요!</p>{host ? <div className="stack"><Button disabled={pending} onClick={onReplay}>같은 모드로 다시하기</Button><Button className="secondary" disabled={pending} onClick={onOther}>다른 게임 선택</Button></div> : <div className="waiting"><span className="dots">•••</span><p>방장이 다음 게임을 선택하고 있어요</p></div>}</div>
+  return <div className="centerState yutFinal"><img className="yutVictoryBackdrop" src={yutVictory} alt="" aria-hidden /><p className="eyebrow">게임 종료</p><h1>{winner} 승리!</h1>{host ? <div className="stack"><Button disabled={pending} onClick={onReplay}>같은 모드로 다시하기</Button><Button className="secondary" disabled={pending} onClick={onOther}>다른 게임 선택</Button></div> : <div className="waiting"><span className="dots">•••</span><p>방장이 다음 게임을 선택하고 있어요</p></div>}</div>
 }
