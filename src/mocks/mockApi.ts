@@ -20,6 +20,7 @@ let mafiaDayNo = 1
 let yutSelectedTokenId: string | null = null
 let yutSelectedPieceId: string | null = null
 let yutThrowIndex = 0
+let yutThrowSequence = 0
 
 const mockPlayerNames = ['모모', '두부', '보리', '콩이', '호두', '초코', '구름', '단추', '라떼', '망고', '쿠키']
 const mockPlayers = (nickname: string, gender: Player['gender']): Player[] => [
@@ -139,13 +140,29 @@ function yutEligiblePieceIds(game: Extract<YutGameState, { phase: 'PLAYING' }>, 
 }
 
 function resolveYutThrow(game: Extract<YutGameState, { phase: 'PLAYING' }>) {
-  const sequence: YutResultCode[] = ['YUT', 'GAE', 'BACK_DO', 'GEOL', 'DO', 'MO']
+  const sequence: Exclude<YutResultCode, 'NAK'>[] = ['YUT', 'GAE', 'BACK_DO', 'GEOL', 'DO', 'MO']
   const ownerId = yutOwnerId(game)
   const hasBackDoPreview = game.pieces.some(piece => piece.ownerId === ownerId && piece.status === 'ON_BOARD' && piece.nodeId === 'OUTER_2')
     && game.pieces.some(piece => piece.ownerId === ownerId && piece.status === 'ON_BOARD' && piece.nodeId === 'OUTER_1')
-  const result = hasBackDoPreview ? 'BACK_DO' : sequence[yutThrowIndex % sequence.length]
+  const result: YutResultCode = yutThrowIndex % 20 === 19 ? 'NAK' : hasBackDoPreview ? 'BACK_DO' : sequence[yutThrowIndex % sequence.length]
   yutThrowIndex++
-  const steps = { BACK_DO: -1, DO: 1, GAE: 2, GEOL: 3, YUT: 4, MO: 5 }[result]
+  yutThrowSequence++
+  const steps = { NAK: 0, BACK_DO: -1, DO: 1, GAE: 2, GEOL: 3, YUT: 4, MO: 5 }[result]
+  const lastThrow = { sequence: yutThrowSequence, turnNo: game.turn.turnNo, playerId: game.turn.currentPlayerId, result, steps, bonusThrowGranted: result === 'YUT' || result === 'MO' }
+  if (result === 'NAK') {
+    const state = room()
+    const order = game.mode === 'TEAM'
+      ? [0, 1].flatMap(index => (game.teams ?? []).flatMap(team => team.players[index] ? [team.players[index].playerId] : []))
+      : state.players.filter(player => game.pieces.some(piece => piece.ownerId === String(player.playerId))).map(player => player.playerId)
+    const currentPlayerId = order[(order.indexOf(game.turn.currentPlayerId) + 1) % order.length]
+    const turnNo = game.turn.turnNo + 1
+    setGameState({ ...game, lastThrow, turn: { ...game.turn, currentPlayerId, turnNo, turnPhase: 'WAITING_THROW', throwResults: [], moveTokens: [], pendingBonusThrows: 0 }, myAction: { type: 'THROW_YUT' } })
+    yutSelectedTokenId = null; yutSelectedPieceId = null
+    emit('YUT_THROW_RESOLVED', { playerId: game.turn.currentPlayerId, result, steps, bonusThrowGranted: false })
+    emit('YUT_TURN_CHANGED', { turnNo, currentPlayerId })
+    if (currentPlayerId !== state.me.playerId) scheduleYutOpponentTurn(turnNo, currentPlayerId)
+    return { result, steps, moveTokenId: null, bonusThrowGranted: false }
+  }
   const moveTokenId = `mock-yut-${yutThrowIndex}`
   const bonusThrowGranted = result === 'YUT' || result === 'MO'
   const moveTokens = [...game.turn.moveTokens, { moveTokenId, result, steps }]
@@ -153,7 +170,7 @@ function resolveYutThrow(game: Extract<YutGameState, { phase: 'PLAYING' }>) {
   const myAction = pendingBonusThrows > 0
     ? { type: 'THROW_YUT' as const }
     : { type: 'SELECT_MOVE_TOKEN' as const, moveTokenIds: moveTokens.map(item => item.moveTokenId) }
-  setGameState({ ...game, turn: { ...game.turn, turnPhase: pendingBonusThrows > 0 ? 'WAITING_THROW' : 'WAITING_MOVE', throwResults: [...game.turn.throwResults, result], moveTokens, pendingBonusThrows }, myAction })
+  setGameState({ ...game, lastThrow, turn: { ...game.turn, turnPhase: pendingBonusThrows > 0 ? 'WAITING_THROW' : 'WAITING_MOVE', throwResults: [...game.turn.throwResults, result], moveTokens, pendingBonusThrows }, myAction })
   emit('YUT_THROW_RESOLVED', { playerId: game.turn.currentPlayerId, result, steps, bonusThrowGranted })
   return { result, steps, moveTokenId, bonusThrowGranted }
 }
@@ -163,7 +180,8 @@ function scheduleYutOpponentTurn(turnNo: number, playerId: number) {
     const state = room()
     const game = state.gameSession?.gameState
     if (!game || game.type !== 'YUT' || game.phase !== 'PLAYING' || game.turn.turnNo !== turnNo || game.turn.currentPlayerId !== playerId || state.me.playerId === playerId || game.myAction?.type !== 'THROW_YUT') return
-    resolveYutThrow(game)
+    const result = resolveYutThrow(game)
+    if (result.result === 'NAK') return
     const updated = activeYut()
     if (updated.myAction?.type === 'THROW_YUT') {
       scheduleYutOpponentTurn(turnNo, playerId)
@@ -337,8 +355,8 @@ export const mockApi: NoopiApi = {
       const teams = current.phase === 'TEAM_SELECT' ? current.teams : undefined
       const pieces = yutPieces(state, mode)
       const ownerIds = mode === 'TEAM' ? ['NOOPI', 'DAY'] : state.players.map(player => String(player.playerId))
-      yutThrowIndex = 0; yutSelectedTokenId = null; yutSelectedPieceId = null
-      setGameState({ type: 'YUT', phase: 'PLAYING', mode, teams, turn: { turnNo: 1, currentPlayerId: state.me.playerId, turnPhase: 'WAITING_THROW', throwResults: [], moveTokens: [], pendingBonusThrows: 0 }, pieces, finishedPieceCounts: ownerIds.map(ownerId => ({ ownerId, count: 0 })), myAction: { type: 'THROW_YUT' } })
+      yutThrowIndex = 0; yutThrowSequence = 0; yutSelectedTokenId = null; yutSelectedPieceId = null
+      setGameState({ type: 'YUT', phase: 'PLAYING', mode, teams, lastThrow: null, turn: { turnNo: 1, currentPlayerId: state.me.playerId, turnPhase: 'WAITING_THROW', throwResults: [], moveTokens: [], pendingBonusThrows: 0 }, pieces, finishedPieceCounts: ownerIds.map(ownerId => ({ ownerId, count: 0 })), myAction: { type: 'THROW_YUT' } })
       emit('GAME_STARTED')
       return
     }

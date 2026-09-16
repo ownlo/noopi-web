@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useBeforeUnload, useBlocker, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
-import type { BlindGameState, GameCatalog, GameState, GameType, LiarGameState, MafiaGameState, MafiaJudgmentChoice, MafiaNightActionType, YutGameState, YutMode, YutTeamId } from '../api/types'
+import type { BlindGameState, GameCatalog, GameState, GameType, LiarGameState, MafiaGameState, MafiaJudgmentChoice, MafiaNightActionType, YutGameState, YutMode, YutTeamId, YutThrowResult } from '../api/types'
 import { Brand, Button, Page, PlayerGenderProvider } from '../components/ui'
 import { RoomLobby } from '../features/room/RoomLobby'
 import { getGameUnavailableReason } from '../features/game-session/gameAvailability'
@@ -105,7 +105,7 @@ export function RoomPage() {
         const game = session!.gameState
         const existingMoveTokenCount = game.type === 'YUT' && game.phase === 'PLAYING' ? game.turn.moveTokens.length : 0
         const result = await api.throwYut(roomId, session!.gameSessionId)
-        if (!result.bonusThrowGranted && existingMoveTokenCount === 0) await api.selectYutMoveToken(roomId, session!.gameSessionId, result.moveTokenId)
+        if (result.moveTokenId && !result.bonusThrowGranted && existingMoveTokenCount === 0) await api.selectYutMoveToken(roomId, session!.gameSessionId, result.moveTokenId)
         return result
       }
       case 'YUT_TOKEN': return api.selectYutMoveToken(roomId, session!.gameSessionId, String(action.payload))
@@ -199,7 +199,10 @@ function YutGameContent({ game, state, pending, act }: { game:YutGameState; stat
   switch (game.phase) {
     case 'READY': return <YutStartingView host={state.me.host} pending={pending} onStart={() => void act('START')} />
     case 'TEAM_SELECT': return <YutTeamSelectView state={game} host={state.me.host} pending={pending} onTeam={team => void act('YUT_TEAM', team)} onStart={() => void act('START')} />
-    case 'PLAYING': return <YutPlayingView state={game} players={state.players} myPlayerId={state.me.playerId} pending={pending} onThrow={() => void act('YUT_THROW')} onToken={id => void act('YUT_TOKEN', id)} onPiece={id => void act('YUT_PIECE', id)} onPath={id => void act('YUT_PATH', id)} />
+    case 'PLAYING': return <YutPlayingView state={game} players={state.players} myPlayerId={state.me.playerId} pending={pending} onThrow={async () => {
+      const result = await act('YUT_THROW')
+      return result && typeof result === 'object' && 'result' in result ? result as YutThrowResult : undefined
+    }} onToken={id => void act('YUT_TOKEN', id)} onPiece={id => void act('YUT_PIECE', id)} onPath={id => void act('YUT_PATH', id)} />
     case 'FINISHED': return <YutFinalView state={game} host={state.me.host} pending={pending} onReplay={() => void act('CREATE', { gameType: 'YUT', mode: game.mode })} onOther={() => void act('FINISH', 'OTHER')} />
     case 'CANCELLED': return <><div className="gameIcon">🫧</div><h1>게임이 취소됐어요</h1><p className="sub">Room은 그대로 유지됩니다.</p></>
   }

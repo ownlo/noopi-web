@@ -53,6 +53,16 @@ test('move-token dock keeps the final remaining token visible', () => {
   assert.doesNotMatch(source, /action\.type === 'SELECT_MOVE_TOKEN' && tokens\.length > 1/)
 })
 
+test('NAK is rendered as a server result and uses the out-of-bounds throw animation', () => {
+  const scene = readFileSync(new URL('../src/features/games/yut/YutThrowScene.tsx', import.meta.url), 'utf8')
+  const styles = readFileSync(new URL('../src/features/games/yut/yut-throw.css', import.meta.url), 'utf8')
+  const page = readFileSync(new URL('../src/pages/RoomPage.tsx', import.meta.url), 'utf8')
+  assert.match(scene, /result === 'NAK' \? '아쉽지만 다음 차례!'/)
+  assert.match(styles, /@keyframes yutNakThrow/)
+  assert.match(styles, /translate\(var\(--nak-x\),-72vh\)/)
+  assert.match(page, /result\.moveTokenId && !result\.bonusThrowGranted/)
+})
+
 test('mock starts with an empty board and grants a bonus throw for the first YUT', async () => {
   const originalWindow = globalThis.window
   const originalSessionStorage = globalThis.sessionStorage

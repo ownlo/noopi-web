@@ -48,9 +48,10 @@ export type MafiaGameState =
   | { type: 'MAFIA'; phase: 'CANCELLED'; reason?: string }
 export type YutMode = 'INDIVIDUAL' | 'TEAM'
 export type YutTeamId = 'NOOPI' | 'DAY'
-export type YutResultCode = 'BACK_DO' | 'DO' | 'GAE' | 'GEOL' | 'YUT' | 'MO'
+export type YutResultCode = 'NAK' | 'BACK_DO' | 'DO' | 'GAE' | 'GEOL' | 'YUT' | 'MO'
+export type YutThrowResult = { result: YutResultCode; steps: number; moveTokenId: string | null; bonusThrowGranted: boolean }
 export type YutPiece = { pieceId: string; ownerType: 'PLAYER' | 'TEAM'; ownerId: string; status: 'READY' | 'ON_BOARD' | 'FINISHED'; nodeId: string | null; groupPieceIds: string[] }
-export type YutMoveToken = { moveTokenId: string; result: YutResultCode; steps: number }
+export type YutMoveToken = { moveTokenId: string; result: Exclude<YutResultCode, 'NAK'>; steps: number }
 export type YutAction =
   | { type: 'THROW_YUT' }
   | { type: 'SELECT_MOVE_TOKEN'; moveTokenIds: string[] }
@@ -61,7 +62,7 @@ export type YutTeam = { team: YutTeamId; name: string; capacity: number; players
 export type YutGameState =
   | { type: 'YUT'; phase: 'READY'; mode: 'INDIVIDUAL' }
   | { type: 'YUT'; phase: 'TEAM_SELECT'; mode: 'TEAM'; teams: YutTeam[]; myTeam: YutTeamId | null; selectableTeams: YutTeamId[]; canStart: boolean }
-  | { type: 'YUT'; phase: 'PLAYING'; mode: YutMode; teams?: YutTeam[]; turn: { turnNo: number; currentPlayerId: number; turnPhase: 'WAITING_THROW' | 'THROWING' | 'WAITING_MOVE' | 'WAITING_PATH_SELECTION' | 'MOVING'; throwResults: YutResultCode[]; moveTokens: YutMoveToken[]; pendingBonusThrows: number }; pieces: YutPiece[]; finishedPieceCounts: { ownerId: string; count: number }[]; myAction: YutAction | null }
+  | { type: 'YUT'; phase: 'PLAYING'; mode: YutMode; teams?: YutTeam[]; lastThrow: ({ sequence: number; turnNo: number; playerId: number } & Pick<YutThrowResult, 'result' | 'steps' | 'bonusThrowGranted'>) | null; turn: { turnNo: number; currentPlayerId: number; turnPhase: 'WAITING_THROW' | 'THROWING' | 'WAITING_MOVE' | 'WAITING_PATH_SELECTION' | 'MOVING'; throwResults: Exclude<YutResultCode, 'NAK'>[]; moveTokens: YutMoveToken[]; pendingBonusThrows: number }; pieces: YutPiece[]; finishedPieceCounts: { ownerId: string; count: number }[]; myAction: YutAction | null }
   | { type: 'YUT'; phase: 'FINISHED'; mode: YutMode; winnerPlayer?: Candidate; winnerTeam?: YutTeam }
   | { type: 'YUT'; phase: 'CANCELLED'; reason?: string }
 export type GameType = 'LIAR' | 'BLIND' | 'MAFIA' | 'YUT'
@@ -93,7 +94,7 @@ export interface NoopiApi {
   submitMafiaJudgment(roomId: number, gameSessionId: number, choice: MafiaJudgmentChoice): Promise<void>
   advanceMafia(roomId: number, gameSessionId: number): Promise<void>
   selectYutTeam(roomId: number, gameSessionId: number, team: YutTeamId): Promise<void>
-  throwYut(roomId: number, gameSessionId: number): Promise<{ result: YutResultCode; steps: number; moveTokenId: string; bonusThrowGranted: boolean }>
+  throwYut(roomId: number, gameSessionId: number): Promise<YutThrowResult>
   selectYutMoveToken(roomId: number, gameSessionId: number, moveTokenId: string): Promise<void>
   selectYutPiece(roomId: number, gameSessionId: number, pieceId: string): Promise<void>
   selectYutPath(roomId: number, gameSessionId: number, pathId: string): Promise<void>

@@ -1186,7 +1186,10 @@ type YutTurnPhase =
   | 'MOVING'
 ```
 
-윷 결과 코드는 `BACK_DO | DO | GAE | GEOL | YUT | MO`를 사용한다. `BACK_DO`의
+윷 결과 코드는 `NAK | BACK_DO | DO | GAE | GEOL | YUT | MO`를 사용한다. `NAK`은
+이동권을 만들지 않고 서버가 즉시 다음 턴으로 전환한 결과다. Client는
+`lastThrow.sequence`로 결과 연출 중복을 막고 별도 턴 전환 요청을 보내지 않는다.
+`BACK_DO`의
 `steps`는 `-1`이며 Frontend는 서버가 제공한 후보와 확정 도착점만 표시한다.
 
 무분별한 `any` 사용을 금지한다.

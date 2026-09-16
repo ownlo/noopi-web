@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
-import type { Player, YutGameState, YutPiece } from '../../../api/types'
+import type { Player, YutGameState, YutPiece, YutResultCode, YutThrowResult } from '../../../api/types'
 import cat from '../../../assets/characters/noopi-cat.png'
 import dog from '../../../assets/characters/noopi-dog.png'
 import './yut-playing.css'
@@ -12,7 +12,7 @@ import { YutBoardDecorations } from './YutBoardDecorations'
 import { boardNodes, outerNodes } from './yutBoardPresentation'
 
 type PlayingState = Extract<YutGameState, { phase: 'PLAYING' }>
-const resultNames = { BACK_DO: '빽도', DO: '도', GAE: '개', GEOL: '걸', YUT: '윷', MO: '모' } as const
+const resultNames = { NAK: '낙', BACK_DO: '빽도', DO: '도', GAE: '개', GEOL: '걸', YUT: '윷', MO: '모' } as const
 const colors = ['#b66bff', '#369cff', '#c1ff24', '#ff4d5e']
 const position = (x: number, y: number): CSSProperties => ({ left: `${x}%`, top: `${y}%` })
 
@@ -86,30 +86,27 @@ function Board({ state, players, pending, onPiece }: { state: PlayingState; play
   </>
 }
 
-export function YutPlayingView({ state, players, myPlayerId, pending, onThrow, onToken, onPiece, onPath }: { state: PlayingState; players: Player[]; myPlayerId: number; pending: boolean; onThrow: () => void; onToken: (id: string) => void; onPiece: (id: string) => void; onPath: (id: string) => void }) {
+export function YutPlayingView({ state, players, myPlayerId, pending, onThrow, onToken, onPiece, onPath }: { state: PlayingState; players: Player[]; myPlayerId: number; pending: boolean; onThrow: () => Promise<YutThrowResult | undefined>; onToken: (id: string) => void; onPiece: (id: string) => void; onPath: (id: string) => void }) {
   const [throwAnimation, setThrowAnimation] = useState(0)
   const [animating, setAnimating] = useState(false)
-  const [throwStart, setThrowStart] = useState('')
+  const [displayedResult, setDisplayedResult] = useState<YutResultCode>()
   const [throwPower, setThrowPower] = useState(0)
-  const latestResult = state.turn.throwResults.at(-1)
-  const resultKey = `${state.turn.turnNo}:${state.turn.throwResults.length}`
-  const observedThrow = useRef({ turnNo: state.turn.turnNo, resultCount: state.turn.throwResults.length })
+  const observedThrow = useRef(state.lastThrow?.sequence ?? 0)
   useEffect(() => {
     if (!animating) return
     const timer = window.setTimeout(() => setAnimating(false), 1800)
     return () => window.clearTimeout(timer)
   }, [animating, throwAnimation])
   useEffect(() => {
-    const previous = observedThrow.current
-    const resultCount = state.turn.throwResults.length
-    observedThrow.current = { turnNo: state.turn.turnNo, resultCount }
-    const newThrow = state.turn.turnNo === previous.turnNo && resultCount > previous.resultCount && latestResult
-    if (!newThrow || animating) return
+    const latest = state.lastThrow
+    if (!latest || latest.sequence <= observedThrow.current) return
+    observedThrow.current = latest.sequence
+    setDisplayedResult(latest.result)
+    if (animating) return
     setThrowPower(.65)
-    setThrowStart(`${previous.turnNo}:${previous.resultCount}`)
     setThrowAnimation(value => value + 1)
     setAnimating(true)
-  }, [animating, latestResult, state.turn.throwResults.length, state.turn.turnNo])
+  }, [animating, state.lastThrow])
   const current = players.find(player => player.playerId === state.turn.currentPlayerId)
   const isMyTurn = state.turn.currentPlayerId === myPlayerId
   const action = state.myAction
@@ -130,11 +127,18 @@ export function YutPlayingView({ state, players, myPlayerId, pending, onThrow, o
     </div>)}</div>
     {animating && createPortal(<div className="yutThrowOverlay">
       <div className="yutThrowOverlayScene">
-        <YutThrowScene result={resultKey !== throwStart ? latestResult : undefined} active animationId={throwAnimation} power={throwPower} />
-        <p className="srOnly" role="status">{resultKey !== throwStart && latestResult ? `${resultNames[latestResult]}!` : '윷을 던지고 있어요'}</p>
+        <YutThrowScene result={displayedResult} active animationId={throwAnimation} power={throwPower} />
+        <p className="srOnly" role="status">{displayedResult ? `${resultNames[displayedResult]}!${displayedResult === 'NAK' ? ' 다음 차례로 넘어갑니다.' : ''}` : '윷을 던지고 있어요'}</p>
       </div>
     </div>, document.body)}
-    <YutActionDock state={state} pending={pending} animating={animating} onToken={onToken} onPath={onPath} onThrow={power => { if (pending || animating) return; setThrowPower(power); setThrowStart(resultKey); setThrowAnimation(value => value + 1); setAnimating(true); onThrow() }} />
+    <YutActionDock state={state} pending={pending} animating={animating} onToken={onToken} onPath={onPath} onThrow={power => {
+      if (pending || animating) return
+      setDisplayedResult(undefined)
+      setThrowPower(power)
+      setThrowAnimation(value => value + 1)
+      setAnimating(true)
+      void onThrow().then(result => { if (result) setDisplayedResult(result.result) })
+    }} />
     <section className="yutPlayActions" aria-label="현재 할 수 있는 행동">
       {!action && <p className="yutWatching" role="status">{current?.nickname ?? '친구'}님의 다음 수를 기다려요 <span aria-hidden="true">···</span></p>}
     </section>
