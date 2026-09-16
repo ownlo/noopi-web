@@ -10,6 +10,8 @@ import './yut-setup.css'
 
 export { YutPlayingView } from './YutPlayingView'
 
+const showTeamMode = import.meta.env.DEV
+
 export function YutGameGuide({ game, onClose, onAction, actionLabel = '시작하기', showCloseButton = true, actionVariant = 'primary' }: { game: GameCatalog['games'][number]; onClose: () => void; onAction: () => void; actionLabel?: string; showCloseButton?: boolean; actionVariant?: 'primary' | 'secondary' }) {
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
@@ -17,7 +19,7 @@ export function YutGameGuide({ game, onClose, onAction, actionLabel = '시작하
     return () => window.removeEventListener('keydown', closeOnEscape)
   }, [onClose])
 
-  return createPortal(<div className="dialogBackdrop gameGuideBackdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><section className="gameGuideDialog yutGameGuideDialog" role="dialog" aria-modal="true" aria-labelledby="yut-guide-title" aria-describedby="yut-guide-summary"><header className="gameGuideHeader"><div><p>NOOPI GAME GUIDE</p><h2 id="yut-guide-title">{game.name}</h2></div>{showCloseButton && <button type="button" autoFocus onClick={onClose} aria-label="게임 방법 닫기">×</button>}</header><p className="gameGuideSummary" id="yut-guide-summary">윷을 던져 말을 움직여요. 내 말 4개를 가장 먼저 도착시키면 이겨요!</p><div className="gameGuideMeta"><span>👥 {game.minPlayers}–{game.maxPlayers}명</span><span>🏁 개인전 · 2:2 팀전</span></div><ol className="gameGuideSteps yutGuideSteps"><li><div className="yutGuideIcon">🎲</div><div><small>STEP 1</small><h3>윷을 던져요</h3><p>내 차례가 오면 윷을 던져요. 윷이나 모가 나오면 한 번 더!</p></div></li><li><div className="yutGuideIcon">🐾</div><div><small>STEP 2</small><h3>말을 움직여요</h3><p>나온 칸 수만큼 움직일 말을 골라요. 갈림길에서는 지름길도 갈 수 있어요.</p></div></li><li><div className="yutGuideIcon">🏆</div><div><small>STEP 3</small><h3>먼저 도착하면 승리!</h3><p>내 말끼리 업고 상대 말을 잡아보세요. 말 4개가 모두 도착하면 이겨요.</p></div></li></ol><div className="gameGuideTip yutGuideTip"><b>누피의 팁</b><span>말을 함께 업으면 빨리 갈 수 있지만, 잡히면 모두 출발점으로 돌아가니 조심하세요!</span></div><Button className={`gameGuideStart ${actionVariant === 'secondary' ? 'secondary' : ''}`} autoFocus={!showCloseButton} onClick={onAction}>{actionLabel}</Button></section></div>, document.body)
+  return createPortal(<div className="dialogBackdrop gameGuideBackdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><section className="gameGuideDialog yutGameGuideDialog" role="dialog" aria-modal="true" aria-labelledby="yut-guide-title" aria-describedby="yut-guide-summary"><header className="gameGuideHeader"><div><p>NOOPI GAME GUIDE</p><h2 id="yut-guide-title">{game.name}</h2></div>{showCloseButton && <button type="button" autoFocus onClick={onClose} aria-label="게임 방법 닫기">×</button>}</header><p className="gameGuideSummary" id="yut-guide-summary">윷을 던져 말을 움직여요. 내 말 4개를 가장 먼저 도착시키면 이겨요!</p><div className="gameGuideMeta"><span>👥 {game.minPlayers}–{game.maxPlayers}명</span><span>🏁 {showTeamMode ? '개인전 · 2:2 팀전' : '개인전'}</span></div><ol className="gameGuideSteps yutGuideSteps"><li><div className="yutGuideIcon">🎲</div><div><small>STEP 1</small><h3>윷을 던져요</h3><p>내 차례가 오면 윷을 던져요. 윷이나 모가 나오면 한 번 더!</p></div></li><li><div className="yutGuideIcon">🐾</div><div><small>STEP 2</small><h3>말을 움직여요</h3><p>나온 칸 수만큼 움직일 말을 골라요. 갈림길에서는 지름길도 갈 수 있어요.</p></div></li><li><div className="yutGuideIcon">🏆</div><div><small>STEP 3</small><h3>먼저 도착하면 승리!</h3><p>내 말끼리 업고 상대 말을 잡아보세요. 말 4개가 모두 도착하면 이겨요.</p></div></li></ol><div className="gameGuideTip yutGuideTip"><b>누피의 팁</b><span>말을 함께 업으면 빨리 갈 수 있지만, 잡히면 모두 출발점으로 돌아가니 조심하세요!</span></div><Button className={`gameGuideStart ${actionVariant === 'secondary' ? 'secondary' : ''}`} autoFocus={!showCloseButton} onClick={onAction}>{actionLabel}</Button></section></div>, document.body)
 }
 
 export function YutSetupView({ playerCount, pending, onCreate }: { playerCount: number; pending: boolean; onCreate: (mode: YutMode) => void }) {
@@ -26,9 +28,9 @@ export function YutSetupView({ playerCount, pending, onCreate }: { playerCount: 
     <div className="yutSetupScene" aria-hidden="true"><img src={yutGroup} alt="" /></div>
     <div className="yutSetupChoices">
       <button className="yutSetupChoice individual" type="button" disabled={pending || playerCount < 2 || playerCount > 4} onClick={() => onCreate('INDIVIDUAL')}><strong className="yutSetupChoiceTitle">개인전</strong><span className="yutSetupChoiceCaption">우정은 잠시 접어두고</span><img src={yutMove} alt="" /></button>
-      <button className="yutSetupChoice teams" type="button" disabled={pending || playerCount !== 4} onClick={() => onCreate('TEAM')}><strong className="yutSetupChoiceTitle">2 vs 2 팀전</strong><span className="yutSetupChoiceCaption">내 편 하나면 든든하지</span><img src={yutTeam} alt="" /></button>
+      {showTeamMode && <button className="yutSetupChoice teams" type="button" disabled={pending || playerCount !== 4} onClick={() => onCreate('TEAM')}><strong className="yutSetupChoiceTitle">2 vs 2 팀전</strong><span className="yutSetupChoiceCaption">내 편 하나면 든든하지</span><img src={yutTeam} alt="" /></button>}
     </div>
-    {(pending || playerCount === 4) && <p className="yutSetupHint" role="status">{pending ? '윷판을 준비하고 있어요…' : '팀전에서는 누피팀과 데이팀을 직접 고를 수 있어요.'}</p>}
+    {(pending || (showTeamMode && playerCount === 4)) && <p className="yutSetupHint" role="status">{pending ? '윷판을 준비하고 있어요…' : '팀전에서는 누피팀과 데이팀을 직접 고를 수 있어요.'}</p>}
   </div>
 }
 
