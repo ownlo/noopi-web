@@ -9,7 +9,7 @@ import { YutActionDock } from './YutActionDock'
 import { useYutCaptureAnimation } from './useYutCaptureAnimation'
 import { useYutStepAnimation } from './useYutStepAnimation'
 import { YutBoardDecorations } from './YutBoardDecorations'
-import { boardNodes, outerNodes } from './yutBoardPresentation'
+import { boardNodes, outerNodes, pathChoicePresentation, pathLabels } from './yutBoardPresentation'
 
 type PlayingState = Extract<YutGameState, { phase: 'PLAYING' }>
 const resultNames = { NAK: '낙', BACK_DO: '빽도', DO: '도', GAE: '개', GEOL: '걸', YUT: '윷', MO: '모' } as const
@@ -39,7 +39,7 @@ function YutHomeGate() {
     <path d="M47 12L48 15L51 16L48 17L47 20L46 17L43 16L46 15Z" fill="#EDC6FF" />
   </svg>
 }
-function Board({ state, players, pending, onPiece }: { state: PlayingState; players: Player[]; pending: boolean; onPiece: (id: string) => void }) {
+function Board({ state, players, pending, onPiece, onPath }: { state: PlayingState; players: Player[]; pending: boolean; onPiece: (id: string) => void; onPath: (id: string) => void }) {
   const woodFillId = useId()
   const boardRef = useRef<HTMLDivElement>(null)
   useYutStepAnimation(boardRef, state.pieces)
@@ -48,6 +48,12 @@ function Board({ state, players, pending, onPiece }: { state: PlayingState; play
   const eligible = state.myAction?.type === 'SELECT_PIECE' ? state.myAction.eligiblePieceIds : []
   const groups = state.pieces.filter((piece, index, pieces) => piece.status === 'ON_BOARD' && !pieces.slice(0, index).some(other => other.groupPieceIds.includes(piece.pieceId)))
   const unplaced = groups.filter(piece => !boardNodes.some(node => node.id === piece.nodeId))
+  const pathAction = state.myAction?.type === 'SELECT_PATH' ? state.myAction : null
+  const selectedPiece = pathAction ? state.pieces.find(piece => piece.pieceId === pathAction.pieceId || piece.groupPieceIds.includes(pathAction.pieceId)) : undefined
+  const pathChoices = pathAction?.eligiblePathIds.map((pathId, index) => {
+    const mapped = selectedPiece?.nodeId ? pathChoicePresentation[selectedPiece.nodeId]?.[pathId] : undefined
+    return { pathId, ...(mapped ?? { x: 38 + index * 24, y: 10, angle: index === 0 ? -90 : 90, label: pathLabels[pathId] ?? '이 길' }) }
+  }) ?? []
   function renderPiece(piece: YutPiece, x: number, y: number, ghost = false) {
     const ownerIndex = Math.max(0, owners.indexOf(piece.ownerId))
     const selectableId = ghost ? undefined : [piece.pieceId, ...piece.groupPieceIds].find(id => eligible.includes(id))
@@ -76,6 +82,16 @@ function Board({ state, players, pending, onPiece }: { state: PlayingState; play
         <path className="yutDirection" d="M95 83 V73 M93 76 L95 73 L97 76" />
       </svg>
       {outerNodes.map(node => <span key={node.id} className={`yutBoardSpot ${node.corner ? 'corner' : ''} ${node.id === 'OUTER_20' ? 'home' : ''}`} style={position(node.x, node.y)} aria-hidden="true">{node.id === 'OUTER_20' ? <YutHomeGate /> : node.id === 'OUTER_5' ? '☾' : node.id === 'OUTER_10' ? '✿' : node.id === 'OUTER_15' ? '♡' : ''}</span>)}
+
+      {pathChoices.map(choice => <button
+        key={choice.pathId}
+        type="button"
+        className="yutBoardPathChoice"
+        style={{ ...position(choice.x, choice.y), '--path-angle': `${choice.angle}deg` } as CSSProperties}
+        disabled={pending}
+        aria-label={`${pathLabels[choice.pathId] ?? `${choice.label}로 이동`}${pending ? ' 선택 중' : ''}`}
+        onClick={() => onPath(choice.pathId)}
+      ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V5M5 12l7-7 7 7" /></svg></button>)}
 
 
       {groups.map(piece => { const node = boardNodes.find(item => item.id === piece.nodeId); return node ? renderPiece(piece, node.x, node.y) : null })}
@@ -111,12 +127,13 @@ export function YutPlayingView({ state, players, myPlayerId, pending, onThrow, o
   const current = players.find(player => player.playerId === state.turn.currentPlayerId)
   const isMyTurn = state.turn.currentPlayerId === myPlayerId
   const action = state.myAction
-  return <div className={`yutPlay ${action ? 'hasFloatingAction' : ''}`}>
+  const hasFloatingAction = action !== null && action.type !== 'SELECT_PATH'
+  return <div className={`yutPlay ${hasFloatingAction ? 'hasFloatingAction' : ''}`}>
     <div className="yutScoreboard" aria-label="참가자와 현재 차례">{state.finishedPieceCounts.map((owner, index) => {
       const active = state.mode === 'TEAM' ? state.teams?.find(team => team.team === owner.ownerId)?.players.some(player => player.playerId === state.turn.currentPlayerId) : owner.ownerId === String(state.turn.currentPlayerId)
       return <div key={owner.ownerId} className={`yutScore ${active ? 'active' : ''} ${active && isMyTurn ? 'myTurn' : ''}`} style={{ '--piece-color': colors[index % colors.length] } as CSSProperties}><PieceFace index={index} /><strong>{ownerLabel(owner.ownerId, players)}</strong>{active && <em>{isMyTurn ? '내 차례' : '지금 차례'}</em>}</div>
     })}</div>
-    <Board state={state} players={players} pending={pending} onPiece={onPiece} />
+    <Board state={state} players={players} pending={pending} onPiece={onPiece} onPath={onPath} />
     <div className="yutPieceDocks" aria-label="참가자별 말 대기석">{state.finishedPieceCounts.map((owner, index) => <div className="yutPieceDock" key={owner.ownerId} style={{ '--piece-color': colors[index % colors.length] } as CSSProperties}>
       <strong>{ownerLabel(owner.ownerId, players)}<small>의 말</small></strong>
       <div>{state.pieces.filter(piece => piece.ownerId === owner.ownerId).map((piece, pieceIndex) => {
@@ -132,7 +149,7 @@ export function YutPlayingView({ state, players, myPlayerId, pending, onThrow, o
         <p className="srOnly" role="status">{displayedResult ? `${resultNames[displayedResult]}!${displayedResult === 'NAK' ? ' 이번 던지기는 무효예요.' : ''}` : '윷을 던지고 있어요'}</p>
       </div>
     </div>, document.body)}
-    <YutActionDock state={state} pending={pending} animating={animating} onToken={onToken} onPath={onPath} onThrow={power => {
+    <YutActionDock state={state} pending={pending} animating={animating} onToken={onToken} onThrow={power => {
       if (pending || animating) return
       pendingThrowPower.current = power
       void onThrow().then(result => {

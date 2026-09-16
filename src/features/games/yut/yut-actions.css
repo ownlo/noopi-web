@@ -3,13 +3,11 @@
 .yutDockStep{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;animation:yutDockArrival .22s ease-out}
 .yutDockHint{margin:0;padding:7px 13px;border:1px solid #b2d6ff40;border-radius:16px;background:#182b47f5;box-shadow:0 4px 14px #0004;color:#fff;font-size:13px;font-weight:700;text-align:center;line-height:1.5}
 .yutDockTokens{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;width:100%;max-height:144px;overflow-y:auto;pointer-events:auto;padding:4px 4px 8px;scrollbar-width:thin;overscroll-behavior:contain}
-.yutDockToken,.yutDockPaths button{display:flex;align-items:center;justify-content:center;gap:9px;min-height:54px;padding:10px 15px;border:1px solid #a4d2ff;border-radius:18px;background:linear-gradient(145deg,#2878dc,#2056ba);color:#fff;box-shadow:inset 0 2px 0 #ffffff30,0 4px 0 #15376c,0 7px 16px #0004;font:inherit;cursor:pointer;touch-action:manipulation}
+.yutDockToken{display:flex;align-items:center;justify-content:center;gap:9px;min-height:54px;padding:10px 15px;border:1px solid #a4d2ff;border-radius:18px;background:linear-gradient(145deg,#2878dc,#2056ba);color:#fff;box-shadow:inset 0 2px 0 #ffffff30,0 4px 0 #15376c,0 7px 16px #0004;font:inherit;cursor:pointer;touch-action:manipulation}
 .yutDockToken b{font-size:24px;line-height:1}
 .yutDockToken span{font-size:13px;font-weight:700;white-space:nowrap}
 .yutDockTokens.single .yutDockToken{width:104px;height:104px;flex-direction:column;gap:7px;border:2px solid #88bdff;border-radius:50%}
 .yutDockTokens.single .yutDockToken b{font-size:30px}
-.yutDockPaths{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;pointer-events:auto;max-height:144px;overflow-y:auto;padding:4px 4px 8px}
-.yutDockPaths button{font-size:14px}
 .yutDockHint.pieceHint{border-color:#d5ee9966;background:#293821f5;color:#f0ffd7}
 .yutDockHint small{display:block;margin-top:3px;color:#d6e7c0;font-size:11px;font-weight:400}
 .yutActionDock button:disabled{opacity:.65;cursor:wait}

@@ -1,22 +1,20 @@
 import { createPortal } from 'react-dom'
 import type { YutGameState } from '../../../api/types'
 import { YutThrowButton } from './YutThrowButton'
-import { pathLabels } from './yutBoardPresentation'
 import './yut-actions.css'
 
 type PlayingState = Extract<YutGameState, { phase: 'PLAYING' }>
 const resultNames = { BACK_DO: '빽도', DO: '도', GAE: '개', GEOL: '걸', YUT: '윷', MO: '모' } as const
 
-export function YutActionDock({ state, pending, animating, onThrow, onToken, onPath }: {
+export function YutActionDock({ state, pending, animating, onThrow, onToken }: {
   state: PlayingState
   pending: boolean
   animating: boolean
   onThrow: (power: number) => void
   onToken: (id: string) => void
-  onPath: (id: string) => void
 }) {
   const action = state.myAction
-  if (!action) return null
+  if (!action || action.type === 'SELECT_PATH') return null
   const tokens = action.type === 'SELECT_MOVE_TOKEN'
     ? state.turn.moveTokens.filter(token => action.moveTokenIds.includes(token.moveTokenId))
     : []
@@ -38,10 +36,6 @@ export function YutActionDock({ state, pending, animating, onThrow, onToken, onP
     </div>}
     {action.type === 'SELECT_PIECE' && pending && <div className="yutDockStep" key="pieces">
       <p className="yutDockHint pieceHint" role="status">말을 움직이고 있어요…</p>
-    </div>}
-    {action.type === 'SELECT_PATH' && <div className="yutDockStep" key="paths">
-      <p className="yutDockHint" role="status">{pending ? '말을 움직이고 있어요…' : '어느 길로 갈까요?'}</p>
-      <div className="yutDockPaths">{action.eligiblePathIds.map(id => <button key={id} type="button" disabled={pending} onClick={() => onPath(id)}>{pathLabels[id] ?? '이 경로로 가요'}</button>)}</div>
     </div>}
   </section>, document.body)
 }

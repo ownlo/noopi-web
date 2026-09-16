@@ -142,8 +142,16 @@ function yutEligiblePieceIds(game: Extract<YutGameState, { phase: 'PLAYING' }>, 
   return game.pieces.filter(piece => piece.ownerId === ownerId && (result === 'BACK_DO' ? piece.status === 'ON_BOARD' : piece.status !== 'FINISHED') && piece.groupPieceIds[0] === piece.pieceId).map(piece => piece.pieceId)
 }
 
+function yutPathCandidates(nodeId: string | null, result?: YutResultCode) {
+  if (result === 'BACK_DO') return []
+  if (nodeId === 'OUTER_5') return ['OUTER', 'CENTER_SHORTCUT_A']
+  if (nodeId === 'OUTER_10') return ['OUTER', 'CENTER_SHORTCUT_B']
+  if (nodeId === 'CENTER_3') return ['CENTER_SHORTCUT_A', 'CENTER_SHORTCUT_HOME']
+  return []
+}
+
 function resolveYutThrow(game: Extract<YutGameState, { phase: 'PLAYING' }>) {
-  const sequence: Exclude<YutResultCode, 'NAK'>[] = ['MO', 'YUT', 'GAE', 'BACK_DO', 'GEOL', 'DO']
+  const sequence: Exclude<YutResultCode, 'NAK'>[] = ['GAE', 'YUT', 'MO', 'BACK_DO', 'GEOL', 'DO']
   const ownerId = yutOwnerId(game)
   const hasBackDoPreview = game.pieces.some(piece => piece.ownerId === ownerId && piece.status === 'ON_BOARD' && piece.nodeId === 'OUTER_2')
     && game.pieces.some(piece => piece.ownerId === ownerId && piece.status === 'ON_BOARD' && piece.nodeId === 'OUTER_1')
@@ -220,7 +228,7 @@ function scheduleYutOpponentTurn(turnNo: number, playerId: number, delay = YUT_O
   }, delay)
 }
 
-function finishYutMove(game: Extract<YutGameState, { phase: 'PLAYING' }>, pieceId: string) {
+function finishYutMove(game: Extract<YutGameState, { phase: 'PLAYING' }>, pieceId: string, pathId?: string) {
   const state = room()
   const token = game.turn.moveTokens.find(item => item.moveTokenId === yutSelectedTokenId)
   if (!token) throw new Error('MOVE_TOKEN_NOT_FOUND')
@@ -228,10 +236,22 @@ function finishYutMove(game: Extract<YutGameState, { phase: 'PLAYING' }>, pieceI
   const selectedPiece = game.pieces.find(piece => piece.pieceId === pieceId)
   if (!selectedPiece) throw new Error('PIECE_NOT_ELIGIBLE')
   const movingIds = selectedPiece.groupPieceIds
+  const outerTrack = Array.from({ length: 20 }, (_, index) => `OUTER_${index + 1}`)
+  const pathTracks: Record<string, string[]> = {
+    OUTER: [...outerTrack, 'FINISH'],
+    CENTER_SHORTCUT_A: ['OUTER_5', 'CENTER_1', 'CENTER_2', 'CENTER_3', 'CENTER_4', 'CENTER_5', ...outerTrack.slice(14), 'FINISH'],
+    CENTER_SHORTCUT_B: ['OUTER_10', 'CENTER_6', 'CENTER_7', 'CENTER_3', 'CENTER_8', 'CENTER_9', 'OUTER_20', 'FINISH'],
+    CENTER_SHORTCUT_HOME: ['CENTER_3', 'CENTER_8', 'CENTER_9', 'OUTER_20', 'FINISH'],
+  }
+  const selectedTrack = pathId ? pathTracks[pathId] : undefined
+  const pathIndex = selectedTrack?.indexOf(selectedPiece.nodeId ?? '') ?? -1
+  const pathDestination = selectedTrack && pathIndex >= 0 ? selectedTrack[pathIndex + token.steps] : undefined
   const currentIndex = selectedPiece.status === 'READY' ? -1 : Number(selectedPiece.nodeId?.replace('OUTER_', '') ?? 0) - 1
   const nextIndex = currentIndex + token.steps
   const backDoFinished = token.result === 'BACK_DO' && selectedPiece.nodeId === 'OUTER_20'
-  const destination = token.result === 'BACK_DO' && selectedPiece.nodeId === 'OUTER_1'
+  const destination = selectedTrack
+    ? !pathDestination || pathDestination === 'FINISH' ? null : pathDestination
+    : token.result === 'BACK_DO' && selectedPiece.nodeId === 'OUTER_1'
     ? 'OUTER_20'
     : nextIndex > 19 || backDoFinished ? null : `OUTER_${nextIndex + 1}`
   const stackedPieceIds = destination === null ? [] : game.pieces.filter(piece => piece.ownerId === selectedPiece.ownerId && piece.status === 'ON_BOARD' && piece.nodeId === destination && !movingIds.includes(piece.pieceId)).map(piece => piece.pieceId)
@@ -367,8 +387,13 @@ export const mockApi: NoopiApi = {
       if (current.phase === 'TEAM_SELECT' && !current.canStart) throw new Error('TEAM_SELECTION_INCOMPLETE')
       const mode = current.mode
       const teams = current.phase === 'TEAM_SELECT' ? current.teams : undefined
-      const pieces = yutPieces(state, mode)
       const ownerIds = mode === 'TEAM' ? ['NOOPI', 'DAY'] : state.players.map(player => String(player.playerId))
+      const myOwnerId = mode === 'TEAM'
+        ? teams?.find(team => team.players.some(player => player.playerId === state.me.playerId))?.team ?? ownerIds[0]
+        : String(state.me.playerId)
+      const pieces = yutPieces(state, mode).map(piece => piece.ownerId === myOwnerId && piece.pieceId === `${myOwnerId}-1`
+        ? { ...piece, status: 'ON_BOARD' as const, nodeId: 'CENTER_3' }
+        : piece)
       yutThrowIndex = 0; yutThrowSequence = 0; yutMyThrowCount = 0; yutOpponentThrowCount = 0; yutSelectedTokenId = null; yutSelectedPieceId = null
       setGameState({ type: 'YUT', phase: 'PLAYING', mode, teams, lastThrow: null, turn: { turnNo: 1, currentPlayerId: state.me.playerId, turnPhase: 'WAITING_THROW', throwResults: [], moveTokens: [], pendingBonusThrows: 0 }, pieces, finishedPieceCounts: ownerIds.map(ownerId => ({ ownerId, count: 0 })), myAction: { type: 'THROW_YUT' } })
       emit('GAME_STARTED')
@@ -611,11 +636,14 @@ export const mockApi: NoopiApi = {
   async selectYutPiece(_roomId, _gameSessionId, pieceId) {
     await wait()
     const game = activeYut()
-    if (game.myAction?.type !== 'SELECT_PIECE' || !game.myAction.eligiblePieceIds.includes(pieceId)) throw new Error('PIECE_NOT_ELIGIBLE')
+    const action = game.myAction
+    if (action?.type !== 'SELECT_PIECE' || !action.eligiblePieceIds.includes(pieceId)) throw new Error('PIECE_NOT_ELIGIBLE')
     const piece = game.pieces.find(item => item.pieceId === pieceId)
+    const token = game.turn.moveTokens.find(item => item.moveTokenId === action.moveTokenId)
     yutSelectedPieceId = pieceId
-    if (piece?.nodeId === 'OUTER_4') {
-      setGameState({ ...game, turn: { ...game.turn, turnPhase: 'WAITING_PATH_SELECTION' }, myAction: { type: 'SELECT_PATH', moveTokenId: game.myAction.moveTokenId, pieceId, eligiblePathIds: ['OUTER_ROUTE', 'CENTER_SHORTCUT_A'] } })
+    const eligiblePathIds = yutPathCandidates(piece?.nodeId ?? null, token?.result)
+    if (eligiblePathIds.length > 1) {
+      setGameState({ ...game, turn: { ...game.turn, turnPhase: 'WAITING_PATH_SELECTION' }, myAction: { type: 'SELECT_PATH', moveTokenId: action.moveTokenId, pieceId, eligiblePathIds } })
       return
     }
     finishYutMove(game, pieceId)
@@ -624,7 +652,7 @@ export const mockApi: NoopiApi = {
     await wait()
     const game = activeYut()
     if (game.myAction?.type !== 'SELECT_PATH' || !game.myAction.eligiblePathIds.includes(pathId) || !yutSelectedPieceId) throw new Error('PATH_NOT_ELIGIBLE')
-    finishYutMove(game, yutSelectedPieceId)
+    finishYutMove(game, yutSelectedPieceId, pathId)
   },
   subscribe(_roomId, listener, connection) {
     listeners.add(listener)

@@ -19,6 +19,20 @@ export const pathLabels: Record<string, string> = {
   OUTER: '바깥길로 가요', CENTER_SHORTCUT_A: '왼쪽 아래로 가요',
   CENTER_SHORTCUT_B: '지름길로 가요', CENTER_SHORTCUT_HOME: '도착점으로 가요',
 }
+export const pathChoicePresentation: Record<string, Record<string, { x: number; y: number; angle: number; label: string }>> = {
+  OUTER_5: {
+    OUTER: { x: 72, y: 12, angle: -90, label: '바깥길' },
+    CENTER_SHORTCUT_A: { x: 75, y: 25, angle: -135, label: '지름길' },
+  },
+  OUTER_10: {
+    OUTER: { x: 12, y: 28, angle: 180, label: '바깥길' },
+    CENTER_SHORTCUT_B: { x: 25, y: 25, angle: 135, label: '지름길' },
+  },
+  CENTER_3: {
+    CENTER_SHORTCUT_A: { x: 37, y: 63, angle: -135, label: '왼쪽 길' },
+    CENTER_SHORTCUT_HOME: { x: 63, y: 63, angle: 135, label: '도착길' },
+  },
+}
 const tracks = [
   ['START', ...outerNodes.map(node => node.id), 'FINISH'],
   ['OUTER_5', 'CENTER_1', 'CENTER_2', 'CENTER_3', 'CENTER_4', 'CENTER_5', 'OUTER_15'],

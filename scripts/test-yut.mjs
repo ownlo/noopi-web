@@ -5,7 +5,7 @@ import ts from 'typescript'
 
 const source = readFileSync(new URL('../src/features/games/yut/yutBoardPresentation.ts', import.meta.url), 'utf8')
 const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
-const { boardNodes, confirmedMovePoints } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`)
+const { boardNodes, confirmedMovePoints, pathChoicePresentation } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`)
 const ids = (from, to) => confirmedMovePoints(from, to).map(p => p.id)
 
 test('all 29 board locations have unique IDs and visible coordinates', () => {
@@ -27,6 +27,18 @@ test('unknown/unreachable paths are not fabricated', () => {
   assert.deepEqual(ids('OUTER_2', 'OUTER_1'), ['OUTER_2', 'OUTER_1'])
   assert.deepEqual(ids('OUTER_1', 'OUTER_20'), ['OUTER_1', 'OUTER_20'])
   assert.deepEqual(ids('OUTER_20', null), ['OUTER_20', 'OUTER_20'])
+})
+test('server path candidates have directional controls on each board fork', () => {
+  assert.deepEqual(Object.keys(pathChoicePresentation.OUTER_5), ['OUTER', 'CENTER_SHORTCUT_A'])
+  assert.deepEqual(Object.keys(pathChoicePresentation.OUTER_10), ['OUTER', 'CENTER_SHORTCUT_B'])
+  assert.deepEqual(Object.keys(pathChoicePresentation.CENTER_3), ['CENTER_SHORTCUT_A', 'CENTER_SHORTCUT_HOME'])
+  const playingView = readFileSync(new URL('../src/features/games/yut/YutPlayingView.tsx', import.meta.url), 'utf8')
+  const actionDock = readFileSync(new URL('../src/features/games/yut/YutActionDock.tsx', import.meta.url), 'utf8')
+  assert.match(playingView, /className="yutBoardPathChoice"/)
+  assert.match(playingView, /onClick=\{\(\) => onPath\(choice\.pathId\)\}/)
+  assert.doesNotMatch(playingView, /<span>\{pending \? '이동 중' : choice\.label\}<\/span>/)
+  assert.match(actionDock, /action\.type === 'SELECT_PATH'\) return null/)
+  assert.doesNotMatch(actionDock, /yutDockPaths/)
 })
 test('HTTP adapter accepts empty 202 responses and sends throws without body', async () => {
   const source = readFileSync(new URL('../src/api/httpApi.ts', import.meta.url), 'utf8')
@@ -53,15 +65,17 @@ test('move-token dock keeps the final remaining token visible', () => {
   assert.doesNotMatch(source, /action\.type === 'SELECT_MOVE_TOKEN' && tokens\.length > 1/)
 })
 
-test('NAK is rendered as a server result and uses the out-of-bounds throw animation', () => {
+test('NAK lands all sticks before one stick bounces out of bounds', () => {
   const scene = readFileSync(new URL('../src/features/games/yut/YutThrowScene.tsx', import.meta.url), 'utf8')
   const styles = readFileSync(new URL('../src/features/games/yut/yut-throw.css', import.meta.url), 'utf8')
   const page = readFileSync(new URL('../src/pages/RoomPage.tsx', import.meta.url), 'utf8')
   assert.match(scene, /result === 'NAK' \? '이번 던지기는 무효!'/)
   assert.match(readFileSync(new URL('../src/features/games/yut/YutPlayingView.tsx', import.meta.url), 'utf8'), /active=\{displayedResult !== undefined\}/)
-  assert.match(styles, /@keyframes yutNakThrow/)
+  assert.match(styles, /@keyframes yutNakLand/)
+  assert.match(styles, /@keyframes yutNakBounceOut/)
+  assert.match(styles, /\.yutFlyingLane:nth-child\(4\) \.yutWoodStick/)
   assert.match(styles, /animation-duration:1\.45s/)
-  assert.match(styles, /translate\(var\(--nak-x\),-72vh\)/)
+  assert.match(styles, /translate\(var\(--nak-x\),calc\(var\(--land-y\) \+ 62px\)\)/)
   assert.match(page, /result\.result === 'NAK' && existingMoveTokens\.length === 1/)
   assert.match(page, /api\.selectYutMoveToken\(roomId, session!\.gameSessionId, onlyMoveTokenId\)/)
 })
@@ -88,7 +102,7 @@ test('mock makes the opponent first throw land as NAK', () => {
   assert.match(mock, /yutOpponentThrowCount = 0/)
 })
 
-test('mock starts with MO, YUT, then NAK', async () => {
+test('mock starts at the center with GAE and offers both center paths', async () => {
   const originalWindow = globalThis.window
   const originalSessionStorage = globalThis.sessionStorage
   const storage = new Map([['noopi.mockPlayerCount', '2'], ['noopi.mockYutQuickFinish', 'false']])
@@ -105,41 +119,31 @@ test('mock starts with MO, YUT, then NAK', async () => {
     await mockApi.createGameSession(100, 'YUT', { mode: 'INDIVIDUAL' })
     await mockApi.startGame()
     let state = await mockApi.getRoomState()
-    assert.ok(state.gameSession.gameState.pieces.every(piece => piece.status === 'READY' && piece.nodeId === null))
+    const myFirstPiece = state.gameSession.gameState.pieces.find(piece => piece.pieceId === '1-1')
+    assert.equal(myFirstPiece.status, 'ON_BOARD')
+    assert.equal(myFirstPiece.nodeId, 'CENTER_3')
+    assert.ok(state.gameSession.gameState.pieces.filter(piece => piece.pieceId !== '1-1').every(piece => piece.status === 'READY' && piece.nodeId === null))
     const thrown = await mockApi.throwYut()
-    assert.equal(thrown.result, 'MO')
-    assert.equal(thrown.steps, 5)
+    assert.equal(thrown.result, 'GAE')
+    assert.equal(thrown.steps, 2)
     assert.notEqual(thrown.moveTokenId, null)
-    assert.equal(thrown.bonusThrowGranted, true)
+    assert.equal(thrown.bonusThrowGranted, false)
     state = await mockApi.getRoomState()
     assert.equal(state.gameSession.gameState.turn.currentPlayerId, 1)
-    assert.deepEqual(state.gameSession.gameState.turn.throwResults, ['MO'])
+    assert.deepEqual(state.gameSession.gameState.turn.throwResults, ['GAE'])
     assert.equal(state.gameSession.gameState.turn.moveTokens.length, 1)
-
-    const secondThrow = await mockApi.throwYut()
-    assert.equal(secondThrow.result, 'YUT')
-    assert.equal(secondThrow.steps, 4)
-    assert.notEqual(secondThrow.moveTokenId, null)
-    assert.equal(secondThrow.bonusThrowGranted, true)
-    state = await mockApi.getRoomState()
-    assert.deepEqual(state.gameSession.gameState.turn.throwResults, ['MO', 'YUT'])
-    assert.equal(state.gameSession.gameState.turn.moveTokens.length, 2)
-    assert.equal(state.gameSession.gameState.myAction.type, 'THROW_YUT')
-
-    const thirdThrow = await mockApi.throwYut()
-    assert.equal(thirdThrow.result, 'NAK')
-    assert.equal(thirdThrow.steps, 0)
-    assert.equal(thirdThrow.moveTokenId, null)
-    assert.equal(thirdThrow.bonusThrowGranted, false)
-    state = await mockApi.getRoomState()
-    assert.equal(state.gameSession.gameState.turn.currentPlayerId, 1)
-    assert.equal(state.gameSession.gameState.turn.turnNo, 1)
-    assert.equal(state.gameSession.gameState.turn.pendingBonusThrows, 0)
-    assert.deepEqual(state.gameSession.gameState.turn.throwResults, ['MO', 'YUT'])
-    assert.deepEqual(state.gameSession.gameState.turn.moveTokens.map(token => token.result), ['MO', 'YUT'])
-    assert.equal(state.gameSession.gameState.turn.moveTokens.length, 2)
     assert.equal(state.gameSession.gameState.myAction.type, 'SELECT_MOVE_TOKEN')
-    assert.equal(state.gameSession.gameState.lastThrow.result, 'NAK')
+    assert.equal(state.gameSession.gameState.lastThrow.result, 'GAE')
+
+    const gaeToken = state.gameSession.gameState.turn.moveTokens.find(token => token.result === 'GAE')
+    await mockApi.selectYutMoveToken(100, state.gameSession.gameSessionId, gaeToken.moveTokenId)
+    await mockApi.selectYutPiece(100, state.gameSession.gameSessionId, '1-1')
+    state = await mockApi.getRoomState()
+    assert.equal(state.gameSession.gameState.myAction.type, 'SELECT_PATH')
+    assert.deepEqual(state.gameSession.gameState.myAction.eligiblePathIds, ['CENTER_SHORTCUT_A', 'CENTER_SHORTCUT_HOME'])
+    await mockApi.selectYutPath(100, state.gameSession.gameSessionId, 'CENTER_SHORTCUT_HOME')
+    state = await mockApi.getRoomState()
+    assert.equal(state.gameSession.gameState.pieces.find(piece => piece.pieceId === '1-1').nodeId, 'CENTER_9')
   } finally {
     globalThis.window = originalWindow
     globalThis.sessionStorage = originalSessionStorage

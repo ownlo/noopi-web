@@ -20,6 +20,11 @@
 .yutBoardSpot{position:absolute;display:grid;place-items:center;width:17px;height:17px;transform:translate(-50%,-50%);border:2px solid #ab9dbd;border-radius:50%;background:#2c2948;box-shadow:0 2px 3px #0004;color:#c6b1e3;font-size:14px}
 .yutBoardSpot.corner{width:28px;height:28px;border:2px solid #c2a9db;box-shadow:inset 0 0 0 3px #38304e,0 2px 4px #0004}
 .yutBoardSpot.home{background:#c99cea;color:#2b1e47;border-color:#f0d5ff;font-size:21px}
+.yutBoardPathChoice{position:absolute;z-index:8;display:grid;place-items:center;width:44px;min-height:44px;padding:4px;transform:translate(-50%,-50%);border:2px solid #d9ff88;border-radius:14px;background:#203c37ed;color:#f2ffd9;box-shadow:inset 0 1px 0 #ffffff55,0 3px 0 #10251f,0 0 16px #baff6370;font:inherit;cursor:pointer;touch-action:manipulation;animation:yutPathChoicePulse 1s ease-in-out infinite alternate}
+.yutBoardPathChoice svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;transform:rotate(var(--path-angle))}
+.yutBoardPathChoice:disabled{opacity:.65;cursor:wait;animation:none}
+.yutBoardPathChoice:focus-visible{outline:3px solid #fff;outline-offset:3px}
+@keyframes yutPathChoicePulse{from{scale:.96;box-shadow:inset 0 1px 0 #ffffff55,0 4px 0 #10251f,0 0 12px #baff6348}to{scale:1.04;box-shadow:inset 0 1px 0 #ffffff55,0 4px 0 #10251f,0 0 25px #baff6390}}
 
 
 .yutBoardPiece{position:absolute;z-index:2;display:grid;place-items:center;width:40px;height:40px;transform:translate(-50%,-50%);padding:0;border:0;background:none}
