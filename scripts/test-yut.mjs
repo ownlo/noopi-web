@@ -66,6 +66,15 @@ test('NAK is rendered as a server result and uses the out-of-bounds throw animat
   assert.match(page, /api\.selectYutMoveToken\(roomId, session!\.gameSessionId, onlyMoveTokenId\)/)
 })
 
+test('throw animation waits for confirmed state and replaces an older animation with the latest result', () => {
+  const source = readFileSync(new URL('../src/features/games/yut/YutPlayingView.tsx', import.meta.url), 'utf8')
+  assert.match(source, /const pendingThrowPower = useRef<number \| null>\(null\)/)
+  assert.match(source, /if \(!latest \|\| latest\.sequence <= observedThrow\.current\) return/)
+  assert.match(source, /setThrowAnimation\(value => value \+ 1\)\s+setAnimating\(true\)/)
+  assert.doesNotMatch(source, /if \(animating\) return\s+setThrowPower/)
+  assert.doesNotMatch(source, /setDisplayedResult\(undefined\)\s+setThrowPower\(power\)/)
+})
+
 test('mock waits for the NAK animation before the opponent auto-throws', () => {
   const mock = readFileSync(new URL('../src/mocks/mockApi.ts', import.meta.url), 'utf8')
   assert.match(mock, /YUT_NAK_HANDOFF_DELAY_MS = 3_200/)

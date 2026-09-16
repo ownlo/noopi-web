@@ -92,6 +92,7 @@ export function YutPlayingView({ state, players, myPlayerId, pending, onThrow, o
   const [displayedResult, setDisplayedResult] = useState<YutResultCode>()
   const [throwPower, setThrowPower] = useState(0)
   const observedThrow = useRef(state.lastThrow?.sequence ?? 0)
+  const pendingThrowPower = useRef<number | null>(null)
   useEffect(() => {
     if (!animating) return
     const timer = window.setTimeout(() => setAnimating(false), displayedResult === 'NAK' ? 2800 : 1800)
@@ -102,11 +103,11 @@ export function YutPlayingView({ state, players, myPlayerId, pending, onThrow, o
     if (!latest || latest.sequence <= observedThrow.current) return
     observedThrow.current = latest.sequence
     setDisplayedResult(latest.result)
-    if (animating) return
-    setThrowPower(.65)
+    setThrowPower(latest.playerId === myPlayerId && pendingThrowPower.current !== null ? pendingThrowPower.current : .65)
+    pendingThrowPower.current = null
     setThrowAnimation(value => value + 1)
     setAnimating(true)
-  }, [animating, state.lastThrow])
+  }, [myPlayerId, state.lastThrow])
   const current = players.find(player => player.playerId === state.turn.currentPlayerId)
   const isMyTurn = state.turn.currentPlayerId === myPlayerId
   const action = state.myAction
@@ -133,11 +134,10 @@ export function YutPlayingView({ state, players, myPlayerId, pending, onThrow, o
     </div>, document.body)}
     <YutActionDock state={state} pending={pending} animating={animating} onToken={onToken} onPath={onPath} onThrow={power => {
       if (pending || animating) return
-      setDisplayedResult(undefined)
-      setThrowPower(power)
-      setThrowAnimation(value => value + 1)
-      setAnimating(true)
-      void onThrow().then(result => { if (result) setDisplayedResult(result.result) })
+      pendingThrowPower.current = power
+      void onThrow().then(result => {
+        if (!result) pendingThrowPower.current = null
+      })
     }} />
     <section className="yutPlayActions" aria-label="현재 할 수 있는 행동">
       {!action && <p className="yutWatching" role="status">{current?.nickname ?? '친구'}님의 다음 수를 기다려요 <span aria-hidden="true">···</span></p>}
