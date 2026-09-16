@@ -28,7 +28,7 @@ export function YutActionDock({ state, pending, animating, onThrow, onToken, onP
       bonus={state.turn.pendingBonusThrows > 0}
       onThrow={onThrow}
     />}
-    {action.type === 'SELECT_MOVE_TOKEN' && tokens.length > 1 && <div className="yutDockStep" key="tokens">
+    {action.type === 'SELECT_MOVE_TOKEN' && tokens.length > 0 && <div className="yutDockStep" key="tokens">
       <p className="srOnly" role="status">{pending ? '이동을 준비하고 있어요…' : '눌러서 말을 움직여요'}</p>
       <div className={`yutDockTokens ${tokens.length === 1 ? 'single' : ''}`} aria-label="이동권 선택">
         {tokens.map(token => <button key={token.moveTokenId} type="button" className="yutDockToken" disabled={pending} onClick={() => onToken(token.moveTokenId)}>

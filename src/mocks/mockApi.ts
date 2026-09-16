@@ -139,7 +139,7 @@ function yutEligiblePieceIds(game: Extract<YutGameState, { phase: 'PLAYING' }>, 
 }
 
 function resolveYutThrow(game: Extract<YutGameState, { phase: 'PLAYING' }>) {
-  const sequence: YutResultCode[] = ['GAE', 'BACK_DO', 'GEOL', 'DO', 'YUT', 'MO']
+  const sequence: YutResultCode[] = ['YUT', 'GAE', 'BACK_DO', 'GEOL', 'DO', 'MO']
   const ownerId = yutOwnerId(game)
   const hasBackDoPreview = game.pieces.some(piece => piece.ownerId === ownerId && piece.status === 'ON_BOARD' && piece.nodeId === 'OUTER_2')
     && game.pieces.some(piece => piece.ownerId === ownerId && piece.status === 'ON_BOARD' && piece.nodeId === 'OUTER_1')
@@ -336,17 +336,9 @@ export const mockApi: NoopiApi = {
       const mode = current.mode
       const teams = current.phase === 'TEAM_SELECT' ? current.teams : undefined
       const pieces = yutPieces(state, mode)
-      // Back-do stacking preview: two local pieces wait on the first two nodes.
-      const myOwnerId = mode === 'TEAM' ? teams?.find(team => team.players.some(player => player.playerId === state.me.playerId))?.team : String(state.me.playerId)
-      const targets = pieces.filter(piece => piece.ownerId === myOwnerId).slice(0, 2)
-      const previewPieces = pieces.map(piece => piece.pieceId === targets[0]?.pieceId
-        ? { ...piece, status: 'ON_BOARD' as const, nodeId: 'OUTER_2' }
-        : piece.pieceId === targets[1]?.pieceId
-          ? { ...piece, status: 'ON_BOARD' as const, nodeId: 'OUTER_1' }
-          : piece)
       const ownerIds = mode === 'TEAM' ? ['NOOPI', 'DAY'] : state.players.map(player => String(player.playerId))
       yutThrowIndex = 0; yutSelectedTokenId = null; yutSelectedPieceId = null
-      setGameState({ type: 'YUT', phase: 'PLAYING', mode, teams, turn: { turnNo: 1, currentPlayerId: state.me.playerId, turnPhase: 'WAITING_THROW', throwResults: [], moveTokens: [], pendingBonusThrows: 0 }, pieces: previewPieces, finishedPieceCounts: ownerIds.map(ownerId => ({ ownerId, count: 0 })), myAction: { type: 'THROW_YUT' } })
+      setGameState({ type: 'YUT', phase: 'PLAYING', mode, teams, turn: { turnNo: 1, currentPlayerId: state.me.playerId, turnPhase: 'WAITING_THROW', throwResults: [], moveTokens: [], pendingBonusThrows: 0 }, pieces, finishedPieceCounts: ownerIds.map(ownerId => ({ ownerId, count: 0 })), myAction: { type: 'THROW_YUT' } })
       emit('GAME_STARTED')
       return
     }

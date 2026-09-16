@@ -47,7 +47,13 @@ test('HTTP adapter accepts empty 202 responses and sends throws without body', a
   } finally { globalThis.fetch = original }
 })
 
-test('mock forces back-do so two local pieces stack on the first node', async () => {
+test('move-token dock keeps the final remaining token visible', () => {
+  const source = readFileSync(new URL('../src/features/games/yut/YutActionDock.tsx', import.meta.url), 'utf8')
+  assert.match(source, /action\.type === 'SELECT_MOVE_TOKEN' && tokens\.length > 0/)
+  assert.doesNotMatch(source, /action\.type === 'SELECT_MOVE_TOKEN' && tokens\.length > 1/)
+})
+
+test('mock starts with an empty board and grants a bonus throw for the first YUT', async () => {
   const originalWindow = globalThis.window
   const originalSessionStorage = globalThis.sessionStorage
   const storage = new Map([['noopi.mockPlayerCount', '2'], ['noopi.mockYutQuickFinish', 'false']])
@@ -64,30 +70,30 @@ test('mock forces back-do so two local pieces stack on the first node', async ()
     await mockApi.createGameSession(100, 'YUT', { mode: 'INDIVIDUAL' })
     await mockApi.startGame()
     let state = await mockApi.getRoomState()
-    const localPiece = state.gameSession.gameState.pieces.find(piece => piece.pieceId === '1-1')
-    const localPieceBehind = state.gameSession.gameState.pieces.find(piece => piece.pieceId === '1-2')
-    assert.equal(localPiece.nodeId, 'OUTER_2')
-    assert.equal(localPieceBehind.nodeId, 'OUTER_1')
+    assert.ok(state.gameSession.gameState.pieces.every(piece => piece.status === 'READY' && piece.nodeId === null))
     const thrown = await mockApi.throwYut()
-    assert.equal(thrown.result, 'BACK_DO')
-    assert.equal(thrown.steps, -1)
+    assert.equal(thrown.result, 'YUT')
+    assert.equal(thrown.steps, 4)
+    assert.equal(thrown.bonusThrowGranted, true)
+    state = await mockApi.getRoomState()
+    assert.equal(state.gameSession.gameState.myAction.type, 'THROW_YUT')
+    assert.equal(state.gameSession.gameState.turn.currentPlayerId, 1)
+    assert.equal(state.gameSession.gameState.turn.pendingBonusThrows, 1)
+    assert.deepEqual(state.gameSession.gameState.turn.throwResults, ['YUT'])
+    assert.equal(state.gameSession.gameState.turn.moveTokens.length, 1)
+
+    const bonusThrow = await mockApi.throwYut()
+    assert.equal(bonusThrow.result, 'GAE')
     state = await mockApi.getRoomState()
     assert.equal(state.gameSession.gameState.myAction.type, 'SELECT_MOVE_TOKEN')
+    assert.equal(state.gameSession.gameState.turn.moveTokens.length, 2)
+
     await mockApi.selectYutMoveToken(100, 500, thrown.moveTokenId)
     await mockApi.selectYutPiece(100, 500, '1-1')
-
     state = await mockApi.getRoomState()
-    assert.equal(state.gameSession.gameState.pieces.find(piece => piece.pieceId === '1-1').nodeId, 'OUTER_1')
-    assert.deepEqual(state.gameSession.gameState.pieces.find(piece => piece.pieceId === '1-1').groupPieceIds, ['1-1', '1-2'])
-    assert.deepEqual(state.gameSession.gameState.pieces.find(piece => piece.pieceId === '1-2').groupPieceIds, ['1-1', '1-2'])
-    assert.equal(state.me.playerId, 1)
-    assert.equal(state.gameSession.gameState.turn.currentPlayerId, 2)
-    assert.equal(state.gameSession.gameState.myAction, null)
-
-    await new Promise(resolve => setTimeout(resolve, 3_000))
-    state = await mockApi.getRoomState()
-    assert.equal(state.gameSession.gameState.turn.currentPlayerId, 1)
-    assert.equal(state.gameSession.gameState.myAction.type, 'THROW_YUT')
+    assert.equal(state.gameSession.gameState.myAction.type, 'SELECT_MOVE_TOKEN')
+    assert.equal(state.gameSession.gameState.turn.moveTokens.length, 1)
+    assert.equal(state.gameSession.gameState.turn.moveTokens[0].moveTokenId, bonusThrow.moveTokenId)
   } finally {
     globalThis.window = originalWindow
     globalThis.sessionStorage = originalSessionStorage
