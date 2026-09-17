@@ -203,7 +203,7 @@ function MafiaGameContent({ game, state, pending, act }: { game:MafiaGameState; 
 function YutGameContent({ game, state, pending, act }: { game:YutGameState; state:State; pending:boolean; act:(type:string,payload?:number|string|'REPLAY'|'OTHER'|{ gameType: GameType; mode?: YutMode })=>Promise<unknown> }) {
   switch (game.phase) {
     case 'READY': return <YutStartingView host={state.me.host} pending={pending} onStart={() => void act('START')} />
-    case 'TEAM_SELECT': return <YutTeamSelectView state={game} host={state.me.host} pending={pending} onTeam={team => void act('YUT_TEAM', team)} onStart={() => void act('START')} />
+    case 'TEAM_SELECT': return <YutTeamSelectView state={game} players={state.players} host={state.me.host} pending={pending} onTeam={team => void act('YUT_TEAM', team)} onStart={() => void act('START')} />
     case 'PLAYING': return <YutPlayingView state={game} players={state.players} myPlayerId={state.me.playerId} pending={pending} onThrow={async () => {
       const result = await act('YUT_THROW')
       return result && typeof result === 'object' && 'result' in result ? result as YutThrowResult : undefined

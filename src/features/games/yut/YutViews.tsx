@@ -1,7 +1,9 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import type { GameCatalog, YutGameState, YutMode, YutTeamId } from '../../../api/types'
+import type { GameCatalog, Player, YutGameState, YutMode, YutTeamId } from '../../../api/types'
 import { Button, Card } from '../../../components/ui'
+import catCharacter from '../../../assets/characters/noopi-cat.png'
+import dogCharacter from '../../../assets/characters/noopi-dog.png'
 import yutGroup from '../../../assets/characters/noopi-yut-group-transparent.png'
 import yutMove from '../../../assets/characters/noopi-yut-move.png'
 import yutTeam from '../../../assets/characters/noopi-yut-team-highfive.png'
@@ -34,8 +36,54 @@ export function YutSetupView({ playerCount, pending, onCreate }: { playerCount: 
   </div>
 }
 
-export function YutTeamSelectView({ state, host, pending, onTeam, onStart }: { state: Extract<YutGameState, { phase: 'TEAM_SELECT' }>; host: boolean; pending: boolean; onTeam: (team: YutTeamId) => void; onStart: () => void }) {
-  return <div className="yutTeamSelect"><p className="eyebrow">2:2 팀전</p><h1>어느 팀으로 갈까요?</h1><div className="yutTeams">{state.teams.map(team => { const selectable = state.selectableTeams.includes(team.team); return <Card className={`yutTeamCard ${team.team.toLowerCase()} ${state.myTeam === team.team ? 'selected' : ''}`} key={team.team}><header><strong>{team.team === 'NOOPI' ? '🐈‍⬛' : '🔵'} {team.name}</strong><span>{team.players.length}/{team.capacity}</span></header><ul>{team.players.map(player => <li key={player.playerId}>{player.nickname}</li>)}</ul><Button className="secondary" disabled={pending || !selectable || state.myTeam === team.team} onClick={() => onTeam(team.team)}>{state.myTeam === team.team ? '선택한 팀' : selectable ? '선택하기' : '마감'}</Button></Card> })}</div>{host ? <Button disabled={pending || !state.canStart} onClick={onStart}>{state.canStart ? '팀전 시작' : '모두 팀을 선택해주세요'}</Button> : <p className="hint">팀이 모두 정해지면 방장이 시작할 수 있어요.</p>}</div>
+export function YutTeamSelectView({ state, players, host, pending, onTeam, onStart }: { state: Extract<YutGameState, { phase: 'TEAM_SELECT' }>; players: Player[]; host: boolean; pending: boolean; onTeam: (team: YutTeamId) => void; onStart: () => void }) {
+  return <div className="yutTeamSelect">
+    <header className="yutTeamSelectHeading">
+      <h1>어느 팀으로 갈까요?</h1>
+    </header>
+    <section className="yutTeams" aria-labelledby="yut-team-status-title">
+      <h2 className="srOnly" id="yut-team-status-title">팀 현황</h2>
+      {state.teams.map(team => {
+        const selectable = state.selectableTeams.includes(team.team)
+        const selected = state.myTeam === team.team
+        const emptySlots = Math.max(0, team.capacity - team.players.length)
+
+        return <div className="yutTeamEntry" key={team.team}>
+          <Card className={`yutTeamCard ${team.team.toLowerCase()} ${selected ? 'selected' : ''}`}>
+            <header className="yutTeamCardHeader">
+              <span className="yutTeamCharacter" aria-hidden="true">
+                <img src={team.team === 'NOOPI' ? catCharacter : dogCharacter} alt="" />
+              </span>
+              <span className="yutTeamName">
+                <strong>{team.name}</strong>
+              </span>
+              <span className="yutTeamCount" aria-label={`${team.players.length}명 참여, 정원 ${team.capacity}명`}>
+                <b>{team.players.length}</b> / {team.capacity}
+              </span>
+            </header>
+            <ul className="yutTeamPlayers">
+              {team.players.map(teamPlayer => {
+                const player = players.find(item => item.playerId === teamPlayer.playerId)
+                const character = player?.gender === 'FEMALE' ? dogCharacter : player?.gender === 'MALE' ? catCharacter : null
+                const connectionLabel = player?.connectionStatus === 'CONNECTED' ? '온라인' : player?.connectionStatus === 'DISCONNECTED' ? '오프라인' : '상태 확인 중'
+
+                return <li className="filled" key={teamPlayer.playerId} aria-label={`${teamPlayer.nickname}, ${connectionLabel}`}>
+                  <span className="yutTeamPlayerAvatar" aria-hidden="true">{character && <img src={character} alt="" />}</span>
+                  <strong>{teamPlayer.nickname}</strong>
+                  <span className={`yutTeamConnection ${player?.connectionStatus === 'CONNECTED' ? 'connected' : 'disconnected'}`} aria-hidden="true" />
+                </li>
+              })}
+              {Array.from({ length: emptySlots }, (_, index) => <li className="empty" key={`empty-${index}`}><span className="yutTeamEmptyAvatar" aria-hidden="true" /><em>빈자리</em></li>)}
+            </ul>
+            <Button className="secondary yutTeamSelectButton" disabled={pending || !selectable || selected} onClick={() => onTeam(team.team)}>
+              {selected ? '✓ 선택한 팀' : selectable ? '이 팀 선택하기' : '팀이 가득 찼어요'}
+            </Button>
+          </Card>
+        </div>
+      })}
+    </section>
+    {host ? <Button disabled={pending || !state.canStart} onClick={onStart}>{state.canStart ? '팀전 시작' : '모두 팀을 선택해주세요'}</Button> : <p className="hint">팀이 모두 정해지면 방장이 시작할 수 있어요.</p>}
+  </div>
 }
 
 export function YutFinalView({ state, host, pending, onReplay, onOther }: { state: Extract<YutGameState, { phase: 'FINISHED' }>; host: boolean; pending: boolean; onReplay: () => void; onOther: () => void }) {
