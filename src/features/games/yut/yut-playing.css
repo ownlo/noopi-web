@@ -6,6 +6,20 @@
 .yutScoreboard{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 .yutScoreboard:has(>.yutScore:nth-child(2):last-child){grid-template-columns:repeat(2,minmax(0,1fr))}
 .yutScoreboard:has(>.yutScore:nth-child(3):last-child){grid-template-columns:repeat(3,minmax(0,1fr))}
+.yutTeamScoreboard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.yutTeamScore{min-width:0;padding:8px;border:1px solid #ffffff16;border-radius:16px;background:linear-gradient(150deg,#413266,#211c3e);box-shadow:inset 0 1px 0 #ffffff16,0 4px 0 #100d27}
+.yutTeamScore.active{border-color:var(--piece-color);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--piece-color) 35%,transparent),0 0 18px color-mix(in srgb,var(--piece-color) 24%,transparent),0 4px 0 #100d27}
+.yutTeamScoreHeader{display:flex;align-items:center;gap:7px;padding:0 2px 7px}
+.yutTeamScoreHeader .yutPieceFace{width:26px;height:26px;border-width:2px}
+.yutTeamScoreHeader strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--piece-color);font-size:11px}
+.yutTeamScorePlayers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin:0;padding:0;list-style:none}
+.yutTeamScorePlayers li{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;min-height:32px;padding:5px 4px;border:1px solid transparent;border-radius:10px;background:#ffffff08;color:#cfc3dd}
+.yutTeamScorePlayers li.active{border-color:var(--piece-color);background:color-mix(in srgb,var(--piece-color) 16%,#241d39);color:#fff;box-shadow:0 0 12px color-mix(in srgb,var(--piece-color) 24%,transparent)}
+.yutTeamScorePlayerDot{width:6px;height:6px;margin-right:4px;border-radius:50%;background:#8ee8a6;box-shadow:0 0 6px #8ee8a680;flex:0 0 auto}
+.yutTeamScorePlayerDot.disconnected{background:#777083;box-shadow:none}
+.yutTeamScorePlayerName{display:flex;align-items:center;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;font-weight:800}
+.yutTeamScorePlayerName small{margin-left:4px;padding:1px 4px;border-radius:5px;background:#ffffff16;color:#dfd5e9;font-size:7px}
+.yutTeamScorePlayers em{position:absolute;top:-6px;left:50%;transform:translateX(-50%);padding:2px 5px;border-radius:6px;background:var(--piece-color);color:#20152c;font-size:7px;font-style:normal;font-weight:900;white-space:nowrap;box-shadow:0 2px 7px #0005}
 .yutScore{position:relative;display:flex;align-items:center;flex-direction:column;min-width:0;padding:10px 3px 9px;border:1px solid #ffffff13;border-radius:19px;background:#ffffff05}
 .yutScore.active{border-color:var(--piece-color);background:linear-gradient(#ffffff12,#ffffff05);box-shadow:0 0 18px #a66bfa18}
 .yutScore strong{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:5px;font-size:12px}

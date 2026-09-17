@@ -24,6 +24,46 @@ function PieceFace({ index }: { index: number }) {
   return <span className="yutPieceFace" aria-hidden="true"><img src={index % 2 === 0 ? cat : dog} alt="" /></span>
 }
 
+function TeamScoreboard({ state, players, myPlayerId }: { state: PlayingState; players: Player[]; myPlayerId: number }) {
+  if (state.mode !== 'TEAM' || !state.teams) return null
+
+  return <div className="yutTeamScoreboard" aria-label="팀별 참가자와 현재 차례">
+    {state.teams.map((team, index) => {
+      const activeTeam = team.players.some(player => player.playerId === state.turn.currentPlayerId)
+
+      return <section
+        className={`yutTeamScore ${activeTeam ? 'active' : ''}`}
+        key={team.team}
+        style={{ '--piece-color': colors[index % colors.length] } as CSSProperties}
+        aria-label={`${team.name}${activeTeam ? ', 현재 차례 팀' : ''}`}
+      >
+        <header className="yutTeamScoreHeader">
+          <PieceFace index={index} />
+          <strong>{team.name}</strong>
+        </header>
+        <ul className="yutTeamScorePlayers">
+          {team.players.map(teamPlayer => {
+            const activePlayer = teamPlayer.playerId === state.turn.currentPlayerId
+            const isMe = teamPlayer.playerId === myPlayerId
+            const player = players.find(item => item.playerId === teamPlayer.playerId)
+
+            return <li
+              className={activePlayer ? 'active' : ''}
+              key={teamPlayer.playerId}
+              aria-current={activePlayer ? 'step' : undefined}
+              aria-label={`${teamPlayer.nickname}${isMe ? ', 나' : ''}${activePlayer ? ', 현재 차례' : ''}`}
+            >
+              <span className={`yutTeamScorePlayerDot ${player?.connectionStatus === 'DISCONNECTED' ? 'disconnected' : ''}`} aria-hidden="true" />
+              <span className="yutTeamScorePlayerName">{teamPlayer.nickname}{isMe && <small>나</small>}</span>
+              {activePlayer && <em>{isMe ? '내 차례' : '차례'}</em>}
+            </li>
+          })}
+        </ul>
+      </section>
+    })}
+  </div>
+}
+
 function YutHomeGate() {
   return <svg className="yutHomeGate" viewBox="0 0 56 56" fill="none" aria-hidden="true">
     <ellipse cx="28" cy="45" rx="21" ry="7" fill="#805138" opacity=".45" />
@@ -129,10 +169,10 @@ export function YutPlayingView({ state, players, myPlayerId, pending, onThrow, o
   const action = state.myAction
   const hasFloatingAction = action !== null && action.type !== 'SELECT_PATH'
   return <div className={`yutPlay ${hasFloatingAction ? 'hasFloatingAction' : ''}`}>
-    <div className="yutScoreboard" aria-label="참가자와 현재 차례">{state.finishedPieceCounts.map((owner, index) => {
+    {state.mode === 'TEAM' && state.teams ? <TeamScoreboard state={state} players={players} myPlayerId={myPlayerId} /> : <div className="yutScoreboard" aria-label="참가자와 현재 차례">{state.finishedPieceCounts.map((owner, index) => {
       const active = state.mode === 'TEAM' ? state.teams?.find(team => team.team === owner.ownerId)?.players.some(player => player.playerId === state.turn.currentPlayerId) : owner.ownerId === String(state.turn.currentPlayerId)
       return <div key={owner.ownerId} className={`yutScore ${active ? 'active' : ''} ${active && isMyTurn ? 'myTurn' : ''}`} style={{ '--piece-color': colors[index % colors.length] } as CSSProperties}><PieceFace index={index} /><strong>{ownerLabel(owner.ownerId, players)}</strong>{active && <em>{isMyTurn ? '내 차례' : '지금 차례'}</em>}</div>
-    })}</div>
+    })}</div>}
     <Board state={state} players={players} pending={pending} onPiece={onPiece} onPath={onPath} />
     <div className="yutPieceDocks" aria-label="참가자별 말 대기석">{state.finishedPieceCounts.map((owner, index) => <div className="yutPieceDock" key={owner.ownerId} style={{ '--piece-color': colors[index % colors.length] } as CSSProperties}>
       <strong>{ownerLabel(owner.ownerId, players)}<small>의 말</small></strong>
