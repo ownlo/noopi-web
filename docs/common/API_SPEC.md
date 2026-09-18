@@ -306,6 +306,44 @@ PLAYER_NOT_IN_ROOM
 
 ------------------------------------------------------------------------
 
+## 8.1 Room 대기 로비로 이동
+
+방장이 Room을 유지한 채 모든 참가자를 공통 대기 로비로 이동시킬 때
+사용한다.
+
+``` http
+POST /api/rooms/{roomId}/lobby
+```
+
+Header:
+
+``` text
+X-Client-Id: <clientId>
+```
+
+Response:
+
+``` text
+204 No Content
+```
+
+진행 중인 GameSession이 있으면 서버는 `HOST_RETURNED_TO_LOBBY` 사유로
+취소한 뒤 현재 GameSession을 제거한다. 이미 종료된 GameSession이 있으면
+현재 GameSession에서 제거한다. Room과 Player는 유지하며 이후 `/state`는
+`gameSession: null`, Room `status: WAITING`을 반환한다.
+
+서버는 전체 참가자에게 `ROOM_RETURNED_TO_LOBBY` 이벤트를 전송한다.
+
+주요 오류:
+
+``` text
+ROOM_NOT_FOUND
+PLAYER_NOT_IN_ROOM
+NOT_ROOM_HOST
+```
+
+------------------------------------------------------------------------
+
 # State API
 
 ## 9. 현재 Room/Game 상태 조회
@@ -1854,6 +1892,21 @@ WebSocket은 상태 저장소가 아니다. 연결 직후 또는 재접속 후�
 
 수신한 Client는 저장된 마지막 Room 정보를 제거하고 홈 화면으로 이동한다.
 
+### ROOM_RETURNED_TO_LOBBY
+
+방장이 Room의 모든 참가자를 대기 로비로 이동시켰을 때 전달한다.
+
+``` json
+{
+  "type": "ROOM_RETURNED_TO_LOBBY",
+  "gameSessionId": null,
+  "payload": {}
+}
+```
+
+수신한 Client는 `GET /state`를 다시 조회하고 Room 대기 로비를 표시한다.
+화면에는 방장이 모두를 대기실로 이동했다는 안내를 표시할 수 있다.
+
 ------------------------------------------------------------------------
 
 ## 27. GameSession 이벤트
@@ -2744,6 +2797,9 @@ Frontend는 다음 규칙을 따른다.
   `POST`        `/api/rooms/{roomId}/players`                                                    Room 참가
 
   `DELETE`      `/api/rooms/{roomId}/players/me`                                                 Room 나가기
+
+  `POST`        `/api/rooms/{roomId}/lobby`                                                      전체 참가자를
+                                                                                                 대기 로비로 이동
 
   `GET`         `/api/rooms/{roomId}/state`                                                      현재 전체
                                                                                                  상태 복구

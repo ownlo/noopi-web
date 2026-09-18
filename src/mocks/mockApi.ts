@@ -358,6 +358,14 @@ export const mockApi: NoopiApi = {
     if (state.me.host) emit('ROOM_CLOSED')
     currentRoom = null
   },
+  async returnToLobby() {
+    await wait()
+    const state = room()
+    if (!state.me.host) throw new Error('NOT_ROOM_HOST')
+    state.gameSession = null
+    state.room.status = 'WAITING'
+    emit('ROOM_RETURNED_TO_LOBBY')
+  },
   async getRoomState() {
     await wait(80)
     const state = structuredClone(room())

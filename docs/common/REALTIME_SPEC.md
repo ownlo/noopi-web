@@ -62,6 +62,7 @@ Player를 연결 종료 상태로 변경하고 일정 시간 동안 재접속을
 -   `PLAYER_LEFT`
 -   `HOST_CHANGED`
 -   `ROOM_CLOSED`
+-   `ROOM_RETURNED_TO_LOBBY`
 -   `GAME_SESSION_CREATED`
 -   `GAME_STARTED`
 -   `GAME_FINISHED`

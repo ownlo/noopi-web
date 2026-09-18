@@ -24,7 +24,7 @@ function isRoomNotFound(error: unknown): error is { code: 'ROOM_NOT_FOUND' } {
 }
 
 export function RoomPage() {
-  const { roomId: value } = useParams(); const roomId = Number(value); const navigate = useNavigate(); const queryClient = useQueryClient(); const allowNavigationRef = useRef(false); const [connected, setConnected] = useState(true); const [screen, setScreen] = useState<'LOBBY'|'GAMES'|'SETUP'|'YUT_SETUP'>('LOBBY'); const [category, setCategory] = useState(''); const [notice, setNotice] = useState(''); const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+  const { roomId: value } = useParams(); const roomId = Number(value); const navigate = useNavigate(); const queryClient = useQueryClient(); const allowNavigationRef = useRef(false); const [connected, setConnected] = useState(true); const [screen, setScreen] = useState<'LOBBY'|'GAMES'|'SETUP'|'YUT_SETUP'>('LOBBY'); const [category, setCategory] = useState(''); const [notice, setNotice] = useState(''); const [showLeaveConfirm, setShowLeaveConfirm] = useState(false); const [showLobbyConfirm, setShowLobbyConfirm] = useState(false)
   const stateQuery = useQuery({
     queryKey: ['room-state', roomId],
     queryFn: ({ signal }) => api.getRoomState(roomId, signal),
@@ -43,6 +43,18 @@ export function RoomPage() {
     event.returnValue = ''
   }, [gameInProgress]))
   const sync = useCallback(() => queryClient.invalidateQueries({ queryKey: ['room-state', roomId] }), [queryClient, roomId])
+  const showReturnedLobby = useCallback(() => {
+    setScreen('LOBBY')
+    setCategory('')
+    setShowLobbyConfirm(false)
+    setNotice('방장이 모두를 대기실로 이동했어요.')
+    queryClient.setQueryData<Awaited<ReturnType<typeof api.getRoomState>>>(['room-state', roomId], current => current ? {
+      ...current,
+      room: { ...current.room, status: 'WAITING' },
+      players: current.players.map(player => ({ ...player, currentGameParticipant: false })),
+      gameSession: null,
+    } : current)
+  }, [queryClient, roomId])
   useEffect(() => api.subscribe(roomId, event => {
     if (event.type === 'ROOM_CLOSED') {
       localStorage.removeItem('noopi.lastRoomId')
@@ -50,8 +62,13 @@ export function RoomPage() {
       navigate('/', { replace: true })
       return
     }
+    if (event.type === 'ROOM_RETURNED_TO_LOBBY') {
+      showReturnedLobby()
+      void sync()
+      return
+    }
     void sync()
-  }, isUp => { setConnected(isUp); if (isUp) void sync() }), [navigate, roomId, sync])
+  }, isUp => { setConnected(isUp); if (isUp) void sync() }), [navigate, roomId, showReturnedLobby, sync])
   useEffect(() => {
     if (!isRoomNotFound(stateQuery.error)) return
     localStorage.removeItem('noopi.lastRoomId')
@@ -76,6 +93,12 @@ export function RoomPage() {
     window.addEventListener('keydown', closeOnEscape)
     return () => window.removeEventListener('keydown', closeOnEscape)
   }, [cancelLeave, showLeaveConfirm])
+  useEffect(() => {
+    if (!showLobbyConfirm) return
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setShowLobbyConfirm(false) }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [showLobbyConfirm])
   type ActionPayload = number|string|{ gameType: GameType; categoryCode?: string; mode?: YutMode }|{ actionType: MafiaNightActionType; targetPlayerId?: number }
   const mutation = useMutation({ mutationFn: async (action: { type:string; payload?: ActionPayload }) => {
     const s=stateQuery.data; const session=s?.gameSession
@@ -119,6 +142,7 @@ export function RoomPage() {
     }
   }, onSuccess: (_data, action) => { setNotice(''); if(action.type==='CREATE') setScreen('LOBBY'); void sync() }, onError: () => { setNotice('지금은 이 행동을 할 수 없어요. 상태를 다시 확인했어요.'); void sync() } })
   const leaveMutation = useMutation({ mutationFn: () => api.leaveRoom(roomId), onSuccess: () => { localStorage.removeItem('noopi.lastRoomId'); setShowLeaveConfirm(false); if (blocker.state === 'blocked') blocker.proceed(); else { allowNavigationRef.current = true; navigate('/', { replace: true }) } }, onError: () => { cancelLeave(); setNotice('방을 나가지 못했어요. 잠시 후 다시 시도해주세요.') } })
+  const lobbyMutation = useMutation({ mutationFn: () => api.returnToLobby(roomId), onSuccess: () => { showReturnedLobby(); void sync() }, onError: () => { setShowLobbyConfirm(false); setNotice('대기실로 이동하지 못했어요. 잠시 후 다시 시도해주세요.'); void sync() } })
   if (stateQuery.isLoading) return <Page><div className="centerState"><div className="loader" /><p>게임 상태를 불러오는 중...</p></div></Page>
   if (!stateQuery.data || stateQuery.isError) return <Page><div className="centerState"><div className="gameIcon">🥲</div><h1>방을 찾을 수 없어요</h1><Button onClick={() => navigate('/')}>홈으로</Button></div></Page>
   const state=stateQuery.data; const game=state.gameSession?.gameState
@@ -144,7 +168,11 @@ export function RoomPage() {
       return undefined
     }
   }
-  return <Page><header className="roomHeader"><Brand /><LeaveRoomButton pending={leaveMutation.isPending} onClick={requestLeave} /></header>{!connected && <div className="network">연결이 불안정해요. 다시 연결하고 있습니다...</div>}{notice && screen !== 'GAMES' && <div className="toast" role="status">{notice}</div>}{notice && screen === 'GAMES' && <div className="gameNotice" role="status">{notice}</div>}<PlayerGenderProvider players={state.players}><div className="content">{game && !choosingNextGame ? <Game key={state.gameSession?.gameSessionId} game={game} state={state} pending={mutation.isPending} act={act} /> : screen === 'GAMES' && state.me.host ? <GameSelect games={games.data?.games ?? []} onSelect={selected => { const reason = getGameUnavailableReason(selected, state.players.length); setNotice(reason ?? ''); if (reason) return; if (selected.gameType === 'LIAR') setScreen('SETUP'); else if (selected.gameType === 'YUT') setScreen('YUT_SETUP'); else mutation.mutate({ type: 'CREATE', payload: { gameType: selected.gameType } }) }} /> : screen === 'SETUP' && state.me.host ? <Setup unavailableReason={setupUnavailableReason} categories={categories.data?.categories ?? []} category={category} setCategory={setCategory} pending={mutation.isPending} onCreate={() => mutation.mutate({type:'CREATE',payload:{ gameType: 'LIAR', categoryCode: category }})} /> : screen === 'YUT_SETUP' && state.me.host ? <YutSetupView playerCount={state.players.length} pending={mutation.isPending} onCreate={mode => mutation.mutate({ type: 'CREATE', payload: { gameType: 'YUT', mode } })} /> : <RoomLobby state={state} onSelect={() => setScreen('GAMES')} />}</div></PlayerGenderProvider>{showLeaveConfirm && <LeaveConfirm host={state.me.host} pending={leaveMutation.isPending} onCancel={cancelLeave} onConfirm={confirmLeave} />}</Page>
+  return <Page><header className="roomHeader"><Brand /><div className="roomHeaderActions">{state.me.host && <LobbyButton pending={lobbyMutation.isPending} onClick={() => setShowLobbyConfirm(true)} />}<LeaveRoomButton pending={leaveMutation.isPending} onClick={requestLeave} /></div></header>{!connected && <div className="network">연결이 불안정해요. 다시 연결하고 있습니다...</div>}{notice && screen !== 'GAMES' && <div className="toast" role="status">{notice}</div>}{notice && screen === 'GAMES' && <div className="gameNotice" role="status">{notice}</div>}<PlayerGenderProvider players={state.players}><div className="content">{game && !choosingNextGame ? <Game key={state.gameSession?.gameSessionId} game={game} state={state} pending={mutation.isPending} act={act} /> : screen === 'GAMES' && state.me.host ? <GameSelect games={games.data?.games ?? []} onSelect={selected => { const reason = getGameUnavailableReason(selected, state.players.length); setNotice(reason ?? ''); if (reason) return; if (selected.gameType === 'LIAR') setScreen('SETUP'); else if (selected.gameType === 'YUT') setScreen('YUT_SETUP'); else mutation.mutate({ type: 'CREATE', payload: { gameType: selected.gameType } }) }} /> : screen === 'SETUP' && state.me.host ? <Setup unavailableReason={setupUnavailableReason} categories={categories.data?.categories ?? []} category={category} setCategory={setCategory} pending={mutation.isPending} onCreate={() => mutation.mutate({type:'CREATE',payload:{ gameType: 'LIAR', categoryCode: category }})} /> : screen === 'YUT_SETUP' && state.me.host ? <YutSetupView playerCount={state.players.length} pending={mutation.isPending} onCreate={mode => mutation.mutate({ type: 'CREATE', payload: { gameType: 'YUT', mode } })} /> : <RoomLobby state={state} onSelect={() => setScreen('GAMES')} />}</div></PlayerGenderProvider>{showLobbyConfirm && <LobbyConfirm pending={lobbyMutation.isPending} onCancel={() => setShowLobbyConfirm(false)} onConfirm={() => lobbyMutation.mutate()} />}{showLeaveConfirm && <LeaveConfirm host={state.me.host} pending={leaveMutation.isPending} onCancel={cancelLeave} onConfirm={confirmLeave} />}</Page>
+}
+
+function LobbyButton({ pending, onClick }: { pending: boolean; onClick: () => void }) {
+  return <button type="button" className="leaveRoomButton" onClick={onClick} disabled={pending} aria-label="모두 대기실로 이동" title="모두 대기실로 이동"><svg aria-hidden viewBox="0 0 24 24"><path d="m3 11 9-8 9 8M5 10v10h14V10M9 20v-6h6v6" /></svg></button>
 }
 
 function LeaveRoomButton({ pending, onClick }: { pending: boolean; onClick: () => void }) {
@@ -153,6 +181,10 @@ function LeaveRoomButton({ pending, onClick }: { pending: boolean; onClick: () =
 
 function LeaveConfirm({ host, pending, onCancel, onConfirm }: { host: boolean; pending: boolean; onCancel: () => void; onConfirm: () => void }) {
   return <div className="dialogBackdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onCancel() }}><section className="leaveDialog" role="alertdialog" aria-modal="true" aria-labelledby="leave-dialog-title" aria-describedby="leave-dialog-description"><h2 id="leave-dialog-title">{host ? '방을 종료할까요?' : '방에서 나갈까요?'}</h2><p id="leave-dialog-description">{host ? <>방장이 나가면 이 방은 사라지고<br />모든 참가자가 홈으로 이동해요.</> : <>나가면 홈 화면으로 이동해요.</>}</p><div className="leaveDialogActions"><Button className="secondary" autoFocus disabled={pending} onClick={onCancel}>취소</Button><Button className="danger" disabled={pending} onClick={onConfirm}>{pending ? '나가는 중...' : '나가기'}</Button></div></section></div>
+}
+
+function LobbyConfirm({ pending, onCancel, onConfirm }: { pending: boolean; onCancel: () => void; onConfirm: () => void }) {
+  return <div className="dialogBackdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && !pending) onCancel() }}><section className="leaveDialog" role="alertdialog" aria-modal="true" aria-labelledby="lobby-dialog-title" aria-describedby="lobby-dialog-description"><h2 id="lobby-dialog-title">모두 대기실로 이동할까요?</h2><p id="lobby-dialog-description">진행 중인 게임은 종료되고<br />모든 참가자가 대기실로 이동해요.</p><div className="leaveDialogActions"><Button className="secondary" autoFocus disabled={pending} onClick={onCancel}>취소</Button><Button disabled={pending} onClick={onConfirm}>{pending ? '이동 중...' : '확인'}</Button></div></section></div>
 }
 
 type State = Awaited<ReturnType<typeof api.getRoomState>>
@@ -250,4 +282,3 @@ function GameSelect({ games, onSelect }: { games: GameCatalog['games']; onSelect
   </>
 }
 function Setup({ unavailableReason, categories, category, setCategory, pending, onCreate }: { unavailableReason:string|null;categories:{code:string;name:string;virtual:boolean}[];category:string;setCategory:(v:string)=>void;pending:boolean;onCreate:()=>void }) { return <div className="setupScreen"><div className="liarCharacter setupBackdrop" aria-hidden><img src={liarCharacter} alt="" /></div><div className="gameIntro setupIntro"><p className="eyebrow">라이어 게임</p><h1>카테고리를<br />골라주세요</h1></div><div className="categoryGrid">{categories.map(c=><button key={c.code} className={category===c.code?'selected':''} onClick={()=>setCategory(c.code)}><b>{c.name}</b>{category===c.code&&<i>✓</i>}</button>)}</div><p className="hint" role="status">{unavailableReason}</p><Button disabled={!category||pending||unavailableReason !== null} onClick={onCreate}>{pending?'준비 중...':'이 카테고리로 준비하기'}</Button></div> }
-
