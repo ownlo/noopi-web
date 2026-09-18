@@ -166,12 +166,14 @@ export function YutPlayingView({ state, players, myPlayerId, pending, onThrow, o
   }, [myPlayerId, state.lastThrow])
   const current = players.find(player => player.playerId === state.turn.currentPlayerId)
   const isMyTurn = state.turn.currentPlayerId === myPlayerId
+  const myRanking = state.rankings.find(player => player.playerId === myPlayerId)
   const action = state.myAction
   const hasFloatingAction = action !== null && action.type !== 'SELECT_PATH'
   return <div className={`yutPlay ${hasFloatingAction ? 'hasFloatingAction' : ''}`}>
     {state.mode === 'TEAM' && state.teams ? <TeamScoreboard state={state} players={players} myPlayerId={myPlayerId} /> : <div className="yutScoreboard" aria-label="참가자와 현재 차례">{state.finishedPieceCounts.map((owner, index) => {
       const active = state.mode === 'TEAM' ? state.teams?.find(team => team.team === owner.ownerId)?.players.some(player => player.playerId === state.turn.currentPlayerId) : owner.ownerId === String(state.turn.currentPlayerId)
-      return <div key={owner.ownerId} className={`yutScore ${active ? 'active' : ''} ${active && isMyTurn ? 'myTurn' : ''}`} style={{ '--piece-color': colors[index % colors.length] } as CSSProperties}><PieceFace index={index} /><strong>{ownerLabel(owner.ownerId, players)}</strong>{active && <em>{isMyTurn ? '내 차례' : '지금 차례'}</em>}</div>
+      const ranking = state.mode === 'INDIVIDUAL' ? state.rankings.find(player => String(player.playerId) === owner.ownerId) : undefined
+      return <div key={owner.ownerId} className={`yutScore ${active ? 'active' : ''} ${active && isMyTurn ? 'myTurn' : ''} ${ranking ? 'finished' : ''}`} style={{ '--piece-color': colors[index % colors.length] } as CSSProperties}><PieceFace index={index} /><strong>{ownerLabel(owner.ownerId, players)}</strong>{ranking ? <span className="yutRankStamp" data-rank={ranking.rank} role="img" aria-label={`${ranking.rank}등 완주`}>{ranking.rank}등</span> : active && <em>{isMyTurn ? '내 차례' : '지금 차례'}</em>}</div>
     })}</div>}
     <Board state={state} players={players} pending={pending} onPiece={onPiece} onPath={onPath} />
     <div className="yutPieceDocks" aria-label="참가자별 말 대기석">{state.finishedPieceCounts.map((owner, index) => <div className="yutPieceDock" key={owner.ownerId} style={{ '--piece-color': colors[index % colors.length] } as CSSProperties}>
@@ -180,7 +182,8 @@ export function YutPlayingView({ state, players, myPlayerId, pending, onThrow, o
         const allowed = piece.status === 'READY' && action?.type === 'SELECT_PIECE' && action.eligiblePieceIds.includes(piece.pieceId)
         const label = `${ownerLabel(owner.ownerId, players)} ${pieceIndex + 1}번 말 ${piece.status === 'READY' ? '출발' : piece.status === 'FINISHED' ? '완주' : allowed ? '이동' : '이동 중'}${piece.groupPieceIds.length > 1 ? `, ${piece.groupPieceIds.length}개 업음` : ''}`
         const face = <><PieceFace index={index} /><small>{piece.status === 'FINISHED' ? '✓' : pieceIndex + 1}</small></>
-        return allowed ? <button type="button" key={piece.pieceId} disabled={pending} aria-label={label} onClick={() => onPiece(piece.pieceId)}>{face}</button> : <span key={piece.pieceId} className={piece.status !== 'READY' ? 'away' : ''} role="img" aria-label={label}>{face}</span>
+        const statusClass = piece.status === 'FINISHED' ? 'finished' : piece.status === 'ON_BOARD' ? 'onBoard' : 'ready'
+        return allowed ? <button type="button" key={piece.pieceId} disabled={pending} aria-label={label} onClick={() => onPiece(piece.pieceId)}>{face}</button> : <span key={piece.pieceId} className={statusClass} role="img" aria-label={label}>{face}</span>
       })}</div>
     </div>)}</div>
     {animating && createPortal(<div className="yutThrowOverlay">
@@ -189,15 +192,15 @@ export function YutPlayingView({ state, players, myPlayerId, pending, onThrow, o
         <p className="srOnly" role="status">{displayedResult ? `${resultNames[displayedResult]}!${displayedResult === 'NAK' ? ' 이번 던지기는 무효예요.' : ''}` : '윷을 던지고 있어요'}</p>
       </div>
     </div>, document.body)}
-    <YutActionDock state={state} pending={pending} animating={animating} onToken={onToken} onThrow={power => {
+    {!myRanking && <YutActionDock state={state} pending={pending} animating={animating} onToken={onToken} onThrow={power => {
       if (pending || animating) return
       pendingThrowPower.current = power
       void onThrow().then(result => {
         if (!result) pendingThrowPower.current = null
       })
-    }} />
+    }} />}
     <section className="yutPlayActions" aria-label="현재 할 수 있는 행동">
-      {!action && <p className="yutWatching" role="status">{current?.nickname ?? '친구'}님의 다음 수를 기다려요 <span aria-hidden="true">···</span></p>}
+      {myRanking ? <div className="yutSpectating" role="status"><strong>{myRanking.rank}위로 완주했어요!</strong><p>이제 편하게 남은 경기를 관전해요 👀</p></div> : !action && <p className="yutWatching" role="status">{current?.nickname ?? '친구'}님의 다음 수를 기다려요 <span aria-hidden="true">···</span></p>}
     </section>
   </div>
 }

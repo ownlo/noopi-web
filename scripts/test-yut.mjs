@@ -95,18 +95,38 @@ test('mock waits for the NAK animation before the opponent auto-throws', () => {
   assert.match(mock, /scheduleYutOpponentTurn\(turnNo, currentPlayerId, YUT_NAK_HANDOFF_DELAY_MS\)/)
 })
 
-test('mock makes the opponent first throw land as NAK', () => {
+test('mock lets finish-ready bots use DO while preserving the NAK fallback', () => {
   const mock = readFileSync(new URL('../src/mocks/mockApi.ts', import.meta.url), 'utf8')
+  assert.match(mock, /const quickFinishBot = !thrownByMe && game\.mode === 'INDIVIDUAL'/)
+  assert.match(mock, /quickFinishBot \? 'DO'/)
   assert.match(mock, /const firstThrowByOpponent = !thrownByMe && yutOpponentThrowCount === 1/)
-  assert.match(mock, /thirdThrowByMe \|\| firstThrowByOpponent \? 'NAK'/)
   assert.match(mock, /yutOpponentThrowCount = 0/)
 })
 
-test('mock starts at the center with GAE and offers both center paths', async () => {
+test('individual play keeps going after a player finishes and ends with rankings', () => {
+  const types = readFileSync(new URL('../src/api/types.ts', import.meta.url), 'utf8')
+  const views = readFileSync(new URL('../src/features/games/yut/YutViews.tsx', import.meta.url), 'utf8')
+  const playing = readFileSync(new URL('../src/features/games/yut/YutPlayingView.tsx', import.meta.url), 'utf8')
+  const mock = readFileSync(new URL('../src/mocks/mockApi.ts', import.meta.url), 'utf8')
+  assert.match(types, /mode: 'INDIVIDUAL'; rankings: YutRanking\[\]/)
+  assert.match(types, /rankings: YutRanking\[\]; myRank: number \| null/)
+  assert.match(mock, /rankings\.length === game\.finishedPieceCounts\.length/)
+  assert.match(mock, /yutTurnOrder\(game, state, rankings\)/)
+  assert.match(playing, /남은 경기를 관전해요/)
+  assert.match(playing, /piece\.status === 'FINISHED' \? 'finished'/)
+  assert.match(playing, /className="yutRankStamp"/)
+  assert.match(playing, /aria-label=\{`\$\{ranking\.rank\}등 완주`\}/)
+  assert.match(views, /aria-label="개인전 최종 순위"/)
+  assert.match(views, /winner \? 'winner' : last \? 'last'/)
+  assert.match(views, /className="yutLastCharacter"/)
+  assert.doesNotMatch(views, /state\.winnerPlayer/)
+})
+
+test('mock starts my pieces at the finish and completes bots in order after me', async () => {
   const originalWindow = globalThis.window
   const originalSessionStorage = globalThis.sessionStorage
-  const storage = new Map([['noopi.mockPlayerCount', '2'], ['noopi.mockYutQuickFinish', 'false']])
-  globalThis.window = { setTimeout: (callback, delay) => delay > 500 ? 0 : setTimeout(callback, delay), clearTimeout }
+  const storage = new Map([['noopi.mockPlayerCount', '4']])
+  globalThis.window = { setTimeout: (callback, delay) => setTimeout(callback, delay > 500 ? 0 : delay), clearTimeout }
   globalThis.sessionStorage = {
     getItem: key => storage.get(key) ?? null,
     setItem: (key, value) => storage.set(key, value),
@@ -119,10 +139,11 @@ test('mock starts at the center with GAE and offers both center paths', async ()
     await mockApi.createGameSession(100, 'YUT', { mode: 'INDIVIDUAL' })
     await mockApi.startGame()
     let state = await mockApi.getRoomState()
-    const myFirstPiece = state.gameSession.gameState.pieces.find(piece => piece.pieceId === '1-1')
-    assert.equal(myFirstPiece.status, 'ON_BOARD')
-    assert.equal(myFirstPiece.nodeId, 'CENTER_3')
-    assert.ok(state.gameSession.gameState.pieces.filter(piece => piece.pieceId !== '1-1').every(piece => piece.status === 'READY' && piece.nodeId === null))
+    const myPieces = state.gameSession.gameState.pieces.filter(piece => piece.ownerId === '1')
+    assert.equal(myPieces.length, 4)
+    assert.ok(myPieces.every(piece => piece.status === 'ON_BOARD' && piece.nodeId === 'OUTER_20'))
+    assert.ok(myPieces.every(piece => piece.groupPieceIds.length === 4 && piece.groupPieceIds.every(id => myPieces.some(candidate => candidate.pieceId === id))))
+    assert.ok(state.gameSession.gameState.pieces.filter(piece => piece.ownerId !== '1').every(piece => piece.status === 'READY' && piece.nodeId === null))
     const thrown = await mockApi.throwYut()
     assert.equal(thrown.result, 'GAE')
     assert.equal(thrown.steps, 2)
@@ -138,12 +159,11 @@ test('mock starts at the center with GAE and offers both center paths', async ()
     const gaeToken = state.gameSession.gameState.turn.moveTokens.find(token => token.result === 'GAE')
     await mockApi.selectYutMoveToken(100, state.gameSession.gameSessionId, gaeToken.moveTokenId)
     await mockApi.selectYutPiece(100, state.gameSession.gameSessionId, '1-1')
+    await new Promise(resolve => setTimeout(resolve, 50))
     state = await mockApi.getRoomState()
-    assert.equal(state.gameSession.gameState.myAction.type, 'SELECT_PATH')
-    assert.deepEqual(state.gameSession.gameState.myAction.eligiblePathIds, ['CENTER_SHORTCUT_A', 'CENTER_SHORTCUT_HOME'])
-    await mockApi.selectYutPath(100, state.gameSession.gameSessionId, 'CENTER_SHORTCUT_HOME')
-    state = await mockApi.getRoomState()
-    assert.equal(state.gameSession.gameState.pieces.find(piece => piece.pieceId === '1-1').nodeId, 'CENTER_9')
+    assert.equal(state.gameSession.gameState.phase, 'FINISHED')
+    assert.deepEqual(state.gameSession.gameState.rankings.map(player => player.playerId), [1, 2, 3, 4])
+    assert.deepEqual(state.gameSession.gameState.rankings.map(player => player.rank), [1, 2, 3, 4])
   } finally {
     globalThis.window = originalWindow
     globalThis.sessionStorage = originalSessionStorage

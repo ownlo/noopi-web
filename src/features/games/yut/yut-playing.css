@@ -99,8 +99,11 @@
 .yutPieceDock>strong{display:flex;gap:4px;color:var(--piece-color);font-size:10px;margin-bottom:4px}.yutPieceDock>strong small{color:#b8a7cb;font-weight:400;font-size:9px}
 .yutPieceDock>div{display:flex;justify-content:space-between;gap:1px}
 .yutPieceDock>div>span,.yutPieceDock button{position:relative;display:grid;place-items:center;padding:0;border:0;background:none;width:32px;height:34px;color:#fff}
-.yutPieceDock .yutPieceFace{width:26px;height:26px}.yutPieceDock .away .yutPieceFace{opacity:.18;filter:grayscale(1)}
+.yutPieceDock .yutPieceFace{width:26px;height:26px}
+.yutPieceDock .onBoard .yutPieceFace{opacity:.18;filter:grayscale(1)}
+.yutPieceDock .finished .yutPieceFace{opacity:1;filter:saturate(.75);border-color:#ffe889;box-shadow:inset 0 1px 0 #fff8,0 0 0 2px #8d6a24,0 0 10px #ffe16b99}
 .yutPieceDock>div>span>small,.yutPieceDock button>small{position:absolute;bottom:0;right:0;display:grid;place-items:center;width:13px;height:13px;border-radius:50%;background:var(--piece-color);color:#281b35;font-size:8px;font-weight:900}
+.yutPieceDock .finished>small{width:17px;height:17px;background:#eaff83;color:#27320e;border:2px solid #fffbd1;font-size:11px;box-shadow:0 2px 5px #0008}
 .yutPieceDock button{width:44px;min-height:44px;border-radius:10px;outline:1px dashed var(--piece-color);cursor:pointer;animation:yutPieceHop 1s ease-in-out 3}.yutPieceDock button:disabled{opacity:.5;cursor:wait}
 .yutThrowStage{display:block;min-height:0;margin:8px 0 10px;padding:0;background:none;overflow:visible}
 .yutThrowStatus{margin:0;text-align:center;color:#d1c0df;font-size:10px}
@@ -110,5 +113,11 @@
 
 
 .yutScore.active.myTurn{border-color:#c9ff69;background:linear-gradient(145deg,#495d3766,#232f3966);box-shadow:inset 0 0 0 1px #d7ff8a50,0 0 17px #baff623d,0 4px 0 #17232b}
+.yutScore.finished{border-color:#ffd56b66;background:linear-gradient(145deg,#5c493066,#2f263366);isolation:isolate}
+.yutScore.finished .yutPieceFace,.yutScore.finished>strong{opacity:.32;filter:grayscale(.7)}
+.yutRankStamp{--rank-stamp:#c994ff;position:absolute;z-index:2;top:6px;left:50%;display:grid;place-items:center;width:43px;height:43px;transform:translateX(-50%) rotate(-10deg);border:3px double var(--rank-stamp);border-radius:50%;background:#261a35e8;color:var(--rank-stamp);font-size:14px;font-weight:1000;line-height:1;text-shadow:0 1px 0 #000;box-shadow:inset 0 0 0 2px #ffffff12,0 2px 8px #0008;pointer-events:none}
+.yutRankStamp[data-rank="1"]{--rank-stamp:#ffe06b}.yutRankStamp[data-rank="2"]{--rank-stamp:#e7efff}.yutRankStamp[data-rank="3"]{--rank-stamp:#e9a36e}
 .yutScore.myTurn em{top:-7px;padding:2px 6px;background:#c9ff69;color:#233315;font-size:8px;line-height:1.2;border-radius:5px;box-shadow:0 0 7px #bdff6860,0 1px 0 #7caa48}
 .yutScore.myTurn strong{color:#e7ffc5}
+.yutSpectating{padding:14px 16px;border:1px solid #ffd56b55;border-radius:18px;background:linear-gradient(135deg,#5a432b66,#281f36);text-align:center;box-shadow:inset 0 1px 0 #ffffff18}
+.yutSpectating strong{color:#ffe69b;font-size:16px}.yutSpectating p{margin:5px 0 0;color:#d8cbe1;font-size:12px}

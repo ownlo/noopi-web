@@ -165,6 +165,21 @@ function yutOwnerId(game: Extract<YutGameState, { phase: 'PLAYING' }>) {
   return game.teams?.find(team => team.players.some(player => player.playerId === game.turn.currentPlayerId))?.team ?? 'NOOPI'
 }
 
+function yutTurnOrder(game: Extract<YutGameState, { phase: 'PLAYING' }>, state: RoomState, rankings = game.rankings) {
+  if (game.mode === 'TEAM') return [0, 1].flatMap(index => (game.teams ?? []).flatMap(team => team.players[index] ? [team.players[index].playerId] : []))
+  const finishedPlayerIds = new Set(rankings.map(player => player.playerId))
+  return state.players
+    .filter(player => game.pieces.some(piece => piece.ownerId === String(player.playerId)) && !finishedPlayerIds.has(player.playerId))
+    .map(player => player.playerId)
+}
+
+function placeYutOwnerAtFinish(pieces: YutPiece[], ownerId: string) {
+  const ownerPieceIds = pieces.filter(piece => piece.ownerId === ownerId).map(piece => piece.pieceId)
+  return pieces.map(piece => piece.ownerId === ownerId
+    ? { ...piece, status: 'ON_BOARD' as const, nodeId: 'OUTER_20', groupPieceIds: ownerPieceIds }
+    : piece)
+}
+
 function yutEligiblePieceIds(game: Extract<YutGameState, { phase: 'PLAYING' }>, result?: YutResultCode) {
   const ownerId = yutOwnerId(game)
   return game.pieces.filter(piece => piece.ownerId === ownerId && (result === 'BACK_DO' ? piece.status === 'ON_BOARD' : piece.status !== 'FINISHED') && piece.groupPieceIds[0] === piece.pieceId).map(piece => piece.pieceId)
@@ -188,7 +203,9 @@ function resolveYutThrow(game: Extract<YutGameState, { phase: 'PLAYING' }>) {
   else yutOpponentThrowCount++
   const thirdThrowByMe = thrownByMe && yutMyThrowCount === 3
   const firstThrowByOpponent = !thrownByMe && yutOpponentThrowCount === 1
-  const result: YutResultCode = thirdThrowByMe || firstThrowByOpponent ? 'NAK' : hasBackDoPreview ? 'BACK_DO' : sequence[yutThrowIndex % sequence.length]
+  const quickFinishBot = !thrownByMe && game.mode === 'INDIVIDUAL' && game.pieces.filter(piece => piece.ownerId === ownerId)
+    .every(piece => piece.status === 'ON_BOARD' && piece.nodeId === 'OUTER_20' && piece.groupPieceIds.length === 4)
+  const result: YutResultCode = quickFinishBot ? 'DO' : thirdThrowByMe || firstThrowByOpponent ? 'NAK' : hasBackDoPreview ? 'BACK_DO' : sequence[yutThrowIndex % sequence.length]
   yutThrowIndex++
   yutThrowSequence++
   const steps = { NAK: 0, BACK_DO: -1, DO: 1, GAE: 2, GEOL: 3, YUT: 4, MO: 5 }[result]
@@ -201,9 +218,7 @@ function resolveYutThrow(game: Extract<YutGameState, { phase: 'PLAYING' }>) {
       return { result, steps, moveTokenId: null, bonusThrowGranted: false }
     }
     const state = room()
-    const order = game.mode === 'TEAM'
-      ? [0, 1].flatMap(index => (game.teams ?? []).flatMap(team => team.players[index] ? [team.players[index].playerId] : []))
-      : state.players.filter(player => game.pieces.some(piece => piece.ownerId === String(player.playerId))).map(player => player.playerId)
+    const order = yutTurnOrder(game, state)
     const currentPlayerId = order[(order.indexOf(game.turn.currentPlayerId) + 1) % order.length]
     const turnNo = game.turn.turnNo + 1
     setGameState({ ...game, lastThrow, turn: { ...game.turn, currentPlayerId, turnNo, turnPhase: 'WAITING_THROW', throwResults: [], moveTokens: [], pendingBonusThrows: 0 }, myAction: { type: 'THROW_YUT' } })
@@ -230,7 +245,11 @@ function scheduleYutOpponentTurn(turnNo: number, playerId: number, delay = YUT_O
     const state = room()
     const game = state.gameSession?.gameState
     if (!game || game.type !== 'YUT' || game.phase !== 'PLAYING' || game.turn.turnNo !== turnNo || game.turn.currentPlayerId !== playerId || state.me.playerId === playerId || game.myAction?.type !== 'THROW_YUT') return
-    const result = resolveYutThrow(game)
+    const activeGame = game.mode === 'INDIVIDUAL'
+      ? { ...game, pieces: placeYutOwnerAtFinish(game.pieces, String(playerId)) }
+      : game
+    if (activeGame !== game) setGameState(activeGame)
+    const result = resolveYutThrow(activeGame)
     if (result.result === 'NAK') return
     const updated = activeYut()
     if (updated.myAction?.type === 'THROW_YUT') {
@@ -294,24 +313,47 @@ function finishYutMove(game: Extract<YutGameState, { phase: 'PLAYING' }>, pieceI
   })
   const ownerId = yutOwnerId(game)
   const finishedCount = pieces.filter(piece => piece.ownerId === ownerId && piece.status === 'FINISHED').length
-  if (finishedCount === 4) {
-    const winnerTeam = game.mode === 'TEAM' ? game.teams?.find(team => team.team === ownerId) : undefined
-    setGameState({ type: 'YUT', phase: 'FINISHED', mode: game.mode, winnerPlayer: game.mode === 'INDIVIDUAL' ? { playerId: game.turn.currentPlayerId, nickname: state.players.find(player => player.playerId === game.turn.currentPlayerId)!.nickname } : undefined, winnerTeam }, 'FINISHED')
+  const finishedPieceCounts = game.finishedPieceCounts.map(item => item.ownerId === ownerId ? { ...item, count: finishedCount } : item)
+  const movedPiece = pieces.find(piece => piece.pieceId === pieceId)!
+  const movePayload = { playerId: game.turn.currentPlayerId, pieceIds: movingIds, fromNodeId: selectedPiece.nodeId, toNodeId: movedPiece.nodeId, finished: movedPiece.status === 'FINISHED', stackedPieceIds, capturedPieceIds, bonusThrowGranted }
+  if (finishedCount === 4 && game.mode === 'TEAM') {
+    const winnerTeam = game.teams?.find(team => team.team === ownerId)
+    if (!winnerTeam) throw new Error('YUT_TEAM_NOT_FOUND')
+    setGameState({ type: 'YUT', phase: 'FINISHED', mode: 'TEAM', winnerTeam }, 'FINISHED')
+    emit('YUT_PIECE_MOVED', movePayload)
     emit('GAME_FINISHED')
+    return
+  }
+  if (finishedCount === 4 && game.mode === 'INDIVIDUAL' && !game.rankings.some(player => player.playerId === game.turn.currentPlayerId)) {
+    const finishedPlayer = state.players.find(player => player.playerId === game.turn.currentPlayerId)
+    if (!finishedPlayer) throw new Error('PLAYER_NOT_IN_GAME')
+    const rankings = [...game.rankings, { playerId: finishedPlayer.playerId, nickname: finishedPlayer.nickname, rank: game.rankings.length + 1 }]
+    emit('YUT_PIECE_MOVED', movePayload)
+    if (rankings.length === game.finishedPieceCounts.length) {
+      setGameState({ type: 'YUT', phase: 'FINISHED', mode: 'INDIVIDUAL', rankings }, 'FINISHED')
+      emit('GAME_FINISHED')
+      return
+    }
+    const order = yutTurnOrder(game, state, rankings)
+    const participantOrder = state.players.filter(player => game.pieces.some(piece => piece.ownerId === String(player.playerId))).map(player => player.playerId)
+    const finishedIndex = participantOrder.indexOf(game.turn.currentPlayerId)
+    const currentPlayerId = Array.from({ length: participantOrder.length }, (_, offset) => participantOrder[(finishedIndex + offset + 1) % participantOrder.length]).find(playerId => order.includes(playerId)) ?? order[0]
+    const turnNo = game.turn.turnNo + 1
+    setGameState({ ...game, pieces, finishedPieceCounts, rankings, myRank: rankings.find(player => player.playerId === state.me.playerId)?.rank ?? null, turn: { ...game.turn, currentPlayerId, turnNo, pendingBonusThrows: 0, turnPhase: 'WAITING_THROW', throwResults: [], moveTokens: [] }, myAction: { type: 'THROW_YUT' } })
+    yutSelectedTokenId = null; yutSelectedPieceId = null
+    emit('YUT_TURN_CHANGED', { turnNo, currentPlayerId })
+    if (currentPlayerId !== state.me.playerId) scheduleYutOpponentTurn(turnNo, currentPlayerId)
     return
   }
   const moveTokens = game.turn.moveTokens.filter(item => item.moveTokenId !== token.moveTokenId)
   const myAction = moveTokens.length > 0 ? { type: 'SELECT_MOVE_TOKEN' as const, moveTokenIds: moveTokens.map(item => item.moveTokenId) } : { type: 'THROW_YUT' as const }
   const turnEnded = moveTokens.length === 0 && pendingBonusThrows === 0
-  const order = game.mode === 'TEAM'
-    ? [0, 1].flatMap(index => (game.teams ?? []).flatMap(team => team.players[index] ? [team.players[index].playerId] : []))
-    : state.players.filter(player => game.pieces.some(piece => piece.ownerId === String(player.playerId))).map(player => player.playerId)
+  const order = yutTurnOrder(game, state)
   const currentPlayerId = turnEnded ? order[(order.indexOf(game.turn.currentPlayerId) + 1) % order.length] : game.turn.currentPlayerId
   const turnNo = game.turn.turnNo + (turnEnded ? 1 : 0)
-  setGameState({ ...game, pieces, finishedPieceCounts: game.finishedPieceCounts.map(item => item.ownerId === ownerId ? { ...item, count: finishedCount } : item), turn: { ...game.turn, currentPlayerId, turnNo, pendingBonusThrows, turnPhase: myAction.type === 'THROW_YUT' ? 'WAITING_THROW' : 'WAITING_MOVE', throwResults: turnEnded ? [] : game.turn.throwResults, moveTokens }, myAction })
+  setGameState({ ...game, pieces, finishedPieceCounts, turn: { ...game.turn, currentPlayerId, turnNo, pendingBonusThrows, turnPhase: myAction.type === 'THROW_YUT' ? 'WAITING_THROW' : 'WAITING_MOVE', throwResults: turnEnded ? [] : game.turn.throwResults, moveTokens }, myAction })
   yutSelectedTokenId = null; yutSelectedPieceId = null
-  const movedPiece = pieces.find(piece => piece.pieceId === pieceId)!
-  emit('YUT_PIECE_MOVED', { playerId: game.turn.currentPlayerId, pieceIds: movingIds, fromNodeId: selectedPiece.nodeId, toNodeId: movedPiece.nodeId, finished: movedPiece.status === 'FINISHED', stackedPieceIds, capturedPieceIds, bonusThrowGranted })
+  emit('YUT_PIECE_MOVED', movePayload)
   if (turnEnded) {
     emit('YUT_TURN_CHANGED', { turnNo, currentPlayerId })
     if (currentPlayerId !== state.me.playerId) scheduleYutOpponentTurn(turnNo, currentPlayerId)
@@ -427,11 +469,10 @@ export const mockApi: NoopiApi = {
       const myOwnerId = mode === 'TEAM'
         ? teams?.find(team => team.players.some(player => player.playerId === state.me.playerId))?.team ?? ownerIds[0]
         : String(state.me.playerId)
-      const pieces = yutPieces(state, mode).map(piece => piece.ownerId === myOwnerId && piece.pieceId === `${myOwnerId}-1`
-        ? { ...piece, status: 'ON_BOARD' as const, nodeId: 'CENTER_3' }
-        : piece)
+      const initialPieces = yutPieces(state, mode)
+      const pieces = mode === 'INDIVIDUAL' ? placeYutOwnerAtFinish(initialPieces, myOwnerId) : initialPieces
       yutThrowIndex = 0; yutThrowSequence = 0; yutMyThrowCount = 0; yutOpponentThrowCount = 0; yutSelectedTokenId = null; yutSelectedPieceId = null
-      setGameState({ type: 'YUT', phase: 'PLAYING', mode, teams, lastThrow: null, turn: { turnNo: 1, currentPlayerId: state.me.playerId, turnPhase: 'WAITING_THROW', throwResults: [], moveTokens: [], pendingBonusThrows: 0 }, pieces, finishedPieceCounts: ownerIds.map(ownerId => ({ ownerId, count: 0 })), myAction: { type: 'THROW_YUT' } })
+      setGameState({ type: 'YUT', phase: 'PLAYING', mode, teams, rankings: [], myRank: null, lastThrow: null, turn: { turnNo: 1, currentPlayerId: state.me.playerId, turnPhase: 'WAITING_THROW', throwResults: [], moveTokens: [], pendingBonusThrows: 0 }, pieces, finishedPieceCounts: ownerIds.map(ownerId => ({ ownerId, count: 0 })), myAction: { type: 'THROW_YUT' } })
       emit('GAME_STARTED')
       return
     }

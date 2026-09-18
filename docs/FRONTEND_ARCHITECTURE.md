@@ -1235,7 +1235,7 @@ type MafiaGameState = {
 type YutGameState = {
   type: 'YUT'
   phase: YutPhase
-  // 윷판과 현재 Player에게 허용된 서버 계산 행동
+  // 윷판, 서버가 확정한 개인전 순위와 현재 Player에게 허용된 행동
 }
 ```
 
