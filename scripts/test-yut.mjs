@@ -110,7 +110,8 @@ test('individual play keeps going after a player finishes and ends with rankings
   const mock = readFileSync(new URL('../src/mocks/mockApi.ts', import.meta.url), 'utf8')
   assert.match(types, /mode: 'INDIVIDUAL'; rankings: YutRanking\[\]/)
   assert.match(types, /rankings: YutRanking\[\]; myRank: number \| null/)
-  assert.match(mock, /rankings\.length === game\.finishedPieceCounts\.length/)
+  assert.match(mock, /rankings\.length >= game\.finishedPieceCounts\.length - 1/)
+  assert.match(mock, /const finalRankings = lastPlayer/)
   assert.match(mock, /yutTurnOrder\(game, state, rankings\)/)
   assert.match(playing, /남은 경기를 관전해요/)
   assert.match(playing, /piece\.status === 'FINISHED' \? 'finished'/)
@@ -122,7 +123,7 @@ test('individual play keeps going after a player finishes and ends with rankings
   assert.doesNotMatch(views, /state\.winnerPlayer/)
 })
 
-test('mock starts my pieces at the finish and completes bots in order after me', async () => {
+test('mock finishes bots in order and assigns the remaining bot last place', async () => {
   const originalWindow = globalThis.window
   const originalSessionStorage = globalThis.sessionStorage
   const storage = new Map([['noopi.mockPlayerCount', '4']])

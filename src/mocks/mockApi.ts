@@ -329,8 +329,10 @@ function finishYutMove(game: Extract<YutGameState, { phase: 'PLAYING' }>, pieceI
     if (!finishedPlayer) throw new Error('PLAYER_NOT_IN_GAME')
     const rankings = [...game.rankings, { playerId: finishedPlayer.playerId, nickname: finishedPlayer.nickname, rank: game.rankings.length + 1 }]
     emit('YUT_PIECE_MOVED', movePayload)
-    if (rankings.length === game.finishedPieceCounts.length) {
-      setGameState({ type: 'YUT', phase: 'FINISHED', mode: 'INDIVIDUAL', rankings }, 'FINISHED')
+    if (rankings.length >= game.finishedPieceCounts.length - 1) {
+      const lastPlayer = state.players.find(player => game.pieces.some(piece => piece.ownerId === String(player.playerId)) && !rankings.some(ranking => ranking.playerId === player.playerId))
+      const finalRankings = lastPlayer ? [...rankings, { playerId: lastPlayer.playerId, nickname: lastPlayer.nickname, rank: rankings.length + 1 }] : rankings
+      setGameState({ type: 'YUT', phase: 'FINISHED', mode: 'INDIVIDUAL', rankings: finalRankings }, 'FINISHED')
       emit('GAME_FINISHED')
       return
     }
