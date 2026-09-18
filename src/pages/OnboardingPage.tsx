@@ -11,10 +11,17 @@ function isRoomNotFound(error: unknown): error is { code: 'ROOM_NOT_FOUND' } {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ROOM_NOT_FOUND'
 }
 
+const roomCodePattern = /^[0-9]{6}$/
+
+function normalizeRoomCode(value: string) {
+  return value.replace(/[^0-9]/g, '').slice(0, 6)
+}
+
 export function OnboardingPage({ mode }: { mode: 'create' | 'join' }) {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const inviteCode = mode === 'join' ? (searchParams.get('code') ?? '').trim().toUpperCase() : ''
+  const requestedInviteCode = mode === 'join' ? (searchParams.get('code') ?? '').trim() : ''
+  const inviteCode = roomCodePattern.test(requestedInviteCode) ? requestedInviteCode : ''
   const [step, setStep] = useState(mode === 'join' ? 'code' : 'profile')
   const [code, setCode] = useState(inviteCode)
   const [roomId, setRoomId] = useState(0)
@@ -44,10 +51,11 @@ export function OnboardingPage({ mode }: { mode: 'create' | 'join' }) {
 
   const find = async (event: FormEvent) => {
     event.preventDefault()
+    if (!roomCodePattern.test(code)) return setError('방 코드는 숫자 6자리로 입력해주세요.')
     setBusy(true)
     setError('')
     try {
-      const room = await api.findRoom(code.trim().toUpperCase())
+      const room = await api.findRoom(code)
       setRoomId(room.roomId)
       setStep('profile')
     } catch {
@@ -91,9 +99,9 @@ export function OnboardingPage({ mode }: { mode: 'create' | 'join' }) {
         <form className="form" onSubmit={find}>
           <h1>방 코드를<br />입력해주세요</h1>
           <label htmlFor="roomCode">6자리 방 코드</label>
-          <input id="roomCode" className="codeInput" value={code} onChange={event => setCode(event.target.value.toUpperCase())} maxLength={6} autoComplete="off" />
+          <input id="roomCode" className="codeInput" type="text" inputMode="numeric" pattern="[0-9]{6}" value={code} onChange={event => setCode(normalizeRoomCode(event.target.value))} maxLength={6} autoComplete="off" />
           {error && <p className="error" role="alert">{error}</p>}
-          <Button disabled={busy || code.length < 6}>{busy ? '찾는 중...' : '다음'}</Button>
+          <Button disabled={busy || !roomCodePattern.test(code)}>{busy ? '찾는 중...' : '다음'}</Button>
         </form>
       ) : (
         <form className="form" onSubmit={submit}>

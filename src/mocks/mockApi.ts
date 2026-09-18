@@ -36,7 +36,7 @@ function createState(nickname = '누피', gender: Player['gender'] = 'MALE'): Ro
   const playerCount = requestedCount >= 2 && requestedCount <= 12 ? requestedCount : 4
   const players = mockPlayers(nickname, gender).slice(0, playerCount)
   return {
-    room: { roomId: nextRoomId++, roomCode: 'MOCK01', status: 'WAITING', hostPlayerId: 1 },
+    room: { roomId: nextRoomId++, roomCode: '123456', status: 'WAITING', hostPlayerId: 1 },
     me: players[0],
     players,
     gameSession: null,
@@ -342,7 +342,7 @@ export const mockApi: NoopiApi = {
   async findRoom(roomCode) {
     await wait()
     const state = room()
-    if (roomCode !== 'MOCK01' && roomCode !== state.room.roomCode) throw new Error('ROOM_NOT_FOUND')
+    if (roomCode !== '123456' && roomCode !== state.room.roomCode) throw new Error('ROOM_NOT_FOUND')
     requireConnectedHost(state)
     return { roomId: state.room.roomId, roomCode: state.room.roomCode, status: state.room.status, playerCount: state.players.length, joinable: true }
   },
