@@ -36,6 +36,7 @@ games/LIAR_GAME_SPEC.md
 games/BLIND_GAME_SPEC.md
 games/MAFIA_GAME_SPEC.md
 games/YUT_GAME_SPEC.md
+games/PIG_GAME_SPEC.md
 ```
 
 우선순위:
@@ -46,6 +47,7 @@ games/YUT_GAME_SPEC.md
 → games/BLIND_GAME_SPEC.md
 → games/MAFIA_GAME_SPEC.md
 → games/YUT_GAME_SPEC.md
+→ games/PIG_GAME_SPEC.md
 
 REST / WebSocket 계약
 → API_SPEC.md
@@ -254,6 +256,7 @@ GameSession
 마피아 공격 집계, 경찰 조사 결과, 의사 치료 결과
 시민 의심 집계와 Player별 개인 의심 수
 마피아 게임의 사망 처리와 승패
+피그 게임의 주사위 결과, 사용 가능/제거 숫자, 점수, 턴, 순위, 종료
 ```
 
 Frontend에서 이 값을 자체 계산하여 확정하지 않는다.
@@ -677,6 +680,8 @@ Room 참가
 투표 제출
 라이어 정답 제출
 블라인드 정답 제출
+피그 주사위 던지기
+피그 멈추기
 ```
 
 더블 클릭으로 중복 요청을 발생시키지 않는다.
@@ -856,6 +861,12 @@ Discussion
 윷놀이 개인전 / 팀전 설정과 팀 선택
 윷 던지기 / 추가 던지기 / 이동권 소비
 윷놀이 경로 선택 / 업기 / 잡기 / 완주 / 승리
+피그 2~6명 시작 검증
+피그 첫 던지기 / 계속 던지기 / 멈추기
+피그 숫자 제거와 1 발생 확률 증가
+피그 1 발생 시 턴 점수 소멸
+피그 50점 도달 순서와 마지막 Player 자동 순위
+피그 FINISHED 관전 / 최종 순위 / 재접속
 연결 끊김
 재접속
 Host 변경
@@ -1080,6 +1091,7 @@ Frontend에서 제시어 선정
 시민 의심을 Frontend에서 집계하거나 타인의 의심 정보를 노출
 마피아 게임의 승패를 Frontend에서 판정
 윷 결과, 이동 후보, 경로, 업기, 잡기, 완주 또는 승자를 Frontend에서 판정
+피그 주사위 결과, 숫자 제거, 점수, 턴, 순위 또는 종료를 Frontend에서 판정
 재투표 횟수 제한 추가
 동률 랜덤 지목 추가
 카테고리 하드코딩

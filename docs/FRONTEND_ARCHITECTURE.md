@@ -15,6 +15,7 @@ Frontend 구현 시 다음 문서를 Source of Truth로 사용한다.
 -   `games/BLIND_GAME_SPEC.md`
 -   `games/MAFIA_GAME_SPEC.md`
 -   `games/YUT_GAME_SPEC.md`
+-   `games/PIG_GAME_SPEC.md`
 
 Frontend는 서버가 결정한 Room/Game 상태를 표현하고 사용자의 행동을
 서버에 전달하는 역할을 담당한다.
@@ -273,6 +274,8 @@ switch (gameSession.gameType) {
     return <MafiaGame />
   case 'YUT':
     return <YutGame />
+  case 'PIG':
+    return <PigGame />
 }
 ```
 
@@ -1148,7 +1151,7 @@ API DTO와 Game State는 명시적으로 타입을 정의한다.
 ``` ts
 type Gender = 'MALE' | 'FEMALE'
 
-type GameType = 'LIAR' | 'BLIND' | 'MAFIA' | 'YUT'
+type GameType = 'LIAR' | 'BLIND' | 'MAFIA' | 'YUT' | 'PIG'
 
 type LiarPhase =
   | 'ROLE_REVEAL'
@@ -1177,6 +1180,8 @@ type MafiaPhase =
   | 'FINISHED'
 
 type YutPhase = 'READY' | 'TEAM_SELECT' | 'PLAYING' | 'FINISHED'
+
+type PigPhase = 'READY' | 'PLAYING' | 'FINISHED'
 
 type YutTurnPhase =
   | 'WAITING_THROW'
@@ -1211,6 +1216,7 @@ type GameState =
   | BlindGameState
   | MafiaGameState
   | YutGameState
+  | PigGameState
 ```
 
 ``` ts
@@ -1237,7 +1243,17 @@ type YutGameState = {
   phase: YutPhase
   // 윷판, 서버가 확정한 개인전 순위와 현재 Player에게 허용된 행동
 }
+
+type PigGameState = {
+  type: 'PIG'
+  phase: PigPhase
+  // 서버가 확정한 점수, 턴, 주사위 상태, 순위와 현재 Player의 허용 행동
+}
 ```
+
+PIG 구현은 `features/games/pig/`에 격리한다. 윷놀이를 포함한 다른 게임의 전용 컴포넌트, 상태, 타입, hook에 의존하지 않는다. 공통 `GameRenderer`, API/Realtime Adapter, 버튼·모달 등 범용 UI만 공유한다.
+
+PIG 화면은 서버가 제공한 `allowedActions`, `availableDiceValues`, `removedDiceValues`, `bustProbability`, `rankings`를 표현한다. 주사위 결과, 제거 목록, 점수, 턴, 순위와 종료를 Frontend에서 계산하거나 optimistic하게 확정하지 않는다.
 
 마피아 밤 행동 Mutation은 역할별 Endpoint로 나누지 않고
 `actionType` discriminated union을 사용하는 단일 `night-actions` API를

@@ -8,6 +8,7 @@
     "build": "tsc --noEmit -p tsconfig.app.json && vite build",
     "lint": "eslint .",
     "test:yut": "node --test scripts/test-yut.mjs",
+    "test:pig": "node --test scripts/test-pig.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

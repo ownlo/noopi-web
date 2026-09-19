@@ -15,6 +15,7 @@
 -   `games/BLIND_GAME_SPEC.md`
 -   `games/MAFIA_GAME_SPEC.md`
 -   `games/YUT_GAME_SPEC.md`
+-   `games/PIG_GAME_SPEC.md`
 
 Frontend는 게임 규칙과 승패를 자체 판단하지 않는다. 서버가 반환한 현재
 상태를 기준으로 화면을 렌더링한다.
@@ -1223,6 +1224,9 @@ YUT_READY
 YUT_TEAM_SELECT
 YUT_PLAYING
 YUT_RESULT
+PIG_READY
+PIG_PLAYING
+PIG_RESULT
 ROOM_NEXT_GAME
 ROOM_NOT_FOUND
 ROOM_CLOSED
@@ -1231,6 +1235,18 @@ ROOM_CLOSED
 실제 React route와 화면 컴포넌트가 반드시 1:1일 필요는 없다.
 
 게임 상태에 따라 하나의 Route 내부에서 여러 View를 렌더링해도 된다.
+
+## 피그 게임 화면 규칙
+
+피그 게임 선택 카드에는 `2~6명` 개인전임을 표시한다. 목표 점수는 50점으로 고정하며 별도 설정 UI를 제공하지 않는다.
+
+`PLAYING` 화면에는 목표 점수, 현재 턴 Player, Player별 총점·상태·확정 순위, 현재 턴 점수, 최근 주사위, 사용 가능한 숫자, 제거된 숫자, 서버가 제공한 `1` 발생 확률을 표시한다.
+
+현재 Player에게는 `allowedActions`가 `ROLL`일 때 첫 던지기 또는 계속 던지기 버튼을, `STOP`일 때 멈추기 버튼을 제공한다. 다른 Player와 `FINISHED` Player에게는 행동 버튼 대신 진행 또는 관전 안내를 표시한다. mutation 중에는 두 행동을 모두 비활성화해 중복 요청을 막는다.
+
+`BUSTED` 결과에는 `1`과 `lostTurnScore`를 명확하게 보여준다. 순위는 서버가 제공한 FINISHED 순서로 표시하며 점수순으로 재정렬하지 않는다. 마지막 순위 Player는 50점 미만일 수 있다.
+
+최종 결과는 윷놀이 결과 화면의 UX와 디자인 톤만 참고하고 PIG 전용 화면으로 구현한다. 윷놀이 전용 컴포넌트, 상태, 타입, hook을 직접 사용하지 않는다.
 
 ## 블라인드 게임 화면 규칙
 

@@ -67,14 +67,16 @@ export type YutGameState =
   | { type: 'YUT'; phase: 'FINISHED'; mode: 'INDIVIDUAL'; rankings: YutRanking[] }
   | { type: 'YUT'; phase: 'FINISHED'; mode: 'TEAM'; winnerTeam: YutTeam }
   | { type: 'YUT'; phase: 'CANCELLED'; reason?: string }
-export type GameType = 'LIAR' | 'BLIND' | 'MAFIA' | 'YUT'
-export type GameState = LiarGameState | BlindGameState | MafiaGameState | YutGameState
+export type GameType = 'LIAR' | 'BLIND' | 'MAFIA' | 'YUT' | 'PIG'
+export type GameState = LiarGameState | BlindGameState | MafiaGameState | YutGameState | import('../features/games/pig/types').PigGameState
 export type RoomState = { room: { roomId: number; roomCode: string; status: 'WAITING' | 'ACTIVE' | 'CLOSED'; hostPlayerId: number }; me: Player; players: Player[]; gameSession: null | { gameSessionId: number; gameType: GameType; status: 'READY' | 'PLAYING' | 'FINISHED' | 'CANCELLED'; gameState: GameState } }
 export type GameCatalog = { games: { gameType: GameType; name: string; minPlayers: number; maxPlayers: number; enabled: boolean }[] }
 export type CategoryCatalog = { categories: { code: string; name: string; virtual: boolean }[] }
 export type RealtimeEvent = { eventId: string; type: string; roomId: number; gameSessionId: number | null; occurredAt: string; payload: Record<string, unknown> }
 
 export interface NoopiApi {
+  rollPig(roomId: number, gameSessionId: number, requestId: string): Promise<void>
+  stopPig(roomId: number, gameSessionId: number, requestId: string): Promise<void>
   createRoom(input: { nickname: string; gender: Gender }): Promise<{ room: RoomState['room']; me: Player }>
   findRoom(roomCode: string): Promise<{ roomId: number; roomCode: string; status: string; playerCount: number; joinable: boolean }>
   joinRoom(roomId: number, input: { nickname: string; gender: Gender }): Promise<{ player: Player }>

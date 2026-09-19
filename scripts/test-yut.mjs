@@ -133,7 +133,10 @@ test('mock finishes bots in order and assigns the remaining bot last place', asy
     setItem: (key, value) => storage.set(key, value),
   }
   try {
-    const source = readFileSync(new URL('../src/mocks/mockApi.ts', import.meta.url), 'utf8')
+    const pigSource = readFileSync(new URL('../src/mocks/pigMock.ts', import.meta.url), 'utf8')
+    const pigCode = ts.transpileModule(pigSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
+    const pigUrl = `data:text/javascript;base64,${Buffer.from(pigCode).toString('base64')}`
+    const source = readFileSync(new URL('../src/mocks/mockApi.ts', import.meta.url), 'utf8').replace("'./pigMock'", JSON.stringify(pigUrl))
     const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
     const { mockApi } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`)
     await mockApi.createRoom({ nickname: '누피', gender: 'MALE' })

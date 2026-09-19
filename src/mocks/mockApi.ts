@@ -1,4 +1,6 @@
 import type { BlindGameState, Candidate, CategoryCatalog, GameCatalog, GameState, MafiaGameState, MafiaNightActionType, MafiaRole, NoopiApi, Player, RealtimeEvent, RoomState, YutGameState, YutMode, YutPiece, YutResultCode, YutTeam, YutTeamId } from '../api/types'
+import { PigMock } from './pigMock'
+import type { PigAction } from '../features/games/pig/types'
 
 const wait = (ms = 180) => new Promise(resolve => window.setTimeout(resolve, ms))
 const PHASE_TRANSITION_DELAY_MS = 3_000
@@ -8,6 +10,44 @@ const YUT_OPPONENT_MOVE_DELAY_MS = 1_900
 const listeners = new Set<(event: RealtimeEvent) => void>()
 
 const games: GameCatalog = { games: [{ gameType: 'LIAR', name: '라이어 게임', minPlayers: 3, maxPlayers: 12, enabled: true }, { gameType: 'BLIND', name: '블라인드 게임', minPlayers: 2, maxPlayers: 2, enabled: true }, { gameType: 'MAFIA', name: '마피아 게임', minPlayers: 4, maxPlayers: 12, enabled: true }, { gameType: 'YUT', name: '윷놀이', minPlayers: 2, maxPlayers: 4, enabled: true }] }
+games.games.push({ gameType: 'PIG', name: '피그 게임', minPlayers: 2, maxPlayers: 6, enabled: true })
+let pigMock: PigMock | null = null
+let pigTimer: number | undefined
+
+function publishPig(action?: PigAction) {
+  const state = room()
+  if (!pigMock || state.gameSession?.gameType !== 'PIG') return
+  const previous = state.gameSession.gameState
+  const game = pigMock.snapshot(state.me.playerId)
+  setGameState(game, game.phase === 'FINISHED' ? 'FINISHED' : 'PLAYING')
+  if (previous.type === 'PIG' && previous.phase === 'PLAYING') {
+    if (action === 'ROLL' && game.phase === 'PLAYING') emit('PIG_ROLL_RESOLVED', { playerId: previous.currentPlayerId, diceValue: game.lastDiceValue, busted: game.lastTurnOutcome === 'BUSTED' })
+    const ranked = game.phase === 'FINISHED' ? game.rankings : game.phase === 'PLAYING' ? game.players : []
+    for (const player of ranked) {
+      if (player.rank !== null && previous.players.find(p => p.playerId === player.playerId)?.rank === null) emit('PIG_PLAYER_FINISHED', { playerId: player.playerId, rank: player.rank, totalScore: player.totalScore })
+    }
+    if (game.phase === 'PLAYING' && previous.currentPlayerId !== game.currentPlayerId) emit('PIG_TURN_CHANGED', { previousPlayerId: previous.currentPlayerId, currentPlayerId: game.currentPlayerId, reason: game.lastTurnOutcome })
+    if (game.phase === 'FINISHED') emit('GAME_FINISHED')
+  }
+  window.clearTimeout(pigTimer)
+  if (game.phase !== 'PLAYING' || game.currentPlayerId === state.me.playerId) return
+  const sessionId = state.gameSession.gameSessionId
+  pigTimer = window.setTimeout(() => {
+    if (room() !== state || state.gameSession?.gameSessionId !== sessionId || state.gameSession.status !== 'PLAYING') return
+    const action = game.turnScore >= 8 ? 'STOP' : 'ROLL'
+    pigMock?.act(game.currentPlayerId, action, crypto.randomUUID())
+    publishPig(action)
+  }, 1400)
+}
+
+async function actPig(roomId: number, sessionId: number, action: PigAction, requestId: string) {
+  await wait()
+  const state = room()
+  if (state.room.roomId !== roomId || state.gameSession?.gameSessionId !== sessionId || state.gameSession.gameType !== 'PIG' || state.gameSession.status !== 'PLAYING' || !pigMock) throw { code: 'INVALID_GAME_ACTION' }
+  pigMock.act(state.me.playerId, action, requestId)
+  publishPig(action)
+}
+
 const categories: CategoryCatalog = { categories: [
   { code: 'RANDOM', name: '랜덤', virtual: true },
   { code: 'FOOD', name: '음식', virtual: false },
@@ -424,7 +464,10 @@ export const mockApi: NoopiApi = {
     const state = room()
     const gameSessionId = nextSessionId++
     state.room.status = 'ACTIVE'
-    if (gameType === 'BLIND') {
+    if (gameType === 'PIG') {
+      if (state.players.length < 2 || state.players.length > 6) throw { code: 'INVALID_PLAYER_COUNT' }
+      state.gameSession = { gameSessionId, gameType, status: 'READY', gameState: { type: 'PIG', phase: 'READY' } }
+    } else if (gameType === 'BLIND') {
       state.gameSession = { gameSessionId, gameType, status: 'READY', gameState: { type: 'BLIND', phase: 'READY' } }
     } else if (gameType === 'MAFIA') {
       mafiaDayNo = 1
@@ -448,6 +491,12 @@ export const mockApi: NoopiApi = {
   async startGame() {
     await wait()
     const state = room()
+    if (state.gameSession?.gameType === 'PIG') {
+      pigMock = new PigMock(state.players)
+      publishPig()
+      emit('GAME_STARTED')
+      return
+    }
     if (state.gameSession?.gameType === 'BLIND') {
       if (state.players.length !== 2) throw new Error('INVALID_PLAYER_COUNT')
       setGameState({ type: 'BLIND', phase: 'GUESSING', opponentPlayer: { playerId: state.players[1].playerId, nickname: state.players[1].nickname }, opponentKeyword: '아메리카노' })
@@ -726,6 +775,8 @@ export const mockApi: NoopiApi = {
     if (game.myAction?.type !== 'SELECT_PATH' || !game.myAction.eligiblePathIds.includes(pathId) || !yutSelectedPieceId) throw new Error('PATH_NOT_ELIGIBLE')
     finishYutMove(game, yutSelectedPieceId, pathId)
   },
+  rollPig(roomId, sessionId, requestId) { return actPig(roomId, sessionId, 'ROLL', requestId) },
+  stopPig(roomId, sessionId, requestId) { return actPig(roomId, sessionId, 'STOP', requestId) },
   subscribe(_roomId, listener, connection) {
     listeners.add(listener)
     connection(true)
