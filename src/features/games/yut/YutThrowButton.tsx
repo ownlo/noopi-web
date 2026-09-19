@@ -83,6 +83,7 @@ export function YutThrowButton({ disabled, bonus, onThrow }: {
         onPointerCancel={cancel}
         onLostPointerCapture={event => { if (hold.current?.input === event.pointerId) cancel() }}
         onBlur={cancel}
+        onDragStart={event => event.preventDefault()}
         onContextMenu={event => event.preventDefault()}
         onKeyDown={event => {
           if (event.key === 'Escape') { cancel(); return }
