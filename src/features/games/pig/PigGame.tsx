@@ -52,7 +52,7 @@ export function PigGame({ game, state, pending, onStart, onReplay, onOther, roll
   const tension = game.bustProbability >= .7 ? 'critical' : game.bustProbability >= .5 ? 'high' : game.bustProbability >= .3 ? 'medium' : 'low'
   const rolling = diceMotion !== 'idle' || remoteRoll !== null
   const displayedMotion = remoteRoll?.motion ?? diceMotion
-  const awaitingFirstRoll = displayedMotion === 'idle' && game.successfulRollCount === 0 && game.lastTurnOutcome !== 'BUSTED'
+  const awaitingFirstRoll = displayedMotion === 'idle' && game.successfulRollCount === 0
   const displayedDiceValue = awaitingFirstRoll ? null : remoteRoll?.value ?? game.lastDiceValue
   return <div className={`pigScreen pigPlaying pigTension-${tension}${rolling ? ' isRolling' : ''}${game.lastTurnOutcome === 'BUSTED' ? ' isBusted' : ''}${game.turnScore >= 10 ? ' isPotGrowing' : ''}`}>
     <section className="pigScoreboard" aria-label="플레이어별 누적 점수">
