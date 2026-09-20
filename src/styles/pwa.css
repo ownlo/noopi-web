@@ -220,8 +220,8 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 290px;
-  height: 290px;
+  width: 340px;
+  height: 340px;
   border-radius: 50%;
   background: #813dff5c;
   filter: blur(72px);
@@ -230,36 +230,20 @@
 
 .pwaSplash img {
   position: relative;
-  width: 148px;
-  height: 148px;
+  width: min(76vw, 330px);
+  height: min(76vw, 330px);
   object-fit: contain;
   filter: drop-shadow(0 22px 32px #02030daa);
-  animation: pwaSplashArrive .55s cubic-bezier(.2, .8, .2, 1) both;
+  animation: pwaSplashArrive .55s cubic-bezier(.2, .8, .2, 1) both, pwaSplashFloat 1.8s .55s ease-in-out infinite alternate;
 }
 
 .pwaSplash h1 {
   position: relative;
-  margin: 16px 0 2px;
-  font-size: 31px;
+  margin: 6px 0 0;
+  font-size: 28px;
   line-height: 1;
   letter-spacing: 7px;
   text-shadow: 0 0 24px #8c62ff80;
-}
-
-.pwaSplash p {
-  position: relative;
-  margin: 10px 0 22px;
-  color: #c3c6e4;
-  font-family: 'Gowun Dodum', system-ui, sans-serif;
-  font-size: 13px;
-}
-
-.pwaSplash > span {
-  position: relative;
-  color: #6ce8ff;
-  font-size: 7px;
-  letter-spacing: 6px;
-  animation: pwaSplashPulse .8s ease-in-out infinite alternate;
 }
 
 @keyframes pwaSplashArrive {
@@ -267,14 +251,13 @@
   to { opacity: 1; transform: none; }
 }
 
-@keyframes pwaSplashPulse {
-  to { opacity: .35; }
+@keyframes pwaSplashFloat {
+  to { transform: translateY(-5px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .pwaSplash,
-  .pwaSplash img,
-  .pwaSplash > span {
+  .pwaSplash img {
     animation: none;
     transition: none;
   }
