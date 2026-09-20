@@ -194,3 +194,88 @@
     display: none;
   }
 }
+
+.pwaSplash {
+  position: fixed;
+  z-index: 3000;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  overflow: hidden;
+  padding: env(safe-area-inset-top) 24px env(safe-area-inset-bottom);
+  background: radial-gradient(circle at 50% 38%, #4931a8 0, #181547 25%, transparent 52%), linear-gradient(180deg, #111439, #07081b 72%);
+  color: #fff;
+  text-align: center;
+  opacity: 1;
+  transition: opacity .28s ease, visibility .28s ease;
+}
+
+.pwaSplash.leaving {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.pwaSplashGlow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 290px;
+  height: 290px;
+  border-radius: 50%;
+  background: #813dff5c;
+  filter: blur(72px);
+  transform: translate(-50%, -62%);
+}
+
+.pwaSplash img {
+  position: relative;
+  width: 148px;
+  height: 148px;
+  object-fit: contain;
+  filter: drop-shadow(0 22px 32px #02030daa);
+  animation: pwaSplashArrive .55s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.pwaSplash h1 {
+  position: relative;
+  margin: 16px 0 2px;
+  font-size: 31px;
+  line-height: 1;
+  letter-spacing: 7px;
+  text-shadow: 0 0 24px #8c62ff80;
+}
+
+.pwaSplash p {
+  position: relative;
+  margin: 10px 0 22px;
+  color: #c3c6e4;
+  font-family: 'Gowun Dodum', system-ui, sans-serif;
+  font-size: 13px;
+}
+
+.pwaSplash > span {
+  position: relative;
+  color: #6ce8ff;
+  font-size: 7px;
+  letter-spacing: 6px;
+  animation: pwaSplashPulse .8s ease-in-out infinite alternate;
+}
+
+@keyframes pwaSplashArrive {
+  from { opacity: 0; transform: translateY(12px) scale(.9) rotate(-3deg); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes pwaSplashPulse {
+  to { opacity: .35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pwaSplash,
+  .pwaSplash img,
+  .pwaSplash > span {
+    animation: none;
+    transition: none;
+  }
+}
