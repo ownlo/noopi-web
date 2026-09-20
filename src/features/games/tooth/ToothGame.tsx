@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../../../api'
 import type { Player, RoomState } from '../../../api/types'
-import { Avatar, Button } from '../../../components/ui'
+import { Avatar, Button, SpinnerText } from '../../../components/ui'
 import toothCharacter from '../../../assets/characters/noopi-tooth-open-mouth.png'
 import toothBiteCharacter from '../../../assets/characters/noopi-tooth-bite.png'
 import type { Tooth, ToothGameState, ToothOutcome } from './types'
@@ -144,7 +144,7 @@ export function ToothGame({ game, state, pending, onStart, onReplay, onOther }: 
     <div className="toothResultHero"><img src={toothBiteCharacter} alt="이빨을 앙 다문 누피" /></div>
     <p className="toothBang">콱!!!</p>
     <h1>{game.result.loserPlayer.nickname}님 당첨!</h1>
-    {state.me.host ? <div className="toothResultActions"><Button disabled={pending} onClick={onReplay}>같은 게임 다시하기</Button><Button className="secondary" disabled={pending} onClick={onOther}>로비로 이동</Button></div> : <p className="toothWaiting">방장이 다음 게임을 고르고 있어요.</p>}
+    {state.me.host ? <div className="toothResultActions"><Button disabled={pending} onClick={onReplay}>같은 게임 다시하기</Button><Button className="secondary" disabled={pending} onClick={onOther}>로비로 이동</Button></div> : <SpinnerText>방장이 다음 게임을 고르고 있어요</SpinnerText>}
   </section>{soundControl}</>
 
   const currentPlayer = state.players.find(player => player.playerId === game.currentTurnPlayerId)
