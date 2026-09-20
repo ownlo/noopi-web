@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../../../api'
 import type { Player, RoomState } from '../../../api/types'
@@ -16,28 +15,6 @@ type Props = {
   onStart: () => void
   onReplay: () => void
   onOther: () => void
-}
-
-function playEffect(outcome: ToothOutcome, muted: boolean) {
-  if (muted) return
-  const AudioContextType = window.AudioContext
-  if (!AudioContextType) return
-  const context = new AudioContextType()
-  const gain = context.createGain()
-  gain.connect(context.destination)
-  const now = context.currentTime
-  if (outcome === 'SAFE') {
-    const oscillator = context.createOscillator()
-    oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(760, now); oscillator.frequency.exponentialRampToValueAtTime(430, now + .08)
-    gain.gain.setValueAtTime(.08, now); gain.gain.exponentialRampToValueAtTime(.001, now + .1)
-    oscillator.connect(gain); oscillator.start(now); oscillator.stop(now + .11)
-  } else {
-    const oscillator = context.createOscillator()
-    oscillator.type = 'sawtooth'; oscillator.frequency.setValueAtTime(160, now); oscillator.frequency.exponentialRampToValueAtTime(48, now + .32)
-    gain.gain.setValueAtTime(.18, now); gain.gain.exponentialRampToValueAtTime(.001, now + .38)
-    oscillator.connect(gain); oscillator.start(now); oscillator.stop(now + .4)
-  }
-  window.setTimeout(() => void context.close(), 500)
 }
 
 function playVibration(outcome: ToothOutcome) {
@@ -85,15 +62,6 @@ export function ToothGame({ game, state, pending, onStart, onReplay, onOther }: 
   const [pressedToothId, setPressedToothId] = useState<number | null>(null)
   const [flash, setFlash] = useState<ToothOutcome | null>(game.phase === 'FINISHED' ? 'BOMB' : null)
   const [error, setError] = useState('')
-  const [muted, setMuted] = useState(false)
-  const [headerTarget, setHeaderTarget] = useState<HTMLElement | null>(null)
-
-  useEffect(() => { setHeaderTarget(document.getElementById('room-game-controls')) }, [])
-
-  const soundControl = headerTarget ? createPortal(
-    <button type="button" className="toothMute toothHeaderMute" onClick={() => setMuted(value => !value)} aria-label={muted ? '효과음 켜기' : '효과음 끄기'}>{muted ? '🔇' : '🔊'}</button>,
-    headerTarget,
-  ) : null
 
   const latest = game.phase === 'PLAYING' || game.phase === 'FINISHED' ? game.lastSelection : null
   useEffect(() => {
@@ -101,11 +69,10 @@ export function ToothGame({ game, state, pending, onStart, onReplay, onOther }: 
     seenSequence.current = latest.sequence
     setPressedToothId(latest.toothId)
     setFlash(latest.outcome)
-    playEffect(latest.outcome, muted)
     playVibration(latest.outcome)
     const timer = window.setTimeout(() => { if (latest.outcome === 'SAFE') { setFlash(null); setPressedToothId(null) } }, 950)
     return () => window.clearTimeout(timer)
-  }, [latest, muted])
+  }, [latest])
 
   async function choose(toothId: number) {
     if (game.phase !== 'PLAYING' || !game.allowedActions.includes('SELECT_TOOTH') || lock.current || !state.gameSession) return
@@ -117,7 +84,6 @@ export function ToothGame({ game, state, pending, onStart, onReplay, onOther }: 
       const [result] = await Promise.all([api.selectTooth(state.room.roomId, state.gameSession.gameSessionId, toothId, crypto.randomUUID()), minimumPress])
       seenSequence.current = result.sequence
       setFlash(result.outcome)
-      playEffect(result.outcome, muted)
       playVibration(result.outcome)
       await queryClient.invalidateQueries({ queryKey: ['room-state', state.room.roomId] }, { throwOnError: true })
       if (result.outcome === 'SAFE') await new Promise<void>(resolve => window.setTimeout(resolve, 680))
@@ -131,27 +97,27 @@ export function ToothGame({ game, state, pending, onStart, onReplay, onOther }: 
     }
   }
 
-  if (game.phase === 'READY') return <><section className="toothReady">
+  if (game.phase === 'READY') return <section className="toothReady">
     <img src={toothCharacter} alt="입을 크게 벌리고 기다리는 누피" />
     <p className="eyebrow">누피 콱!</p><h1>어느 이빨이<br />꽝일까요?</h1>
     <p className="sub">24개 중 단 하나!<br />차례대로 이빨을 눌러 살아남으세요.</p>
     {state.me.host ? <Button disabled={pending} onClick={onStart}>{pending ? '이빨 숨기는 중…' : '게임 시작'}</Button> : <p className="toothWaiting">방장이 꽝 이빨을 숨기고 있어요…</p>}
-  </section>{soundControl}</>
+  </section>
 
-  if (game.phase === 'CANCELLED') return <><section className="toothResult"><div className="toothResultEmoji">🫧</div><h1>게임이 취소됐어요</h1><p className="sub">방장이 대기실에서 새 게임을 준비할 수 있어요.</p></section>{soundControl}</>
+  if (game.phase === 'CANCELLED') return <section className="toothResult"><div className="toothResultEmoji">🫧</div><h1>게임이 취소됐어요</h1><p className="sub">방장이 대기실에서 새 게임을 준비할 수 있어요.</p></section>
 
-  if (game.phase === 'FINISHED') return <><section className="toothResult isChomp">
+  if (game.phase === 'FINISHED') return <section className="toothResult isChomp">
     <div className="toothResultHero"><img src={toothBiteCharacter} alt="이빨을 앙 다문 누피" /></div>
     <p className="toothBang">콱!!!</p>
     <h1>{game.result.loserPlayer.nickname}님 당첨!</h1>
     {state.me.host ? <div className="toothResultActions"><Button disabled={pending} onClick={onReplay}>같은 게임 다시하기</Button><Button className="secondary" disabled={pending} onClick={onOther}>로비로 이동</Button></div> : <SpinnerText>방장이 다음 게임을 고르고 있어요</SpinnerText>}
-  </section>{soundControl}</>
+  </section>
 
   const currentPlayer = state.players.find(player => player.playerId === game.currentTurnPlayerId)
   const canSelect = game.allowedActions.includes('SELECT_TOOTH') && !busy
   const upper = game.teeth.filter(tooth => tooth.row === 'UPPER')
   const lower = game.teeth.filter(tooth => tooth.row === 'LOWER')
-  return <><section className={`toothGame${flash === 'BOMB' ? ' isBomb' : ''}${flash === 'SAFE' ? ' isSafe' : ''}`} aria-busy={busy}>
+  return <section className={`toothGame${flash === 'BOMB' ? ' isBomb' : ''}${flash === 'SAFE' ? ' isSafe' : ''}`} aria-busy={busy}>
     <PlayerTurnRail players={state.players} order={game.turnOrderPlayerIds} currentPlayerId={game.currentTurnPlayerId} myPlayerId={state.me.playerId} />
     <div className="toothArena">
       <img src={toothCharacter} alt="입을 크게 벌린 누피" />
@@ -164,5 +130,5 @@ export function ToothGame({ game, state, pending, onStart, onReplay, onOther }: 
     </div>
     <div className="toothInstruction" role="status">{canSelect ? <><strong>내 차례예요!</strong><span>이빨 하나를 눌러주세요</span></> : busy ? <><strong>누피가 확인 중…</strong><span>잠시만 기다려주세요</span></> : <><strong>{currentPlayer?.nickname}님 차례</strong><span>어떤 이빨을 고를까요?</span></>}</div>
     {error && <p className="toothError" role="alert">{error}</p>}
-  </section>{soundControl}</>
+  </section>
 }
