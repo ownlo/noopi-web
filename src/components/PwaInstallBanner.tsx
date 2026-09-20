@@ -14,6 +14,8 @@ function isStandalone() {
 }
 
 function getInstallPlatform() {
+  if (/SamsungBrowser/.test(navigator.userAgent)) return 'SAMSUNG'
+
   const isAppleMobile = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
   if (isAppleMobile) return 'IOS'
 
@@ -63,7 +65,7 @@ export function PwaInstallBanner() {
   }
 
   const addIcon = async () => {
-    if (!installPrompt) {
+    if (installPlatform === 'SAMSUNG' || !installPrompt) {
       setShowGuide(true)
       return
     }
@@ -81,7 +83,7 @@ export function PwaInstallBanner() {
 
   return <>
     <aside className="pwaInstallBanner" aria-label="홈 화면 아이콘 추가">
-      <p>앱 설치 없이 누피 실행하기</p>
+      <p>앱 설치 없이 누피 추가하고 바로 실행하기</p>
       <button type="button" onClick={addIcon} disabled={isInstalling}>{isInstalling ? '추가 중…' : '아이콘 추가'}</button>
       <button className="pwaInstallDismiss" type="button" onClick={dismiss} aria-label="설치 안내 닫기">×</button>
     </aside>
@@ -90,7 +92,11 @@ export function PwaInstallBanner() {
         <h2 id="pwa-guide-title">바탕화면에 아이콘 추가하기</h2>
         <p className="pwaGuideIntro">한 번 추가하면 주소를 입력하지 않고<br />NOOPI를 바로 열 수 있어요.</p>
         <ol className="pwaInstallSteps">
-          {installPlatform === 'IOS' ? <>
+          {installPlatform === 'SAMSUNG' ? <>
+            <li><span>1</span><div><b>삼성 인터넷 업데이트</b><p>Galaxy Store 또는 Play 스토어에서 삼성 인터넷을 최신 버전으로 업데이트해주세요.</p></div></li>
+            <li><span>2</span><div><b>Chrome에서 NOOPI 열기</b><p>경고가 계속되면 Chrome을 열고 주소창에 noopi.kr을 입력해주세요.</p></div></li>
+            <li><span>3</span><div><b>Chrome에서 아이콘 추가</b><p>NOOPI 상단의 ‘아이콘 추가’를 누르고 Chrome 설치창에서 확인해주세요.</p></div></li>
+          </> : installPlatform === 'IOS' ? <>
             <li><span>1</span><div><b>Safari에서 열기</b><p>현재 페이지를 iPhone의 Safari 브라우저에서 열어주세요.</p></div></li>
             <li><span>2</span><div><b>공유 버튼 누르기</b><p>화면 아래의 네모에서 화살표가 올라오는 공유 버튼을 눌러주세요.</p></div></li>
             <li><span>3</span><div><b>홈 화면에 추가</b><p>메뉴에서 ‘홈 화면에 추가’를 선택하고 오른쪽 위 ‘추가’를 눌러주세요.</p></div></li>
@@ -104,7 +110,7 @@ export function PwaInstallBanner() {
             <li><span>3</span><div><b>추가 확인하기</b><p>표시되는 확인창에서 ‘설치’ 또는 ‘추가’를 누르면 완료돼요.</p></div></li>
           </>}
         </ol>
-        <p className="pwaGuideTip">추가된 NOOPI 아이콘을 누르면 전체 화면으로 바로 시작됩니다.</p>
+        <p className="pwaGuideTip">{installPlatform === 'SAMSUNG' ? '안전 경고가 나타나면 보안 기능을 끄지 말고 설치를 취소해주세요.' : '추가된 NOOPI 아이콘을 누르면 전체 화면으로 바로 시작됩니다.'}</p>
         <Button autoFocus onClick={() => setShowGuide(false)}>확인</Button>
       </section>
     </div>}
