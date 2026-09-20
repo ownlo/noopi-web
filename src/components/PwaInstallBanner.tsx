@@ -81,7 +81,7 @@ export function PwaInstallBanner() {
 
   return <>
     <aside className="pwaInstallBanner" aria-label="홈 화면 아이콘 추가">
-      <p>앱 설치 없이 바탕화면에 아이콘 추가하고 바로 접속하기</p>
+      <p>앱 설치 없이 누피 실행하기</p>
       <button type="button" onClick={addIcon} disabled={isInstalling}>{isInstalling ? '추가 중…' : '아이콘 추가'}</button>
       <button className="pwaInstallDismiss" type="button" onClick={dismiss} aria-label="설치 안내 닫기">×</button>
     </aside>

@@ -10,6 +10,7 @@
   "orientation": "portrait-primary",
   "background_color": "#07091a",
   "theme_color": "#0b0d25",
+  "prefer_related_applications": false,
   "categories": ["games", "entertainment"],
   "icons": [
     {
