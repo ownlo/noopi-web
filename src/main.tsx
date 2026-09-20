@@ -11,8 +11,15 @@ import './styles/mafia.css'
 import './styles/yut.css'
 import './styles/yut-character.css'
 import './styles/theme.css'
+import './styles/pwa.css'
 
 loadAdSenseScript()
+
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    void navigator.serviceWorker.register('/sw.js').catch(() => undefined)
+  })
+}
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 10_000 } } })
 const router = createBrowserRouter([{ path: '*', element: <App /> }])

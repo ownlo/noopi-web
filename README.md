@@ -17,6 +17,13 @@ npm run lint
 npm run build
 ```
 
+## PWA
+
+운영 빌드는 Web App Manifest와 Service Worker를 등록합니다. 앱 셸과 정적
+에셋만 캐시하며 Room/Game 서버 상태와 API 응답은 캐시하지 않습니다.
+Service Worker 동작은 HTTPS 환경 또는 `localhost`의 production preview에서
+확인할 수 있습니다.
+
 ## 환경 변수
 
 `.env.example`을 참고하세요.
