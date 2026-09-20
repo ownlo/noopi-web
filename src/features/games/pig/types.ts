@@ -5,4 +5,4 @@ export type PigGameState =
   | { type: 'PIG'; phase: 'READY' }
   | { type: 'PIG'; phase: 'CANCELLED'; reason?: string }
   | { type: 'PIG'; phase: 'FINISHED'; targetScore: number; rankings: PigRanking[]; allowedActions: PigAction[] }
-  | { type: 'PIG'; phase: 'PLAYING'; targetScore: number; currentPlayerId: number; turnScore: number; availableDiceValues: number[]; removedDiceValues: number[]; lastDiceValue: number | null; lastTurnOutcome: 'STOPPED' | 'BUSTED' | null; lostTurnScore: number; bustProbability: number; players: PigPlayer[]; allowedActions: PigAction[] }
+  | { type: 'PIG'; phase: 'PLAYING'; targetScore: number; currentPlayerId: number; turnScore: number; successfulRollCount: number; lastDiceValue: number | null; lastTurnOutcome: 'STOPPED' | 'BUSTED' | null; lostTurnScore: number; bustProbability: number; players: PigPlayer[]; allowedActions: PigAction[] }

@@ -34,7 +34,7 @@ export function PigGuide({ onClose, onAction, actionLabel = '시작하기', show
         <ol className="gameGuideSteps">
           <li>
             <div className="guideScene pigGuideScene" aria-hidden><img src={rollCharacter} alt="" /></div>
-            <div><small>STEP 1</small><h3>내 차례에 주사위를 던져요</h3><p>2~6이 나오면 이번 턴 점수에 더해요. 나온 숫자는 그 턴 동안 사라져, 계속 던질수록 1의 위험이 커져요.</p></div>
+            <div><small>STEP 1</small><h3>내 차례에 주사위를 던져요</h3><p>2~6이 나오면 이번 턴 점수에 더해요. 같은 숫자도 다시 나올 수 있고, 성공할 때마다 다음 1의 확률이 10%p씩 올라가요.</p></div>
           </li>
           <li>
             <div className="guideScene pigGuideScene pigGuideRisk" aria-hidden><img src={catCharacter} alt="" /><i>1!</i></div>
@@ -42,14 +42,14 @@ export function PigGuide({ onClose, onAction, actionLabel = '시작하기', show
           </li>
           <li>
             <div className="guideScene pigGuideScene" aria-hidden><img src={stopCharacter} alt="" /></div>
-            <div><small>STEP 3</small><h3>멈춰서 점수를 챙겨요</h3><p>첫 성공 이후 ‘멈추기’를 누르면 이번 턴 점수가 총점에 더해져요. 다음 턴에는 모든 숫자가 돌아와요.</p></div>
+            <div><small>STEP 3</small><h3>멈춰서 점수를 챙겨요</h3><p>첫 성공 이후 ‘멈추기’를 누르면 이번 턴 점수가 총점에 더해져요. 다음 턴의 1 확률은 다시 20%로 시작해요.</p></div>
           </li>
           <li>
             <div className="guideScene pigGuideScene" aria-hidden><img src={animalDuo} alt="" /><i>50</i></div>
             <div><small>STEP 4</small><h3>50점 확정 순서가 순위!</h3><p>50점 이상을 확정하면 순위를 받고 관전해요. 마지막 한 명은 점수와 관계없이 마지막 순위로 자동 확정돼요.</p></div>
           </li>
         </ol>
-        <div className="gameGuideTip"><b>누피의 팁</b><span>남은 숫자와 1이 나올 확률을 확인하세요. 1만 남았다면 멈춰서 점수를 지킬 타이밍!</span></div>
+        <div className="gameGuideTip"><b>누피의 팁</b><span>1이 나올 확률은 성공할수록 올라가 최대 90%가 돼요. 위험도를 보고 멈출 타이밍을 잡으세요!</span></div>
         <Button className={`gameGuideStart ${actionVariant === 'secondary' ? 'secondary' : ''}`} autoFocus={!showCloseButton} onClick={onAction}>{actionLabel}</Button>
       </section>
     </div>, document.body,

@@ -64,16 +64,17 @@ test('only 2–6 participants and current-player actions are allowed', () => {
   assert.throws(() => act(mock, 2, 'ROLL'))
 })
 
-test('successful faces disappear, risk increases, bust preserves banked points', () => {
+test('successful faces can repeat, risk increases, bust preserves banked points', () => {
   let random = .99
   const mock = new PigMock(players(2), () => random)
   act(mock, 1, 'ROLL')
   assert.equal(mock.snapshot(1).turnScore, 6)
-  assert.equal(mock.snapshot(1).bustProbability, .2)
-  assert.deepEqual(mock.snapshot(1).removedDiceValues, [6])
+  assert.equal(mock.snapshot(1).successfulRollCount, 1)
+  assert.equal(mock.snapshot(1).bustProbability, .3)
   mock.act(1, 'ROLL', 'same-request')
   mock.act(1, 'ROLL', 'same-request')
-  assert.equal(mock.snapshot(1).turnScore, 11)
+  assert.equal(mock.snapshot(1).turnScore, 12)
+  assert.equal(mock.snapshot(1).successfulRollCount, 2)
   act(mock, 1, 'STOP')
   random = 0
   act(mock, 2, 'ROLL')
@@ -84,17 +85,22 @@ test('successful faces disappear, risk increases, bust preserves banked points',
   const view = mock.snapshot(1)
   assert.equal(view.lostTurnScore, 6)
   assert.equal(view.lastTurnOutcome, 'BUSTED')
-  assert.equal(view.players[0].totalScore, 11)
-  assert.deepEqual(view.availableDiceValues, [1, 2, 3, 4, 5, 6])
+  assert.equal(view.players[0].totalScore, 12)
+  assert.equal(view.successfulRollCount, 0)
+  assert.equal(view.bustProbability, .2)
 })
 
-test('all five successes leave only 1 and a 100% bust chance', () => {
-  const mock = new PigMock(players(2), () => .99)
-  for (let i = 0; i < 5; i++) act(mock, 1, 'ROLL')
-  assert.equal(mock.snapshot(1).turnScore, 20)
-  assert.equal(mock.snapshot(1).bustProbability, 1)
+test('risk rises by ten points per success and caps at 90%', () => {
+  let random = .99
+  const mock = new PigMock(players(2), () => random)
+  assert.equal(mock.snapshot(1).bustProbability, .2)
+  for (let i = 0; i < 8; i++) act(mock, 1, 'ROLL')
+  assert.equal(mock.snapshot(1).turnScore, 48)
+  assert.equal(mock.snapshot(1).successfulRollCount, 8)
+  assert.equal(mock.snapshot(1).bustProbability, .9)
+  random = 0
   act(mock, 1, 'ROLL')
-  assert.equal(mock.snapshot(1).lostTurnScore, 20)
+  assert.equal(mock.snapshot(1).lostTurnScore, 48)
 })
 
 test('finish order is preserved, finishers spectate, last player ranks automatically', () => {

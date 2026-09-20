@@ -49,10 +49,10 @@ export function PigGame({ game, state, pending, onStart, onReplay, onOther, roll
   if (game.phase === 'FINISHED') return <PigFinalView game={game} state={state} pending={pending} onReplay={onReplay} onOther={onOther} />
   const me = game.players.find(p => p.playerId === state.me.playerId)
   const percent = new Intl.NumberFormat('ko-KR', { style: 'percent', maximumFractionDigits: 1 }).format(game.bustProbability)
-  const tension = game.bustProbability >= .5 ? 'critical' : game.bustProbability >= 1 / 3 ? 'high' : game.bustProbability >= .25 ? 'medium' : 'low'
+  const tension = game.bustProbability >= .7 ? 'critical' : game.bustProbability >= .5 ? 'high' : game.bustProbability >= .3 ? 'medium' : 'low'
   const rolling = diceMotion !== 'idle' || remoteRoll !== null
   const displayedMotion = remoteRoll?.motion ?? diceMotion
-  const awaitingFirstRoll = displayedMotion === 'idle' && game.turnScore === 0 && game.removedDiceValues.length === 0
+  const awaitingFirstRoll = displayedMotion === 'idle' && game.successfulRollCount === 0 && game.lastTurnOutcome !== 'BUSTED'
   const displayedDiceValue = awaitingFirstRoll ? null : remoteRoll?.value ?? game.lastDiceValue
   return <div className={`pigScreen pigPlaying pigTension-${tension}${rolling ? ' isRolling' : ''}${game.lastTurnOutcome === 'BUSTED' ? ' isBusted' : ''}${game.turnScore >= 10 ? ' isPotGrowing' : ''}`}>
     <section className="pigScoreboard" aria-label="플레이어별 누적 점수">
@@ -75,7 +75,7 @@ export function PigGame({ game, state, pending, onStart, onReplay, onOther, roll
         </div>
         <div className="pigTurnSummary">
           <header className="pigTurnHeader"><span><small>이번 턴 누적 점수</small><strong>+{game.turnScore}</strong></span></header>
-          <div className="pigRisk"><span>1이 나올 확률</span><strong>{percent}</strong></div>
+          <div className="pigRisk"><span>1이 나올 확률<small>{game.successfulRollCount}회 성공</small></span><strong>{percent}</strong></div>
         </div>
       </div>
     </section>

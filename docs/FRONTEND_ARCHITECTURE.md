@@ -1253,7 +1253,7 @@ type PigGameState = {
 
 PIG 구현은 `features/games/pig/`에 격리한다. 윷놀이를 포함한 다른 게임의 전용 컴포넌트, 상태, 타입, hook에 의존하지 않는다. 공통 `GameRenderer`, API/Realtime Adapter, 버튼·모달 등 범용 UI만 공유한다.
 
-PIG 화면은 서버가 제공한 `allowedActions`, `availableDiceValues`, `removedDiceValues`, `bustProbability`, `rankings`를 표현한다. 주사위 결과, 제거 목록, 점수, 턴, 순위와 종료를 Frontend에서 계산하거나 optimistic하게 확정하지 않는다.
+PIG 화면은 서버가 제공한 `allowedActions`, `successfulRollCount`, `bustProbability`, `rankings`를 표현한다. 주사위 결과, 성공 횟수, `1` 발생 확률, 점수, 턴, 순위와 종료를 Frontend에서 계산하거나 optimistic하게 확정하지 않는다.
 
 마피아 밤 행동 Mutation은 역할별 Endpoint로 나누지 않고
 `actionType` discriminated union을 사용하는 단일 `night-actions` API를
