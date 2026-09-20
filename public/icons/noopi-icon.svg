@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="background" x1="110" y1="80" x2="914" y2="944" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A655FF"/>
+      <stop offset="0.48" stop-color="#6540E8"/>
+      <stop offset="1" stop-color="#2536B9"/>
+    </linearGradient>
+    <radialGradient id="highlight" cx="0" cy="0" r="1" gradientTransform="translate(278 190) rotate(47) scale(688)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D792FF" stop-opacity="0.72"/>
+      <stop offset="0.55" stop-color="#B967FF" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#6840E6" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="letterShadow" x="150" y="130" width="760" height="790" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="28" stdDeviation="25" flood-color="#1B106F" flood-opacity="0.42"/>
+    </filter>
+  </defs>
+  <path fill="url(#background)" d="M0 0h1024v1024H0z"/>
+  <path fill="url(#highlight)" d="M0 0h1024v1024H0z"/>
+  <g transform="rotate(-4 512 512)" filter="url(#letterShadow)">
+    <path d="M327 733V291L697 733V291" fill="none" stroke="#FFFFFF" stroke-width="126" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M327 291L697 733" fill="none" stroke="#F8F5FF" stroke-width="76" stroke-linecap="round"/>
+  </g>
+</svg>

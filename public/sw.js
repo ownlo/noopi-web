@@ -1,7 +1,8 @@
-const CACHE_VERSION = 'noopi-shell-v3'
+const CACHE_VERSION = 'noopi-shell-v4'
 const CORE_ASSETS = [
   '/',
   '/manifest.json',
+  '/icons/noopi-icon.svg',
   '/icons/noopi-180.png',
   '/icons/noopi-192.png',
   '/icons/noopi-512.png',
