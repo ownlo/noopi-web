@@ -75,7 +75,7 @@ export function PigGame({ game, state, pending, onStart, onReplay, onOther, roll
         </div>
         <div className="pigTurnSummary">
           <header className="pigTurnHeader"><span><small>이번 턴 누적 점수</small><strong>+{game.turnScore}</strong></span></header>
-          <div className="pigRisk"><span>1이 나올 확률<small>{game.successfulRollCount}회 성공</small></span><strong>{percent}</strong></div>
+          <div className="pigRisk"><span>1이 나올 확률</span><strong>{percent}</strong></div>
         </div>
       </div>
     </section>

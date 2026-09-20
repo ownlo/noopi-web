@@ -70,7 +70,7 @@ test('successful faces can repeat, risk increases, bust preserves banked points'
   act(mock, 1, 'ROLL')
   assert.equal(mock.snapshot(1).turnScore, 6)
   assert.equal(mock.snapshot(1).successfulRollCount, 1)
-  assert.equal(mock.snapshot(1).bustProbability, .3)
+  assert.equal(mock.snapshot(1).bustProbability, .2)
   mock.act(1, 'ROLL', 'same-request')
   mock.act(1, 'ROLL', 'same-request')
   assert.equal(mock.snapshot(1).turnScore, 12)
@@ -87,13 +87,13 @@ test('successful faces can repeat, risk increases, bust preserves banked points'
   assert.equal(view.lastTurnOutcome, 'BUSTED')
   assert.equal(view.players[0].totalScore, 12)
   assert.equal(view.successfulRollCount, 0)
-  assert.equal(view.bustProbability, .2)
+  assert.equal(view.bustProbability, .1)
 })
 
 test('risk rises by ten points per success and caps at 90%', () => {
   let random = .99
   const mock = new PigMock(players(2), () => random)
-  assert.equal(mock.snapshot(1).bustProbability, .2)
+  assert.equal(mock.snapshot(1).bustProbability, .1)
   for (let i = 0; i < 8; i++) act(mock, 1, 'ROLL')
   assert.equal(mock.snapshot(1).turnScore, 48)
   assert.equal(mock.snapshot(1).successfulRollCount, 8)

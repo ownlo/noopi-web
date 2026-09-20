@@ -42,7 +42,7 @@ export function PigGuide({ onClose, onAction, actionLabel = '시작하기', show
           </li>
           <li>
             <div className="guideScene pigGuideScene" aria-hidden><img src={stopCharacter} alt="" /></div>
-            <div><small>STEP 3</small><h3>멈춰서 점수를 챙겨요</h3><p>첫 성공 이후 ‘멈추기’를 누르면 이번 턴 점수가 총점에 더해져요. 다음 턴의 1 확률은 다시 20%로 시작해요.</p></div>
+            <div><small>STEP 3</small><h3>멈춰서 점수를 챙겨요</h3><p>첫 성공 이후 ‘멈추기’를 누르면 이번 턴 점수가 총점에 더해져요. 다음 턴의 1 확률은 다시 10%로 시작해요.</p></div>
           </li>
           <li>
             <div className="guideScene pigGuideScene" aria-hidden><img src={animalDuo} alt="" /><i>50</i></div>

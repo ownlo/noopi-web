@@ -61,6 +61,6 @@ export class PigMock {
   }
 
   private bustProbability() {
-    return Math.min(20 + this.successfulRollCount * 10, 90) / 100
+    return Math.min(10 + this.successfulRollCount * 10, 90) / 100
   }
 }
