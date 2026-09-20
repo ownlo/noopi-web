@@ -37,6 +37,7 @@ games/BLIND_GAME_SPEC.md
 games/MAFIA_GAME_SPEC.md
 games/YUT_GAME_SPEC.md
 games/PIG_GAME_SPEC.md
+games/TOOTH_GAME_SPEC.md
 ```
 
 우선순위:
@@ -48,6 +49,7 @@ games/PIG_GAME_SPEC.md
 → games/MAFIA_GAME_SPEC.md
 → games/YUT_GAME_SPEC.md
 → games/PIG_GAME_SPEC.md
+→ games/TOOTH_GAME_SPEC.md
 
 REST / WebSocket 계약
 → API_SPEC.md
@@ -184,7 +186,9 @@ src/
 │       ├── liar/
 │       ├── blind/
 │       ├── mafia/
-│       └── yut/
+│       ├── yut/
+│       ├── pig/
+│       └── tooth/
 ├── components/
 ├── api/
 ├── realtime/
@@ -257,6 +261,7 @@ GameSession
 시민 의심 집계와 Player별 개인 의심 수
 마피아 게임의 사망 처리와 승패
 피그 게임의 주사위 결과, 성공 횟수, 1 발생 확률, 점수, 턴, 순위, 종료
+누피 콱!의 턴 순서, 꽝 위치, 선택 결과, 다음 턴, 당첨 Player와 종료
 ```
 
 Frontend에서 이 값을 자체 계산하여 확정하지 않는다.
@@ -682,6 +687,7 @@ Room 참가
 블라인드 정답 제출
 피그 주사위 던지기
 피그 멈추기
+누피 콱! 이빨 선택
 ```
 
 더블 클릭으로 중복 요청을 발생시키지 않는다.
@@ -867,6 +873,10 @@ Discussion
 피그 1 발생 시 턴 점수 소멸
 피그 50점 도달 순서와 마지막 Player 자동 순위
 피그 FINISHED 관전 / 최종 순위 / 재접속
+누피 콱! 2~8명 시작 검증
+누피 콱! 내 턴/다른 Player 턴 행동 차이
+누피 콱! 안전 이빨/꽝 이빨/중복 입력 잠금
+누피 콱! 즉시 종료/한 판 더/재접속
 연결 끊김
 재접속
 Host 변경
@@ -1092,6 +1102,7 @@ Frontend에서 제시어 선정
 마피아 게임의 승패를 Frontend에서 판정
 윷 결과, 이동 후보, 경로, 업기, 잡기, 완주 또는 승자를 Frontend에서 판정
 피그 주사위 결과, 성공 횟수, 1 발생 확률, 점수, 턴, 순위 또는 종료를 Frontend에서 판정
+누피 콱!의 꽝 위치, 안전/꽝 결과, 다음 턴 또는 당첨 Player를 Frontend에서 판정
 재투표 횟수 제한 추가
 동률 랜덤 지목 추가
 카테고리 하드코딩

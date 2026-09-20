@@ -67,8 +67,8 @@ export type YutGameState =
   | { type: 'YUT'; phase: 'FINISHED'; mode: 'INDIVIDUAL'; rankings: YutRanking[] }
   | { type: 'YUT'; phase: 'FINISHED'; mode: 'TEAM'; winnerTeam: YutTeam }
   | { type: 'YUT'; phase: 'CANCELLED'; reason?: string }
-export type GameType = 'LIAR' | 'BLIND' | 'MAFIA' | 'YUT' | 'PIG'
-export type GameState = LiarGameState | BlindGameState | MafiaGameState | YutGameState | import('../features/games/pig/types').PigGameState
+export type GameType = 'LIAR' | 'BLIND' | 'MAFIA' | 'YUT' | 'PIG' | 'TOOTH'
+export type GameState = LiarGameState | BlindGameState | MafiaGameState | YutGameState | import('../features/games/pig/types').PigGameState | import('../features/games/tooth/types').ToothGameState
 export type RoomState = { room: { roomId: number; roomCode: string; status: 'WAITING' | 'ACTIVE' | 'CLOSED'; hostPlayerId: number }; me: Player; players: Player[]; gameSession: null | { gameSessionId: number; gameType: GameType; status: 'READY' | 'PLAYING' | 'FINISHED' | 'CANCELLED'; gameState: GameState } }
 export type GameCatalog = { games: { gameType: GameType; name: string; minPlayers: number; maxPlayers: number; enabled: boolean }[] }
 export type CategoryCatalog = { categories: { code: string; name: string; virtual: boolean }[] }
@@ -77,6 +77,7 @@ export type RealtimeEvent = { eventId: string; type: string; roomId: number; gam
 export interface NoopiApi {
   rollPig(roomId: number, gameSessionId: number, requestId: string): Promise<void>
   stopPig(roomId: number, gameSessionId: number, requestId: string): Promise<void>
+  selectTooth(roomId: number, gameSessionId: number, toothId: number, requestId: string): Promise<import('../features/games/tooth/types').ToothSelectionResponse>
   createRoom(input: { nickname: string; gender: Gender }): Promise<{ room: RoomState['room']; me: Player }>
   findRoom(roomCode: string): Promise<{ roomId: number; roomCode: string; status: string; playerCount: number; joinable: boolean }>
   joinRoom(roomId: number, input: { nickname: string; gender: Gender }): Promise<{ player: Player }>

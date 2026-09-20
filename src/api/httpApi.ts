@@ -16,6 +16,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const httpApi: NoopiApi = {
   rollPig: (id, session, key) => request(`/rooms/${id}/game-sessions/${session}/pig/roll`, { method: 'POST', headers: { 'Idempotency-Key': key } }),
   stopPig: (id, session, key) => request(`/rooms/${id}/game-sessions/${session}/pig/stop`, { method: 'POST', headers: { 'Idempotency-Key': key } }),
+  selectTooth: (id, session, toothId, key) => request(`/rooms/${id}/game-sessions/${session}/tooth/selections`, { method: 'POST', headers: { 'Idempotency-Key': key }, body: JSON.stringify({ toothId }) }),
   createRoom: input => request('/rooms', { method: 'POST', body: JSON.stringify(input) }),
   findRoom: code => request(`/rooms/by-code/${code}`),
   joinRoom: (id, input) => request(`/rooms/${id}/players`, { method: 'POST', body: JSON.stringify(input) }),

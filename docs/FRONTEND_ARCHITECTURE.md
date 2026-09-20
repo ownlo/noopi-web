@@ -16,6 +16,7 @@ Frontend 구현 시 다음 문서를 Source of Truth로 사용한다.
 -   `games/MAFIA_GAME_SPEC.md`
 -   `games/YUT_GAME_SPEC.md`
 -   `games/PIG_GAME_SPEC.md`
+-   `games/TOOTH_GAME_SPEC.md`
 
 Frontend는 서버가 결정한 Room/Game 상태를 표현하고 사용자의 행동을
 서버에 전달하는 역할을 담당한다.
@@ -161,7 +162,9 @@ features/games/
 ├── liar/
 ├── blind/
 ├── mafia/
-└── yut/
+├── yut/
+├── pig/
+└── tooth/
 ```
 
 처럼 확장할 수 있어야 한다.
@@ -276,6 +279,8 @@ switch (gameSession.gameType) {
     return <YutGame />
   case 'PIG':
     return <PigGame />
+  case 'TOOTH':
+    return <ToothGame />
 }
 ```
 
@@ -347,6 +352,21 @@ features/games/yut/
 ├── api/
 ├── types/
 └── views/
+```
+
+누피 콱!도 독립 경계 아래에 두고 캐릭터/이빨 표현과 서버 선택 Mutation을
+분리한다.
+
+``` text
+features/games/tooth/
+├── components/
+├── hooks/
+├── api/
+├── types/
+└── views/
+    ├── ToothReadyView.tsx
+    ├── ToothPlayingView.tsx
+    └── ToothResultView.tsx
 ```
 
 ------------------------------------------------------------------------
@@ -536,6 +556,7 @@ startVote
 submitVote
 submitGuess
 excludePlayer
+selectTooth
 ```
 
 ------------------------------------------------------------------------
@@ -610,6 +631,7 @@ GET /state
   `MAFIA_VOTE_RESULT`      room state invalidate
   `MAFIA_REVOTE_STARTED`   room state invalidate
   `MAFIA_PLAYER_DIED`      room state invalidate
+  `TOOTH_SELECTED`         room state invalidate
   `GAME_FINISHED`          room state invalidate
   `GAME_CANCELLED`         room state invalidate
 
@@ -696,6 +718,7 @@ vote result
 game phase
 winner
 liar guess result
+tooth outcome / current turn / loser
 ```
 
 는 서버 응답을 기다린다.
@@ -1151,7 +1174,7 @@ API DTO와 Game State는 명시적으로 타입을 정의한다.
 ``` ts
 type Gender = 'MALE' | 'FEMALE'
 
-type GameType = 'LIAR' | 'BLIND' | 'MAFIA' | 'YUT' | 'PIG'
+type GameType = 'LIAR' | 'BLIND' | 'MAFIA' | 'YUT' | 'PIG' | 'TOOTH'
 
 type LiarPhase =
   | 'ROLE_REVEAL'
@@ -1182,6 +1205,8 @@ type MafiaPhase =
 type YutPhase = 'READY' | 'TEAM_SELECT' | 'PLAYING' | 'FINISHED'
 
 type PigPhase = 'READY' | 'PLAYING' | 'FINISHED'
+
+type ToothPhase = 'READY' | 'PLAYING' | 'FINISHED'
 
 type YutTurnPhase =
   | 'WAITING_THROW'
@@ -1217,6 +1242,7 @@ type GameState =
   | MafiaGameState
   | YutGameState
   | PigGameState
+  | ToothGameState
 ```
 
 ``` ts
@@ -1249,11 +1275,24 @@ type PigGameState = {
   phase: PigPhase
   // 서버가 확정한 점수, 턴, 주사위 상태, 순위와 현재 Player의 허용 행동
 }
+
+type ToothGameState = {
+  type: 'TOOTH'
+  phase: ToothPhase
+  // 서버가 확정한 이빨 상태, 턴, 최근 결과, 당첨 Player와 허용 행동
+}
 ```
 
 PIG 구현은 `features/games/pig/`에 격리한다. 윷놀이를 포함한 다른 게임의 전용 컴포넌트, 상태, 타입, hook에 의존하지 않는다. 공통 `GameRenderer`, API/Realtime Adapter, 버튼·모달 등 범용 UI만 공유한다.
 
 PIG 화면은 서버가 제공한 `allowedActions`, `successfulRollCount`, `bustProbability`, `rankings`를 표현한다. 주사위 결과, 성공 횟수, `1` 발생 확률, 점수, 턴, 순위와 종료를 Frontend에서 계산하거나 optimistic하게 확정하지 않는다.
+
+TOOTH 구현은 `features/games/tooth/`에 격리한다. 화면은 서버가 제공한
+`teeth`, `remainingToothCount`, `lastSelection`, `allowedActions`, 종료 결과를
+표현한다. 꽝 위치, 안전/꽝 결과, 다음 턴과 당첨 Player를 Frontend에서
+계산하거나 optimistic하게 확정하지 않는다. `SELECT_TOOTH` Mutation 중에는
+24개 이빨 입력을 모두 잠그고 응답 유실 시 자동 재시도 대신 `/state`를 먼저
+조회한다.
 
 마피아 밤 행동 Mutation은 역할별 Endpoint로 나누지 않고
 `actionType` discriminated union을 사용하는 단일 `night-actions` API를
@@ -1336,6 +1375,9 @@ Custom WebSocket Protocol Framework
 투표 완료 후 다시 투표 버튼이 표시되지 않음
 Host가 아닌 Player에게 투표 시작 버튼이 없음
 REVOTING에서 eligibleCandidates만 표시
+TOOTH에서 현재 Player와 AVAILABLE 이빨만 선택 가능
+TOOTH 선택 Mutation 중 전체 이빨 입력 잠금
+BOMB 결과와 당첨 Player를 Client가 계산하지 않음
 ```
 
 서버의 승패 계산을 Frontend 테스트에서 다시 구현하지 않는다.

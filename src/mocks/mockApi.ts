@@ -1,6 +1,8 @@
 import type { BlindGameState, Candidate, CategoryCatalog, GameCatalog, GameState, MafiaGameState, MafiaNightActionType, MafiaRole, NoopiApi, Player, RealtimeEvent, RoomState, YutGameState, YutMode, YutPiece, YutResultCode, YutTeam, YutTeamId } from '../api/types'
 import { PigMock } from './pigMock'
 import type { PigAction } from '../features/games/pig/types'
+import { ToothMock } from './toothMock'
+import type { ToothSelectionResponse } from '../features/games/tooth/types'
 
 const wait = (ms = 180) => new Promise(resolve => window.setTimeout(resolve, ms))
 const PHASE_TRANSITION_DELAY_MS = 3_000
@@ -11,8 +13,11 @@ const listeners = new Set<(event: RealtimeEvent) => void>()
 
 const games: GameCatalog = { games: [{ gameType: 'LIAR', name: '라이어 게임', minPlayers: 3, maxPlayers: 12, enabled: true }, { gameType: 'BLIND', name: '블라인드 게임', minPlayers: 2, maxPlayers: 2, enabled: true }, { gameType: 'MAFIA', name: '마피아 게임', minPlayers: 4, maxPlayers: 12, enabled: true }, { gameType: 'YUT', name: '윷놀이', minPlayers: 2, maxPlayers: 4, enabled: true }] }
 games.games.push({ gameType: 'PIG', name: '피그 게임', minPlayers: 2, maxPlayers: 6, enabled: true })
+games.games.push({ gameType: 'TOOTH', name: '누피 콱!', minPlayers: 2, maxPlayers: 8, enabled: true })
 let pigMock: PigMock | null = null
 let pigTimer: number | undefined
+let toothMock: ToothMock | null = null
+let toothTimer: number | undefined
 
 function publishPig(action?: PigAction) {
   const state = room()
@@ -46,6 +51,28 @@ async function actPig(roomId: number, sessionId: number, action: PigAction, requ
   if (state.room.roomId !== roomId || state.gameSession?.gameSessionId !== sessionId || state.gameSession.gameType !== 'PIG' || state.gameSession.status !== 'PLAYING' || !pigMock) throw { code: 'INVALID_GAME_ACTION' }
   pigMock.act(state.me.playerId, action, requestId)
   publishPig(action)
+}
+
+function publishTooth(selection?: ToothSelectionResponse) {
+  const state = room()
+  if (!toothMock || state.gameSession?.gameType !== 'TOOTH') return
+  const game = toothMock.snapshot(state.me.playerId)
+  setGameState(game, game.phase === 'FINISHED' ? 'FINISHED' : 'PLAYING')
+  if (selection) emit('TOOTH_SELECTED', selection)
+  if (game.phase === 'FINISHED') emit('GAME_FINISHED')
+  window.clearTimeout(toothTimer)
+  if (game.phase !== 'PLAYING' || game.currentTurnPlayerId === state.me.playerId) return
+  const sessionId = state.gameSession.gameSessionId
+  toothTimer = window.setTimeout(() => {
+    const current = room()
+    if (!toothMock || current.gameSession?.gameSessionId !== sessionId || current.gameSession.status !== 'PLAYING') return
+    const snapshot = toothMock.snapshot(current.me.playerId)
+    if (snapshot.phase !== 'PLAYING' || snapshot.currentTurnPlayerId === current.me.playerId) return
+    const tooth = snapshot.teeth.find(item => item.status === 'AVAILABLE')
+    if (!tooth) return
+    const result = toothMock.select(snapshot.currentTurnPlayerId, tooth.toothId, crypto.randomUUID())
+    publishTooth(result)
+  }, 1_150)
 }
 
 const categories: CategoryCatalog = { categories: [
@@ -448,6 +475,8 @@ export const mockApi: NoopiApi = {
     if (!state.me.host) throw new Error('NOT_ROOM_HOST')
     state.gameSession = null
     state.room.status = 'WAITING'
+    window.clearTimeout(toothTimer)
+    toothMock = null
     emit('ROOM_RETURNED_TO_LOBBY')
   },
   async getRoomState() {
@@ -467,6 +496,11 @@ export const mockApi: NoopiApi = {
     if (gameType === 'PIG') {
       if (state.players.length < 2 || state.players.length > 6) throw { code: 'INVALID_PLAYER_COUNT' }
       state.gameSession = { gameSessionId, gameType, status: 'READY', gameState: { type: 'PIG', phase: 'READY' } }
+    } else if (gameType === 'TOOTH') {
+      if (state.players.length < 2 || state.players.length > 8) throw { code: 'INVALID_PLAYER_COUNT' }
+      window.clearTimeout(toothTimer)
+      toothMock = null
+      state.gameSession = { gameSessionId, gameType, status: 'READY', gameState: { type: 'TOOTH', phase: 'READY' } }
     } else if (gameType === 'BLIND') {
       state.gameSession = { gameSessionId, gameType, status: 'READY', gameState: { type: 'BLIND', phase: 'READY' } }
     } else if (gameType === 'MAFIA') {
@@ -494,6 +528,12 @@ export const mockApi: NoopiApi = {
     if (state.gameSession?.gameType === 'PIG') {
       pigMock = new PigMock(state.players)
       publishPig()
+      emit('GAME_STARTED')
+      return
+    }
+    if (state.gameSession?.gameType === 'TOOTH') {
+      toothMock = new ToothMock(state.players)
+      publishTooth()
       emit('GAME_STARTED')
       return
     }
@@ -777,6 +817,14 @@ export const mockApi: NoopiApi = {
   },
   rollPig(roomId, sessionId, requestId) { return actPig(roomId, sessionId, 'ROLL', requestId) },
   stopPig(roomId, sessionId, requestId) { return actPig(roomId, sessionId, 'STOP', requestId) },
+  async selectTooth(roomId, sessionId, toothId, requestId) {
+    await wait(260)
+    const state = room()
+    if (state.room.roomId !== roomId || state.gameSession?.gameSessionId !== sessionId || state.gameSession.gameType !== 'TOOTH' || state.gameSession.status !== 'PLAYING' || !toothMock) throw { code: 'INVALID_GAME_ACTION' }
+    const result = toothMock.select(state.me.playerId, toothId, requestId)
+    publishTooth(result)
+    return result
+  },
   subscribe(_roomId, listener, connection) {
     listeners.add(listener)
     connection(true)

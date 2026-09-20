@@ -15,12 +15,15 @@ import { MafiaDayView, MafiaExecutionView, MafiaFinalView, MafiaInvestigationRes
 import { YutFinalView, YutGameGuide, YutPlayingView, YutSetupView, YutTeamSelectView } from '../features/games/yut/YutViews'
 import { PigGame } from '../features/games/pig/PigGame'
 import { PigGuide } from '../features/games/pig/PigGameGuide'
+import { ToothGame } from '../features/games/tooth/ToothGame'
+import { ToothGameGuide } from '../features/games/tooth/ToothGameGuide'
 import pigCharacter from '../assets/characters/noopi-pig-game-choice.png'
 import liarCharacter from '../assets/characters/noopi-liar-cat.png'
 import liarGameChoiceCharacter from '../assets/characters/noopi-liar-cat-game-choice.png'
 import blindGameChoiceCharacter from '../assets/characters/noopi-blind-game-choice.png'
 import mafiaGameChoiceCharacter from '../assets/characters/noopi-mafia-cat-game-choice.png'
 import yutThrowCharacter from '../assets/characters/noopi-yut-throw.png'
+import toothCharacter from '../assets/characters/noopi-tooth-open-mouth.png'
 
 function isRoomNotFound(error: unknown): error is { code: 'ROOM_NOT_FOUND' } {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ROOM_NOT_FOUND'
@@ -173,7 +176,7 @@ export function RoomPage() {
       return undefined
     }
   }
-  return <Page><header className="roomHeader"><Brand /><div className="roomHeaderActions">{state.me.host && <LobbyButton pending={lobbyMutation.isPending} onClick={() => setShowLobbyConfirm(true)} />}<LeaveRoomButton pending={leaveMutation.isPending} onClick={requestLeave} /></div></header>{!connected && <div className="network">연결이 불안정해요. 다시 연결하고 있습니다...</div>}{notice && screen !== 'GAMES' && <div className="toast" role="status">{notice}</div>}{notice && screen === 'GAMES' && <div className="gameNotice" role="status">{notice}</div>}<PlayerGenderProvider players={state.players}><div className="content">{game && !choosingNextGame ? <Game key={state.gameSession?.gameSessionId} pigRollEvent={pigRollEvent} game={game} state={state} pending={mutation.isPending} act={act} /> : screen === 'GAMES' && state.me.host ? <GameSelect games={games.data?.games ?? []} onSelect={selected => { const reason = getGameUnavailableReason(selected, state.players.length); setNotice(reason ?? ''); if (reason) return; if (selected.gameType === 'LIAR') setScreen('SETUP'); else if (selected.gameType === 'YUT') setScreen('YUT_SETUP'); else mutation.mutate({ type: 'CREATE', payload: { gameType: selected.gameType } }) }} /> : screen === 'SETUP' && state.me.host ? <Setup unavailableReason={setupUnavailableReason} categories={categories.data?.categories ?? []} category={category} setCategory={setCategory} pending={mutation.isPending} onCreate={() => mutation.mutate({type:'CREATE',payload:{ gameType: 'LIAR', categoryCode: category }})} /> : screen === 'YUT_SETUP' && state.me.host ? <YutSetupView playerCount={state.players.length} pending={mutation.isPending} onCreate={mode => mutation.mutate({ type: 'CREATE', payload: { gameType: 'YUT', mode } })} /> : <RoomLobby state={state} onSelect={() => setScreen('GAMES')} />}</div></PlayerGenderProvider>{showLobbyConfirm && <LobbyConfirm pending={lobbyMutation.isPending} onCancel={() => setShowLobbyConfirm(false)} onConfirm={() => lobbyMutation.mutate()} />}{showLeaveConfirm && <LeaveConfirm host={state.me.host} pending={leaveMutation.isPending} onCancel={cancelLeave} onConfirm={confirmLeave} />}</Page>
+  return <Page><header className="roomHeader"><Brand /><div className="roomHeaderActions"><div id="room-game-controls" className="roomGameControls" />{state.me.host && <LobbyButton pending={lobbyMutation.isPending} onClick={() => setShowLobbyConfirm(true)} />}<LeaveRoomButton pending={leaveMutation.isPending} onClick={requestLeave} /></div></header>{!connected && <div className="network">연결이 불안정해요. 다시 연결하고 있습니다...</div>}{notice && screen !== 'GAMES' && <div className="toast" role="status">{notice}</div>}{notice && screen === 'GAMES' && <div className="gameNotice" role="status">{notice}</div>}<PlayerGenderProvider players={state.players}><div className="content">{game && !choosingNextGame ? <Game key={state.gameSession?.gameSessionId} pigRollEvent={pigRollEvent} game={game} state={state} pending={mutation.isPending} act={act} /> : screen === 'GAMES' && state.me.host ? <GameSelect games={games.data?.games ?? []} onSelect={selected => { const reason = getGameUnavailableReason(selected, state.players.length); setNotice(reason ?? ''); if (reason) return; if (selected.gameType === 'LIAR') setScreen('SETUP'); else if (selected.gameType === 'YUT') setScreen('YUT_SETUP'); else mutation.mutate({ type: 'CREATE', payload: { gameType: selected.gameType } }) }} /> : screen === 'SETUP' && state.me.host ? <Setup unavailableReason={setupUnavailableReason} categories={categories.data?.categories ?? []} category={category} setCategory={setCategory} pending={mutation.isPending} onCreate={() => mutation.mutate({type:'CREATE',payload:{ gameType: 'LIAR', categoryCode: category }})} /> : screen === 'YUT_SETUP' && state.me.host ? <YutSetupView playerCount={state.players.length} pending={mutation.isPending} onCreate={mode => mutation.mutate({ type: 'CREATE', payload: { gameType: 'YUT', mode } })} /> : <RoomLobby state={state} onSelect={() => setScreen('GAMES')} />}</div></PlayerGenderProvider>{showLobbyConfirm && <LobbyConfirm pending={lobbyMutation.isPending} onCancel={() => setShowLobbyConfirm(false)} onConfirm={() => lobbyMutation.mutate()} />}{showLeaveConfirm && <LeaveConfirm host={state.me.host} pending={leaveMutation.isPending} onCancel={cancelLeave} onConfirm={confirmLeave} />}</Page>
 }
 
 function LobbyButton({ pending, onClick }: { pending: boolean; onClick: () => void }) {
@@ -262,6 +265,7 @@ function YutStartingView({ host, pending, onStart }: { host: boolean; pending: b
 
 function Game({ game, state, pending, act, pigRollEvent }: { pigRollEvent: RealtimeEvent | null; game: GameState; state: State; pending: boolean; act: (type:string,payload?:number|string|'REPLAY'|'OTHER'|{ gameType: GameType; mode?: YutMode }|{ actionType: MafiaNightActionType; targetPlayerId?: number })=>Promise<unknown> }) {
   if (game.type === 'PIG') return <PigGame rollEvent={pigRollEvent} game={game} state={state} pending={pending} onStart={() => void act('START')} onReplay={() => void act('CREATE', { gameType: 'PIG' })} onOther={() => void act('FINISH', 'OTHER')} />
+  if (game.type === 'TOOTH') return <ToothGame game={game} state={state} pending={pending} onStart={() => void act('START')} onReplay={() => void act('CREATE', { gameType: 'TOOTH' })} onOther={() => void act('FINISH', 'OTHER')} />
   if (game.type === 'LIAR') return <LiarGameContent game={game} state={state} pending={pending} act={act} />
   if (game.type === 'BLIND') return <BlindGameContent game={game} state={state} pending={pending} act={act} />
   if (game.type === 'MAFIA') return <MafiaGameContent game={game} state={state} pending={pending} act={act} />
@@ -279,12 +283,30 @@ function GameSelect({ games, onSelect }: { games: GameCatalog['games']; onSelect
   return <>
     <h1>무슨 게임을 할까요?</h1>
     <p className="sub">오늘 분위기에 딱 맞는 게임을 골라보세요.</p>
-    {games.filter(game => game.enabled).map(game => <article className={`gameChoice${game.gameType === 'PIG' ? ' gameChoicePig' : ''}`} key={game.gameType}>
+    {games.filter(game => game.enabled).map(game => <article className={`gameChoice${game.gameType === 'PIG' ? ' gameChoicePig' : ''}${game.gameType === 'TOOTH' ? ' gameChoiceTooth' : ''}`} key={game.gameType}>
       <button className="gameChoiceHitArea" type="button" onClick={() => setGuideGame(game)} aria-label={`${game.gameType === 'PIG' ? '피그 게임' : game.name} 자세히 보기`} />
-      <span className="gameChoiceCharacter" aria-hidden><img src={game.gameType === 'PIG' ? pigCharacter : game.gameType === 'BLIND' ? blindGameChoiceCharacter : game.gameType === 'MAFIA' ? mafiaGameChoiceCharacter : game.gameType === 'YUT' ? yutThrowCharacter : liarGameChoiceCharacter} alt="" /></span>
-      <span className="gameChoiceCopy" aria-hidden><small>{game.minPlayers === game.maxPlayers ? `${game.minPlayers}명 전용` : `${game.minPlayers}–${game.maxPlayers}명`}</small><strong>{game.gameType === 'PIG' ? '피그 게임' : game.name}</strong><span>{game.gameType === 'PIG' ? '한 번 더? 멈출 타이밍을 잡아 50점에 도전!' : game.gameType === 'BLIND' ? '질문하면서 내 제시어를 먼저 맞춰보세요' : game.gameType === 'MAFIA' ? '밤의 단서를 모아 마피아를 찾아보세요' : game.gameType === 'YUT' ? '윷을 던지고 말을 먼저 완주해보세요' : '제시어를 숨긴 라이어를 찾아보세요'}</span></span>
+      <span className="gameChoiceCharacter" aria-hidden><img src={getGameArtwork(game.gameType)} alt="" /></span>
+      <span className="gameChoiceCopy" aria-hidden><small>{game.minPlayers === game.maxPlayers ? `${game.minPlayers}명 전용` : `${game.minPlayers}–${game.maxPlayers}명`}</small><strong>{game.gameType === 'PIG' ? '피그 게임' : game.name}</strong><span>{getGameSummary(game.gameType)}</span></span>
     </article>)}
-    {guideGame && (guideGame.gameType === 'PIG' ? <PigGuide onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : guideGame.gameType === 'LIAR' ? <LiarGameGuide game={guideGame} actionLabel="시작하기" onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : guideGame.gameType === 'BLIND' ? <BlindGameGuide game={guideGame} actionLabel="시작하기" onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : guideGame.gameType === 'MAFIA' ? <MafiaGameGuide game={guideGame} onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : <YutGameGuide game={guideGame} onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} />)}
+    {guideGame && (guideGame.gameType === 'PIG' ? <PigGuide onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : guideGame.gameType === 'TOOTH' ? <ToothGameGuide onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : guideGame.gameType === 'LIAR' ? <LiarGameGuide game={guideGame} actionLabel="시작하기" onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : guideGame.gameType === 'BLIND' ? <BlindGameGuide game={guideGame} actionLabel="시작하기" onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : guideGame.gameType === 'MAFIA' ? <MafiaGameGuide game={guideGame} onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : <YutGameGuide game={guideGame} onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} />)}
   </>
+}
+
+function getGameSummary(gameType: GameType) {
+  if (gameType === 'PIG') return '한 번 더? 멈출 타이밍을 잡아 50점에 도전!'
+  if (gameType === 'TOOTH') return '이빨 하나를 눌러 누피의 콱!을 피해보세요'
+  if (gameType === 'BLIND') return '질문하면서 내 제시어를 먼저 맞춰보세요'
+  if (gameType === 'MAFIA') return '밤의 단서를 모아 마피아를 찾아보세요'
+  if (gameType === 'YUT') return '윷을 던지고 말을 먼저 완주해보세요'
+  return '제시어를 숨긴 라이어를 찾아보세요'
+}
+
+function getGameArtwork(gameType: GameType) {
+  if (gameType === 'PIG') return pigCharacter
+  if (gameType === 'TOOTH') return toothCharacter
+  if (gameType === 'BLIND') return blindGameChoiceCharacter
+  if (gameType === 'MAFIA') return mafiaGameChoiceCharacter
+  if (gameType === 'YUT') return yutThrowCharacter
+  return liarGameChoiceCharacter
 }
 function Setup({ unavailableReason, categories, category, setCategory, pending, onCreate }: { unavailableReason:string|null;categories:{code:string;name:string;virtual:boolean}[];category:string;setCategory:(v:string)=>void;pending:boolean;onCreate:()=>void }) { return <div className="setupScreen"><div className="liarCharacter setupBackdrop" aria-hidden><img src={liarCharacter} alt="" /></div><div className="gameIntro setupIntro"><p className="eyebrow">라이어 게임</p><h1>카테고리를<br />골라주세요</h1></div><div className="categoryGrid">{categories.map(c=><button key={c.code} className={category===c.code?'selected':''} onClick={()=>setCategory(c.code)}><b>{c.name}</b>{category===c.code&&<i>✓</i>}</button>)}</div><p className="hint" role="status">{unavailableReason}</p><Button disabled={!category||pending||unavailableReason !== null} onClick={onCreate}>{pending?'준비 중...':'이 카테고리로 준비하기'}</Button></div> }
