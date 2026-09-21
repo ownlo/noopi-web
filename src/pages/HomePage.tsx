@@ -33,6 +33,11 @@ export function HomePage() {
       <footer className="homeFooter">
         <p className="footnote">게임은 사람끼리, 진행은 누피가.</p>
         <p className="contactInfo">문의 및 건의 : ownlo.company@gmail.com</p>
+        <nav className="legalLinks" aria-label="서비스 정책">
+          <Link to="/privacy">개인정보처리방침</Link>
+          <span aria-hidden="true">·</span>
+          <Link to="/terms">이용약관</Link>
+        </nav>
       </footer>
     </Page>
   )
