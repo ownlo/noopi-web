@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Nunito:wght@700;800;900&display=swap');
 .mascot.small+.playerCard{margin-top:20px}
+.playerIdentity{display:flex;align-items:center;gap:5px;min-width:0}.kickPlayerIcon{display:inline-grid;place-items:center;flex:0 0 auto;width:25px;height:25px;padding:0;border:1px solid #ff78943d;border-radius:8px;background:#ff52750d;color:#ff91aa;cursor:pointer}.kickPlayerIcon svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.kickPlayerIcon:hover:not(:disabled){background:#ff527526;border-color:#ff78947a}.kickPlayerIcon:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}.kickPlayerIcon:disabled{opacity:.4;cursor:not-allowed}
 .card:has(.summaryRow)+.button{margin-top:20px}
 .playerCard+.button{margin-top:20px}
 .content>label+input+.button{margin-top:18px}

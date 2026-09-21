@@ -82,6 +82,7 @@ export interface NoopiApi {
   findRoom(roomCode: string): Promise<{ roomId: number; roomCode: string; status: string; playerCount: number; joinable: boolean }>
   joinRoom(roomId: number, input: { nickname: string; gender: Gender }): Promise<{ player: Player }>
   leaveRoom(roomId: number): Promise<void>
+  kickPlayer(roomId: number, playerId: number): Promise<void>
   returnToLobby(roomId: number): Promise<void>
   getRoomState(roomId: number, signal?: AbortSignal): Promise<RoomState>
   getGames(): Promise<GameCatalog>

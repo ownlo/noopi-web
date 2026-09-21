@@ -470,6 +470,17 @@ export const mockApi: NoopiApi = {
     if (state.me.host) emit('ROOM_CLOSED')
     currentRoom = null
   },
+  async kickPlayer(_roomId, playerId) {
+    await wait()
+    const state = room()
+    if (!state.me.host) throw { code: 'NOT_ROOM_HOST' }
+    if (state.gameSession !== null) throw { code: 'ACTIVE_GAME_SESSION_EXISTS' }
+    const target = state.players.find(player => player.playerId === playerId)
+    if (!target) throw { code: 'PLAYER_NOT_FOUND' }
+    if (target.host) throw { code: 'ROOM_HOST_CANNOT_BE_KICKED' }
+    state.players = state.players.filter(player => player.playerId !== playerId)
+    emit('PLAYER_LEFT', { playerId, reason: 'KICKED' })
+  },
   async returnToLobby() {
     await wait()
     const state = room()

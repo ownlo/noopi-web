@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
-import type { RoomState } from '../../api/types'
+import type { Player, RoomState } from '../../api/types'
 import { Avatar, Button, Card, CharacterStage, SpinnerText } from '../../components/ui'
 
-export function PlayerList({ state }: { state: RoomState }) {
+export function PlayerList({ state, kickPending, onKick }: { state: RoomState; kickPending: boolean; onKick: (player: Player) => void }) {
   return (
     <Card className="playerCard">
       <div className="sectionHead"><strong>플레이어</strong><span>{state.players.length}명</span></div>
@@ -11,7 +11,17 @@ export function PlayerList({ state }: { state: RoomState }) {
         {state.players.map(player => (
           <div className="player" key={player.playerId}>
             <Avatar name={player.nickname} gender={player.gender} />
-            <span><b>{player.nickname}</b>{player.playerId === state.me.playerId && <small> 나</small>}</span>
+            <span className="playerIdentity">
+              <b>{player.nickname}</b>
+              {player.playerId === state.me.playerId && <small>나</small>}
+              {state.me.host && !player.host && player.playerId !== state.me.playerId && (
+                <button type="button" className="kickPlayerIcon" disabled={kickPending} onClick={() => onKick(player)} aria-label={`${player.nickname}님 내보내기`} title="내보내기">
+                  <svg aria-hidden="true" viewBox="0 0 24 24">
+                    <path d="M10 4H6.5A1.5 1.5 0 0 0 5 5.5v13A1.5 1.5 0 0 0 6.5 20H10M9 12h10M15 8l4 4-4 4" />
+                  </svg>
+                </button>
+              )}
+            </span>
             {player.host && <i>👑 방장</i>}
             {player.connectionStatus === 'DISCONNECTED' && <em>연결 끊김</em>}
             <span className={`online ${player.connectionStatus.toLowerCase()}`} />
@@ -22,9 +32,10 @@ export function PlayerList({ state }: { state: RoomState }) {
   )
 }
 
-export function RoomLobby({ state, onSelect }: { state: RoomState; onSelect: () => void }) {
+export function RoomLobby({ state, kickPending, onSelect, onKick }: { state: RoomState; kickPending: boolean; onSelect: () => void; onKick: (playerId: number) => void }) {
   const [copyStatus, setCopyStatus] = useState<'idle' | 'code' | 'link' | 'error'>('idle')
   const [showQrCode, setShowQrCode] = useState(false)
+  const [kickTarget, setKickTarget] = useState<Player | null>(null)
   const inviteUrl = `${window.location.origin}/join?code=${encodeURIComponent(state.room.roomCode)}`
 
   useEffect(() => {
@@ -35,6 +46,15 @@ export function RoomLobby({ state, onSelect }: { state: RoomState; onSelect: () 
     window.addEventListener('keydown', closeOnEscape)
     return () => window.removeEventListener('keydown', closeOnEscape)
   }, [showQrCode])
+
+  useEffect(() => {
+    if (!kickTarget || kickPending) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setKickTarget(null)
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [kickPending, kickTarget])
 
   const copyInvite = async (kind: 'code' | 'link') => {
     const value = kind === 'code'
@@ -71,12 +91,28 @@ export function RoomLobby({ state, onSelect }: { state: RoomState; onSelect: () 
         </small>
       </div>
       <CharacterStage compact />
-      <PlayerList state={state} />
+      <PlayerList state={state} kickPending={kickPending} onKick={setKickTarget} />
       {state.me.host
         ? <Button onClick={onSelect}>게임 선택하기</Button>
         : <SpinnerText>방장이 게임을 고르는 중이에요</SpinnerText>}
       {showQrCode && <QrCodeDialog roomCode={state.room.roomCode} inviteUrl={inviteUrl} onClose={() => setShowQrCode(false)} />}
+      {kickTarget && <KickPlayerDialog player={kickTarget} pending={kickPending} onCancel={() => setKickTarget(null)} onConfirm={() => { onKick(kickTarget.playerId); setKickTarget(null) }} />}
     </>
+  )
+}
+
+function KickPlayerDialog({ player, pending, onCancel, onConfirm }: { player: Player; pending: boolean; onCancel: () => void; onConfirm: () => void }) {
+  return (
+    <div className="dialogBackdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && !pending) onCancel() }}>
+      <section className="leaveDialog" role="alertdialog" aria-modal="true" aria-labelledby="kick-dialog-title" aria-describedby="kick-dialog-description">
+        <h2 id="kick-dialog-title">{player.nickname}님을 내보낼까요?</h2>
+        <p id="kick-dialog-description">이 참가자는 방에서 즉시 퇴장하고<br />홈 화면으로 이동해요.</p>
+        <div className="leaveDialogActions">
+          <Button className="secondary" autoFocus disabled={pending} onClick={onCancel}>취소</Button>
+          <Button className="danger" disabled={pending} onClick={onConfirm}>{pending ? '내보내는 중...' : '내보내기'}</Button>
+        </div>
+      </section>
+    </div>
   )
 }
 
