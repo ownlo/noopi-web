@@ -10,6 +10,7 @@ import './styles/yut.css'
 import './styles/yut-character.css'
 import './styles/theme.css'
 import './styles/pwa.css'
+import './styles/game-guide-page.css'
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
