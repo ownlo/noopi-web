@@ -30,19 +30,9 @@ Service Worker 동작은 HTTPS 환경 또는 `localhost`의 production preview�
 
 - `VITE_API_BASE_URL`: REST API base URL (`development`: `http://localhost:8080/api`, `production`: `https://api.noopi.kr/api`)
 - `VITE_WS_URL`: WebSocket URL (`development`: `ws://localhost:8080/ws`, `production`: `wss://api.noopi.kr/ws`)
-- `VITE_ADSENSE_TEST_MODE=true`: 방 코드 입력과 추리타임에 클릭되지 않는 테스트 광고 배너 표시
-- `VITE_ADSENSE_CLIENT_ID`, `VITE_ADSENSE_DISPLAY_SLOT_ID`: 운영 AdSense Display 광고 ID (`VITE_ADSENSE_TEST_MODE=false`에서 사용)
 
-## AdSense 운영 설정
+## AdSense 소유권 확인
 
-운영 빌드는 `.env.production`의 게시자 ID로 AdSense 스크립트를 페이지의 `<head>`에 한 번 로드합니다.
-기존 배너 위치에 광고를 표시하려면 AdSense에서 디스플레이 광고 단위를 생성한 뒤,
-광고 코드의 `data-ad-slot` 값을 `VITE_ADSENSE_DISPLAY_SLOT_ID`에 설정하고 다시 빌드해야 합니다.
-게시자 스크립트만으로는 해당 배너 광고 단위가 지정되지 않습니다.
-운영 모드에서 광고 ID가 누락되면 배너를 숨기며, 개발 환경에서는 기존 테스트 배너를 표시합니다.
-실제 송출 여부는 AdSense의 사이트 승인 및 광고 제공 상태에 따라 달라집니다.
-
-소유권 확인용 `google-adsense-account` 메타 태그는 `index.html`의 `<head>`에 직접 포함합니다.
-빌드 결과를 배포한 뒤 AdSense 사이트 연결 화면에서 **메타 태그** 방식을 선택해 확인하세요.
-광고 스크립트는 JavaScript 실행 후 삽입되므로 소유권 확인에는 이 정적 메타 태그를 사용합니다.
-게시자 계정을 변경할 때는 `.env.production`과 `index.html`의 게시자 ID를 함께 변경해야 합니다.
+입력, 대기, 게임 화면에는 광고나 AdSense 스크립트를 로드하지 않습니다.
+소유권 확인용 `google-adsense-account` 메타 태그는 `index.html`의 `<head>`에 직접 포함하며,
+`public/ads.txt`에는 동일한 게시자 ID를 선언합니다. 게시자 계정을 변경할 때는 두 파일의 ID를 함께 변경해야 합니다.

@@ -3,17 +3,13 @@ import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { App } from './app/App'
-import { loadAdSenseScript } from './utils/adsense'
 import './styles/global.css'
-import './styles/ads.css'
 import './styles/liar.css'
 import './styles/mafia.css'
 import './styles/yut.css'
 import './styles/yut-character.css'
 import './styles/theme.css'
 import './styles/pwa.css'
-
-loadAdSenseScript()
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
