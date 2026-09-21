@@ -362,12 +362,13 @@ function finishYutMove(game: Extract<YutGameState, { phase: 'PLAYING' }>, pieceI
   const pathDestination = selectedTrack && pathIndex >= 0 ? selectedTrack[pathIndex + token.steps] : undefined
   const currentIndex = selectedPiece.status === 'READY' ? -1 : Number(selectedPiece.nodeId?.replace('OUTER_', '') ?? 0) - 1
   const nextIndex = currentIndex + token.steps
-  const backDoFinished = token.result === 'BACK_DO' && selectedPiece.nodeId === 'OUTER_20'
   const destination = selectedTrack
     ? !pathDestination || pathDestination === 'FINISH' ? null : pathDestination
     : token.result === 'BACK_DO' && selectedPiece.nodeId === 'OUTER_1'
     ? 'OUTER_20'
-    : nextIndex > 19 || backDoFinished ? null : `OUTER_${nextIndex + 1}`
+    : token.result === 'BACK_DO' && selectedPiece.nodeId === 'OUTER_20'
+    ? 'OUTER_19'
+    : nextIndex > 19 ? null : `OUTER_${nextIndex + 1}`
   const stackedPieceIds = destination === null ? [] : game.pieces.filter(piece => piece.ownerId === selectedPiece.ownerId && piece.status === 'ON_BOARD' && piece.nodeId === destination && !movingIds.includes(piece.pieceId)).map(piece => piece.pieceId)
   const groupPieceIds = [...movingIds, ...stackedPieceIds]
   const capturedPieceIds = destination === null ? [] : game.pieces.filter(piece => piece.ownerId !== selectedPiece.ownerId && piece.status === 'ON_BOARD' && piece.nodeId === destination).map(piece => piece.pieceId)
