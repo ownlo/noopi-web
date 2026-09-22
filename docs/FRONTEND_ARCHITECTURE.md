@@ -575,6 +575,25 @@ Room 화면의 핵심 Query Key 예:
 
 ------------------------------------------------------------------------
 
+# 16-1. Game Catalog Query
+
+`GET /api/games` 응답의 `catalogCategories`와 `games`를 하나의 Query 결과로
+관리한다. 카탈로그 카테고리와 게임별 `catalogCategoryCodes`는 Server State이며
+Frontend 상수나 별도 Store에 복제하지 않는다.
+
+Frontend가 소유하는 상태는 현재 선택한 카탈로그 필터 코드뿐이다. 최초 값은
+Client 전용 값 `ALL`이며, 이 값을 API 요청이나 GameSession `config`에 보내지
+않는다.
+
+선택한 필터가 `ALL`이면 모든 활성 게임을, 그 외에는 해당 코드가
+`catalogCategoryCodes`에 포함된 활성 게임만 렌더링한다. 게임의 카테고리
+소속은 UI 편의를 위해 추론하거나 `gameType` 분기로 다시 정의하지 않는다.
+
+라이어 게임의 제시어 카테고리 Query와 게임 카탈로그 Query는 타입, Query Key,
+UI 상태를 분리한다.
+
+------------------------------------------------------------------------
+
 # 17. WebSocket 역할
 
 WebSocket은 서버 상태 변경을 빠르게 알려주는 수단이다.

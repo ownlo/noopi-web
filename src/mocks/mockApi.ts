@@ -11,9 +11,25 @@ const YUT_NAK_HANDOFF_DELAY_MS = 2_000
 const YUT_OPPONENT_MOVE_DELAY_MS = 1_900
 const listeners = new Set<(event: RealtimeEvent) => void>()
 
-const games: GameCatalog = { games: [{ gameType: 'LIAR', name: '라이어 게임', minPlayers: 3, maxPlayers: 12, enabled: true }, { gameType: 'BLIND', name: '블라인드 게임', minPlayers: 2, maxPlayers: 2, enabled: true }, { gameType: 'MAFIA', name: '마피아 게임', minPlayers: 4, maxPlayers: 12, enabled: true }, { gameType: 'YUT', name: '윷놀이', minPlayers: 2, maxPlayers: 4, enabled: true }] }
-games.games.push({ gameType: 'PIG', name: '피그 게임', minPlayers: 2, maxPlayers: 6, enabled: true })
-games.games.push({ gameType: 'TOOTH', name: '누피 콱!', minPlayers: 2, maxPlayers: 8, enabled: true })
+const games: GameCatalog = {
+  catalogCategories: [
+    { code: 'MINI_GAME', name: '미니게임', order: 1 },
+    { code: 'PARTY_GAME', name: '파티게임', order: 2 },
+    { code: 'DEDUCTION', name: '추리', order: 3 },
+    { code: 'STRATEGY', name: '전략', order: 4 },
+    { code: 'LUCK', name: '운빨', order: 5 },
+    { code: 'INDIVIDUAL', name: '개인전', order: 6 },
+    { code: 'TEAM', name: '팀전', order: 7 },
+  ],
+  games: [
+    { gameType: 'LIAR', name: '라이어 게임', catalogCategoryCodes: ['PARTY_GAME', 'DEDUCTION', 'TEAM'], minPlayers: 3, maxPlayers: 12, enabled: true },
+    { gameType: 'BLIND', name: '블라인드 게임', catalogCategoryCodes: ['PARTY_GAME', 'DEDUCTION', 'INDIVIDUAL'], minPlayers: 2, maxPlayers: 2, enabled: true },
+    { gameType: 'MAFIA', name: '마피아 게임', catalogCategoryCodes: ['PARTY_GAME', 'DEDUCTION', 'TEAM'], minPlayers: 4, maxPlayers: 12, enabled: true },
+    { gameType: 'YUT', name: '윷놀이', catalogCategoryCodes: ['PARTY_GAME', 'STRATEGY', 'LUCK', 'INDIVIDUAL', 'TEAM'], minPlayers: 2, maxPlayers: 4, enabled: true },
+    { gameType: 'PIG', name: '피그', catalogCategoryCodes: ['MINI_GAME', 'LUCK', 'INDIVIDUAL'], minPlayers: 2, maxPlayers: 6, enabled: true },
+    { gameType: 'TOOTH', name: '누피 콱!', catalogCategoryCodes: ['MINI_GAME', 'PARTY_GAME', 'LUCK', 'INDIVIDUAL'], minPlayers: 2, maxPlayers: 8, enabled: true },
+  ],
+}
 let pigMock: PigMock | null = null
 let pigTimer: number | undefined
 let toothMock: ToothMock | null = null

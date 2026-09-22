@@ -70,7 +70,9 @@ export type YutGameState =
 export type GameType = 'LIAR' | 'BLIND' | 'MAFIA' | 'YUT' | 'PIG' | 'TOOTH'
 export type GameState = LiarGameState | BlindGameState | MafiaGameState | YutGameState | import('../features/games/pig/types').PigGameState | import('../features/games/tooth/types').ToothGameState
 export type RoomState = { room: { roomId: number; roomCode: string; status: 'WAITING' | 'ACTIVE' | 'CLOSED'; hostPlayerId: number }; me: Player; players: Player[]; gameSession: null | { gameSessionId: number; gameType: GameType; status: 'READY' | 'PLAYING' | 'FINISHED' | 'CANCELLED'; gameState: GameState } }
-export type GameCatalog = { games: { gameType: GameType; name: string; minPlayers: number; maxPlayers: number; enabled: boolean }[] }
+export type GameCatalogCategory = { code: string; name: string; order: number }
+export type GameCatalogGame = { gameType: GameType; name: string; catalogCategoryCodes: string[]; minPlayers: number; maxPlayers: number; enabled: boolean }
+export type GameCatalog = { catalogCategories: GameCatalogCategory[]; games: GameCatalogGame[] }
 export type CategoryCatalog = { categories: { code: string; name: string; virtual: boolean }[] }
 export type RealtimeEvent = { eventId: string; type: string; roomId: number; gameSessionId: number | null; occurredAt: string; payload: Record<string, unknown> }
 
