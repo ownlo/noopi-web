@@ -4,6 +4,7 @@ import mafiaArtwork from '../assets/characters/noopi-mafia-cat-game-choice.png'
 import yutArtwork from '../assets/characters/noopi-yut-throw.png'
 import pigArtwork from '../assets/characters/noopi-pig-game-choice.png'
 import toothArtwork from '../assets/characters/noopi-tooth-open-mouth.png'
+import underMineArtwork from '../assets/characters/noopi-cat.png'
 
 export type GameGuide = {
   slug: string
@@ -160,6 +161,34 @@ export const gameGuides: GameGuide[] = [
       { question: '1이 나오면 지금까지의 총점도 사라지나요?', answer: '아니요. 현재 턴에서 아직 확정하지 않은 점수만 사라지고 기존 총점은 유지됩니다.' },
       { question: '마지막 참가자도 50점까지 플레이하나요?', answer: '아니요. 진행 중인 참가자가 한 명만 남으면 그 사람을 마지막 순위로 자동 확정합니다.' },
       { question: '주사위 확률을 설정할 수 있나요?', answer: '설정할 수 없습니다. 위험도와 주사위 결과는 서버가 게임 규칙에 따라 결정합니다.' },
+    ],
+  },
+  {
+    slug: 'undermine',
+    name: '언더마인',
+    tagline: '금을 향해 길을 잇거나, 정체를 숨기고 탐험을 방해하세요.',
+    description: '광부와 방해꾼으로 나뉘어 광산 길을 만드는 정체 은닉 카드 게임입니다. 길과 행동 카드를 한 장씩 사용하며, 누피가 가능한 배치와 대상만 정확히 안내합니다.',
+    artwork: underMineArtwork,
+    artworkAlt: '언더마인 광산을 탐험하는 누피 고양이 캐릭터',
+    meta: [{ label: '인원', value: '3–10명' }, { label: '라운드', value: '3라운드' }, { label: '장르', value: '정체 은닉·전략' }],
+    highlights: ['광부와 방해꾼의 비밀 역할', '길·고장·수리·지도·파괴 카드', '낼 카드가 없을 때만 버리기 가능'],
+    steps: [
+      { title: '비밀 역할 확인', description: '각 라운드마다 광부 또는 방해꾼 역할을 혼자 확인합니다. 남은 역할 카드 한 장은 공개되지 않아 방해꾼 수를 확신할 수 없습니다.' },
+      { title: '카드 한 장 플레이', description: '차례마다 길을 놓거나 장비를 고장·수리하고, 지도와 파괴 카드를 사용합니다. 화면에는 서버가 허용한 위치와 대상만 나타납니다.' },
+      { title: '금까지 길 연결', description: '출발점에서 진짜 금 목적지까지 길이 이어지면 광부가 라운드에서 승리합니다. 카드가 다 떨어질 때까지 막아내면 방해꾼이 승리합니다.' },
+      { title: '세 라운드 금 합산', description: '라운드마다 역할을 다시 받고 보상을 획득합니다. 세 라운드가 끝나면 모은 금의 합계로 최종 순위를 정합니다.' },
+    ],
+    rules: [
+      { title: '길은 출발점과 연결', description: '새 길은 이미 놓인 길과 맞닿고 출발점에서 이어져야 합니다. 길 카드는 0도 또는 180도로만 회전할 수 있습니다.' },
+      { title: '고장 난 장비', description: '랜턴·곡괭이·광차 중 하나라도 고장 나면 길 카드를 놓을 수 없습니다. 수리 카드를 사용해 다시 길을 놓을 수 있습니다.' },
+      { title: '파괴 카드', description: '출발점과 목적지를 제외한 이미 놓인 길 한 장을 제거합니다. 제거 후 끊긴 길도 판 위에 남습니다.' },
+      { title: '제한 버리기', description: '손에 실행 가능한 카드가 단 한 장도 없을 때만 원하는 카드 한 장을 뒷면으로 버릴 수 있습니다.' },
+    ],
+    faqs: [
+      { question: '카드를 내기 싫으면 그냥 버려도 되나요?', answer: '아니요. 서버가 손패 전체를 확인해 낼 수 있는 카드가 하나도 없다고 판단한 경우에만 버릴 수 있습니다.' },
+      { question: '지도 결과는 다른 사람도 볼 수 있나요?', answer: '아니요. 지도를 사용한 본인에게만 목적지 결과가 공개됩니다.' },
+      { question: '방해꾼은 몇 명인가요?', answer: '인원에 따라 준비되는 역할 카드 구성이 달라지며 한 장은 숨겨집니다. 그래서 정확한 방해꾼 수는 라운드가 끝날 때까지 확신할 수 없습니다.' },
+      { question: '길 카드가 부서진 장비와 관계있나요?', answer: '장비가 하나라도 고장 난 동안에는 길 카드를 놓을 수 없지만 다른 행동 카드는 사용할 수 있습니다.' },
     ],
   },
   {

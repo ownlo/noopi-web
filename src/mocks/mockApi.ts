@@ -3,6 +3,7 @@ import { PigMock } from './pigMock'
 import type { PigAction } from '../features/games/pig/types'
 import { ToothMock } from './toothMock'
 import type { ToothSelectionResponse } from '../features/games/tooth/types'
+import { UnderMineMock } from './undermineMock'
 
 const wait = (ms = 180) => new Promise(resolve => window.setTimeout(resolve, ms))
 const PHASE_TRANSITION_DELAY_MS = 3_000
@@ -28,12 +29,21 @@ const games: GameCatalog = {
     { gameType: 'YUT', name: '윷놀이', catalogCategoryCodes: ['PARTY_GAME', 'STRATEGY', 'LUCK', 'INDIVIDUAL', 'TEAM'], minPlayers: 2, maxPlayers: 4, enabled: true },
     { gameType: 'PIG', name: '피그', catalogCategoryCodes: ['MINI_GAME', 'LUCK', 'INDIVIDUAL'], minPlayers: 2, maxPlayers: 6, enabled: true },
     { gameType: 'TOOTH', name: '누피 콱!', catalogCategoryCodes: ['MINI_GAME', 'PARTY_GAME', 'LUCK', 'INDIVIDUAL'], minPlayers: 2, maxPlayers: 8, enabled: true },
+    { gameType: 'UNDERMINE', name: '언더마인', catalogCategoryCodes: ['PARTY_GAME', 'DEDUCTION', 'STRATEGY', 'TEAM'], minPlayers: 3, maxPlayers: 10, enabled: true },
   ],
 }
 let pigMock: PigMock | null = null
 let pigTimer: number | undefined
 let toothMock: ToothMock | null = null
 let toothTimer: number | undefined
+let underMineMock: UnderMineMock | null = null
+
+function publishUnderMine() {
+  const state = room()
+  if (!underMineMock || state.gameSession?.gameType !== 'UNDERMINE') return
+  const game = underMineMock.snapshot(state.me.playerId)
+  setGameState(game, game.phase === 'FINISHED' ? 'FINISHED' : game.phase === 'READY' ? 'READY' : 'PLAYING')
+}
 
 function publishPig(action?: PigAction) {
   const state = room()
@@ -505,6 +515,7 @@ export const mockApi: NoopiApi = {
     state.room.status = 'WAITING'
     window.clearTimeout(toothTimer)
     toothMock = null
+    underMineMock = null
     emit('ROOM_RETURNED_TO_LOBBY')
   },
   async getRoomState() {
@@ -521,7 +532,11 @@ export const mockApi: NoopiApi = {
     const state = room()
     const gameSessionId = nextSessionId++
     state.room.status = 'ACTIVE'
-    if (gameType === 'PIG') {
+    if (gameType === 'UNDERMINE') {
+      if (state.players.length < 3 || state.players.length > 10) throw { code: 'INVALID_PLAYER_COUNT' }
+      underMineMock = new UnderMineMock(state.players)
+      state.gameSession = { gameSessionId, gameType, status: 'READY', gameState: underMineMock.snapshot(state.me.playerId) }
+    } else if (gameType === 'PIG') {
       if (state.players.length < 2 || state.players.length > 6) throw { code: 'INVALID_PLAYER_COUNT' }
       state.gameSession = { gameSessionId, gameType, status: 'READY', gameState: { type: 'PIG', phase: 'READY' } }
     } else if (gameType === 'TOOTH') {
@@ -564,6 +579,9 @@ export const mockApi: NoopiApi = {
       publishTooth()
       emit('GAME_STARTED')
       return
+    }
+    if (state.gameSession?.gameType === 'UNDERMINE') {
+      underMineMock?.start(); publishUnderMine(); emit('GAME_STARTED'); return
     }
     if (state.gameSession?.gameType === 'BLIND') {
       if (state.players.length !== 2) throw new Error('INVALID_PLAYER_COUNT')
@@ -842,6 +860,23 @@ export const mockApi: NoopiApi = {
     const game = activeYut()
     if (game.myAction?.type !== 'SELECT_PATH' || !game.myAction.eligiblePathIds.includes(pathId) || !yutSelectedPieceId) throw new Error('PATH_NOT_ELIGIBLE')
     finishYutMove(game, yutSelectedPieceId, pathId)
+  },
+  async confirmUnderMineRole() {
+    await wait(); if (!underMineMock) throw { code: 'INVALID_GAME_ACTION' }
+    underMineMock.confirmRole(); publishUnderMine(); emit('UNDERMINE_ROLE_CHECKED')
+  },
+  async playUnderMineCard(_roomId, _sessionId, input) {
+    await wait(260); const state = room(); if (!underMineMock || state.gameSession?.gameType !== 'UNDERMINE') throw { code: 'INVALID_GAME_ACTION' }
+    const result = underMineMock.play(state.me.playerId, input); publishUnderMine(); emit(input.actionType === 'DESTROY_PATH' ? 'UNDERMINE_PATH_DESTROYED' : 'UNDERMINE_CARD_PLAYED', { playerId: state.me.playerId, actionType: input.actionType })
+    return result
+  },
+  async selectUnderMineGold(_roomId, _sessionId, goldCardId) {
+    await wait(); const state = room(); if (!underMineMock) throw { code: 'INVALID_GAME_ACTION' }
+    underMineMock.selectGold(state.me.playerId, goldCardId); publishUnderMine(); emit('UNDERMINE_GOLD_SELECTION_CHANGED')
+  },
+  async startUnderMineNextRound() {
+    await wait(); if (!underMineMock) throw { code: 'INVALID_GAME_ACTION' }
+    underMineMock.nextRound(); publishUnderMine(); emit('UNDERMINE_ROUND_STARTED')
   },
   rollPig(roomId, sessionId, requestId) { return actPig(roomId, sessionId, 'ROLL', requestId) },
   stopPig(roomId, sessionId, requestId) { return actPig(roomId, sessionId, 'STOP', requestId) },

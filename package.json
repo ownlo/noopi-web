@@ -10,6 +10,7 @@
     "test:yut": "node --test scripts/test-yut.mjs",
     "test:pig": "node --test scripts/test-pig.mjs",
     "test:tooth": "node --test scripts/test-tooth.mjs",
+    "test:undermine": "node --test scripts/test-undermine.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

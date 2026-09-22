@@ -38,6 +38,7 @@ games/MAFIA_GAME_SPEC.md
 games/YUT_GAME_SPEC.md
 games/PIG_GAME_SPEC.md
 games/TOOTH_GAME_SPEC.md
+games/UNDERMINE_GAME_SPEC.md
 ```
 
 우선순위:
@@ -50,6 +51,7 @@ games/TOOTH_GAME_SPEC.md
 → games/YUT_GAME_SPEC.md
 → games/PIG_GAME_SPEC.md
 → games/TOOTH_GAME_SPEC.md
+→ games/UNDERMINE_GAME_SPEC.md
 
 REST / WebSocket 계약
 → API_SPEC.md
@@ -188,7 +190,8 @@ src/
 │       ├── mafia/
 │       ├── yut/
 │       ├── pig/
-│       └── tooth/
+│       ├── tooth/
+│       └── undermine/
 ├── components/
 ├── api/
 ├── realtime/
@@ -262,6 +265,8 @@ GameSession
 마피아 게임의 사망 처리와 승패
 피그 게임의 주사위 결과, 성공 횟수, 1 발생 확률, 점수, 턴, 순위, 종료
 누피 콱!의 턴 순서, 꽝 위치, 선택 결과, 다음 턴, 당첨 Player와 종료
+언더마인의 역할, 손패, 카드 셔플·드로우, 길 배치 후보, 장비 상태, 지도 결과,
+목적지 공개, 라운드 승패, 금 지급과 최종 우승자
 ```
 
 Frontend에서 이 값을 자체 계산하여 확정하지 않는다.
@@ -688,6 +693,10 @@ Room 참가
 피그 주사위 던지기
 피그 멈추기
 누피 콱! 이빨 선택
+언더마인 역할 확인
+언더마인 카드 행동
+언더마인 금 선택
+언더마인 다음 라운드 시작
 ```
 
 더블 클릭으로 중복 요청을 발생시키지 않는다.
@@ -877,6 +886,13 @@ Discussion
 누피 콱! 내 턴/다른 Player 턴 행동 차이
 누피 콱! 안전 이빨/꽝 이빨/중복 입력 잠금
 누피 콱! 즉시 종료/한 판 더/재접속
+언더마인 3~10명 시작과 숨겨진 역할 카드
+언더마인 0°/180° 길 배치와 출발점 연결 검증
+언더마인 장비 고장/수리/지도/파괴
+언더마인 낼 수 있는 카드가 있을 때 버리기 거절
+언더마인 전체 행동 불가 시 버리기와 라운드 종료
+언더마인 광부/방해꾼 금 지급과 3라운드 최종 결과
+언더마인 개인 역할/손패/지도/금 정보 재접속 복구
 연결 끊김
 재접속
 Host 변경
@@ -1103,6 +1119,8 @@ Frontend에서 제시어 선정
 윷 결과, 이동 후보, 경로, 업기, 잡기, 완주 또는 승자를 Frontend에서 판정
 피그 주사위 결과, 성공 횟수, 1 발생 확률, 점수, 턴, 순위 또는 종료를 Frontend에서 판정
 누피 콱!의 꽝 위치, 안전/꽝 결과, 다음 턴 또는 당첨 Player를 Frontend에서 판정
+언더마인의 역할, 카드 드로우, 길 연결, 배치 후보, 장비 대상, 목적지 공개,
+버리기 가능 여부, 라운드 승패, 금 지급 또는 최종 우승자를 Frontend에서 판정
 재투표 횟수 제한 추가
 동률 랜덤 지목 추가
 카테고리 하드코딩

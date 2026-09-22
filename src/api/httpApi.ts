@@ -14,6 +14,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return body ? JSON.parse(body) as T : undefined as T
 }
 export const httpApi: NoopiApi = {
+  confirmUnderMineRole: (id, session) => request(`/rooms/${id}/game-sessions/${session}/undermine/role-check`, { method: 'POST' }),
+  playUnderMineCard: (id, session, input, key) => request(`/rooms/${id}/game-sessions/${session}/undermine/card-plays`, { method: 'POST', headers: { 'Idempotency-Key': key }, body: JSON.stringify(input) }),
+  selectUnderMineGold: (id, session, goldCardId, key) => request(`/rooms/${id}/game-sessions/${session}/undermine/gold-selections`, { method: 'POST', headers: { 'Idempotency-Key': key }, body: JSON.stringify({ goldCardId }) }),
+  startUnderMineNextRound: (id, session, key) => request(`/rooms/${id}/game-sessions/${session}/undermine/rounds/next`, { method: 'POST', headers: { 'Idempotency-Key': key } }),
   rollPig: (id, session, key) => request(`/rooms/${id}/game-sessions/${session}/pig/roll`, { method: 'POST', headers: { 'Idempotency-Key': key } }),
   stopPig: (id, session, key) => request(`/rooms/${id}/game-sessions/${session}/pig/stop`, { method: 'POST', headers: { 'Idempotency-Key': key } }),
   selectTooth: (id, session, toothId, key) => request(`/rooms/${id}/game-sessions/${session}/tooth/selections`, { method: 'POST', headers: { 'Idempotency-Key': key }, body: JSON.stringify({ toothId }) }),

@@ -139,9 +139,13 @@ test('mock finishes bots in order and assigns the remaining bot last place', asy
     const toothSource = readFileSync(new URL('../src/mocks/toothMock.ts', import.meta.url), 'utf8')
     const toothCode = ts.transpileModule(toothSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
     const toothUrl = `data:text/javascript;base64,${Buffer.from(toothCode).toString('base64')}`
+    const underMineSource = readFileSync(new URL('../src/mocks/undermineMock.ts', import.meta.url), 'utf8')
+    const underMineCode = ts.transpileModule(underMineSource, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
+    const underMineUrl = `data:text/javascript;base64,${Buffer.from(underMineCode).toString('base64')}`
     const source = readFileSync(new URL('../src/mocks/mockApi.ts', import.meta.url), 'utf8')
       .replace("'./pigMock'", JSON.stringify(pigUrl))
       .replace("'./toothMock'", JSON.stringify(toothUrl))
+      .replace("'./undermineMock'", JSON.stringify(underMineUrl))
     const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
     const { mockApi } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`)
     await mockApi.createRoom({ nickname: '누피', gender: 'MALE' })

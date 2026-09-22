@@ -17,6 +17,7 @@ Frontend 구현 시 다음 문서를 Source of Truth로 사용한다.
 -   `games/YUT_GAME_SPEC.md`
 -   `games/PIG_GAME_SPEC.md`
 -   `games/TOOTH_GAME_SPEC.md`
+-   `games/UNDERMINE_GAME_SPEC.md`
 
 Frontend는 서버가 결정한 Room/Game 상태를 표현하고 사용자의 행동을
 서버에 전달하는 역할을 담당한다.
@@ -164,7 +165,8 @@ features/games/
 ├── mafia/
 ├── yut/
 ├── pig/
-└── tooth/
+├── tooth/
+└── undermine/
 ```
 
 처럼 확장할 수 있어야 한다.
@@ -281,6 +283,8 @@ switch (gameSession.gameType) {
     return <PigGame />
   case 'TOOTH':
     return <ToothGame />
+  case 'UNDERMINE':
+    return <UnderMineGame />
 }
 ```
 
@@ -367,6 +371,24 @@ features/games/tooth/
     ├── ToothReadyView.tsx
     ├── ToothPlayingView.tsx
     └── ToothResultView.tsx
+```
+
+언더마인도 독립 경계 아래에 두고 보드 표현, 개인 손패와 서버 행동 Mutation을
+분리한다.
+
+``` text
+features/games/undermine/
+├── components/
+├── hooks/
+├── api/
+├── types/
+└── views/
+    ├── UnderMineReadyView.tsx
+    ├── UnderMineRoleRevealView.tsx
+    ├── UnderMinePlayingView.tsx
+    ├── UnderMineRoundResultView.tsx
+    ├── UnderMineGoldSelectionView.tsx
+    └── UnderMineResultView.tsx
 ```
 
 ------------------------------------------------------------------------
@@ -525,6 +547,12 @@ features/games/liar/api/
 ├── startVote.ts
 ├── submitVote.ts
 └── submitGuess.ts
+
+features/games/undermine/api/
+├── confirmRole.ts
+├── playCard.ts
+├── selectGold.ts
+└── startNextRound.ts
 ```
 
 API DTO는 `API_SPEC.md`와 일치해야 한다.
@@ -557,6 +585,10 @@ submitVote
 submitGuess
 excludePlayer
 selectTooth
+checkUnderMineRole
+playUnderMineCard
+selectUnderMineGold
+startUnderMineNextRound
 ```
 
 ------------------------------------------------------------------------
@@ -651,6 +683,14 @@ GET /state
   `MAFIA_REVOTE_STARTED`   room state invalidate
   `MAFIA_PLAYER_DIED`      room state invalidate
   `TOOTH_SELECTED`         room state invalidate
+  `UNDERMINE_ROLE_CHECKED` room state invalidate 또는 카운트 갱신
+  `UNDERMINE_CARD_PLAYED`  room state invalidate
+  `UNDERMINE_PATH_DESTROYED` room state invalidate
+  `UNDERMINE_GOAL_REVEALED` room state invalidate
+  `UNDERMINE_TURN_CHANGED` room state invalidate
+  `UNDERMINE_ROUND_FINISHED` room state invalidate
+  `UNDERMINE_GOLD_SELECTION_CHANGED` room state invalidate
+  `UNDERMINE_ROUND_STARTED` room state invalidate
   `GAME_FINISHED`          room state invalidate
   `GAME_CANCELLED`         room state invalidate
 
@@ -738,6 +778,7 @@ game phase
 winner
 liar guess result
 tooth outcome / current turn / loser
+undermine card action / board / role / round result / gold selection
 ```
 
 는 서버 응답을 기다린다.
@@ -1061,6 +1102,14 @@ PLAYER_VOTED
 VOTE_RESULT
 REVOTE_STARTED
 LIAR_GUESS_STARTED
+UNDERMINE_ROLE_CHECKED
+UNDERMINE_CARD_PLAYED
+UNDERMINE_PATH_DESTROYED
+UNDERMINE_GOAL_REVEALED
+UNDERMINE_TURN_CHANGED
+UNDERMINE_ROUND_FINISHED
+UNDERMINE_GOLD_SELECTION_CHANGED
+UNDERMINE_ROUND_STARTED
 GAME_FINISHED
 ```
 
@@ -1194,7 +1243,7 @@ API DTO와 Game State는 명시적으로 타입을 정의한다.
 ``` ts
 type Gender = 'MALE' | 'FEMALE'
 
-type GameType = 'LIAR' | 'BLIND' | 'MAFIA' | 'YUT' | 'PIG' | 'TOOTH'
+type GameType = 'LIAR' | 'BLIND' | 'MAFIA' | 'YUT' | 'PIG' | 'TOOTH' | 'UNDERMINE'
 
 type LiarPhase =
   | 'ROLE_REVEAL'
@@ -1227,6 +1276,14 @@ type YutPhase = 'READY' | 'TEAM_SELECT' | 'PLAYING' | 'FINISHED'
 type PigPhase = 'READY' | 'PLAYING' | 'FINISHED'
 
 type ToothPhase = 'READY' | 'PLAYING' | 'FINISHED'
+
+type UnderMinePhase =
+  | 'READY'
+  | 'ROLE_REVEAL'
+  | 'PLAYING'
+  | 'ROUND_RESULT'
+  | 'GOLD_SELECTION'
+  | 'FINISHED'
 
 type YutTurnPhase =
   | 'WAITING_THROW'
@@ -1263,6 +1320,7 @@ type GameState =
   | YutGameState
   | PigGameState
   | ToothGameState
+  | UnderMineGameState
 ```
 
 ``` ts
@@ -1301,6 +1359,12 @@ type ToothGameState = {
   phase: ToothPhase
   // 서버가 확정한 이빨 상태, 턴, 최근 결과, 당첨 Player와 허용 행동
 }
+
+type UnderMineGameState = {
+  type: 'UNDERMINE'
+  phase: UnderMinePhase
+  // 서버가 확정한 라운드, 보드, 개인 손패, 행동 후보, 금 선택과 결과
+}
 ```
 
 PIG 구현은 `features/games/pig/`에 격리한다. 윷놀이를 포함한 다른 게임의 전용 컴포넌트, 상태, 타입, hook에 의존하지 않는다. 공통 `GameRenderer`, API/Realtime Adapter, 버튼·모달 등 범용 UI만 공유한다.
@@ -1313,6 +1377,13 @@ TOOTH 구현은 `features/games/tooth/`에 격리한다. 화면은 서버가 제
 계산하거나 optimistic하게 확정하지 않는다. `SELECT_TOOTH` Mutation 중에는
 24개 이빨 입력을 모두 잠그고 응답 유실 시 자동 재시도 대신 `/state`를 먼저
 조회한다.
+
+UNDERMINE 구현은 `features/games/undermine/`에 격리한다. 화면은 서버가
+제공한 `allowedActions`, 카드별 대상 후보, 보드, 공개 목적지, 개인 손패와
+개인 금 정보를 표현한다. 길 연결, 카드 배치 후보, 장비 대상, 버리기 가능 여부,
+라운드 승패, 금 지급 또는 최종 우승자를 Frontend에서 계산하거나 optimistic하게
+확정하지 않는다. 카드 행동 Mutation 중에는 손패와 모든 대상을 잠그고 응답
+유실 시 자동 재시도 대신 `/state`를 먼저 조회한다.
 
 마피아 밤 행동 Mutation은 역할별 Endpoint로 나누지 않고
 `actionType` discriminated union을 사용하는 단일 `night-actions` API를
@@ -1398,6 +1469,9 @@ REVOTING에서 eligibleCandidates만 표시
 TOOTH에서 현재 Player와 AVAILABLE 이빨만 선택 가능
 TOOTH 선택 Mutation 중 전체 이빨 입력 잠금
 BOMB 결과와 당첨 Player를 Client가 계산하지 않음
+UNDERMINE에서 서버가 제공한 카드별 후보만 선택 가능
+UNDERMINE에서 낼 수 있는 카드가 있으면 버리기 UI가 표시되지 않음
+UNDERMINE의 역할·손패·지도·금 정보가 다른 Player에게 노출되지 않음
 ```
 
 서버의 승패 계산을 Frontend 테스트에서 다시 구현하지 않는다.

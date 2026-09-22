@@ -67,8 +67,8 @@ export type YutGameState =
   | { type: 'YUT'; phase: 'FINISHED'; mode: 'INDIVIDUAL'; rankings: YutRanking[] }
   | { type: 'YUT'; phase: 'FINISHED'; mode: 'TEAM'; winnerTeam: YutTeam }
   | { type: 'YUT'; phase: 'CANCELLED'; reason?: string }
-export type GameType = 'LIAR' | 'BLIND' | 'MAFIA' | 'YUT' | 'PIG' | 'TOOTH'
-export type GameState = LiarGameState | BlindGameState | MafiaGameState | YutGameState | import('../features/games/pig/types').PigGameState | import('../features/games/tooth/types').ToothGameState
+export type GameType = 'LIAR' | 'BLIND' | 'MAFIA' | 'YUT' | 'PIG' | 'TOOTH' | 'UNDERMINE'
+export type GameState = LiarGameState | BlindGameState | MafiaGameState | YutGameState | import('../features/games/pig/types').PigGameState | import('../features/games/tooth/types').ToothGameState | import('../features/games/undermine/types').UnderMineGameState
 export type RoomState = { room: { roomId: number; roomCode: string; status: 'WAITING' | 'ACTIVE' | 'CLOSED'; hostPlayerId: number }; me: Player; players: Player[]; gameSession: null | { gameSessionId: number; gameType: GameType; status: 'READY' | 'PLAYING' | 'FINISHED' | 'CANCELLED'; gameState: GameState } }
 export type GameCatalogCategory = { code: string; name: string; order: number }
 export type GameCatalogGame = { gameType: GameType; name: string; catalogCategoryCodes: string[]; minPlayers: number; maxPlayers: number; enabled: boolean }
@@ -77,6 +77,10 @@ export type CategoryCatalog = { categories: { code: string; name: string; virtua
 export type RealtimeEvent = { eventId: string; type: string; roomId: number; gameSessionId: number | null; occurredAt: string; payload: Record<string, unknown> }
 
 export interface NoopiApi {
+  confirmUnderMineRole(roomId: number, gameSessionId: number): Promise<void>
+  playUnderMineCard(roomId: number, gameSessionId: number, input: import('../features/games/undermine/types').UnderMineCardPlayInput, requestId: string): Promise<import('../features/games/undermine/types').UnderMineCardPlayResponse>
+  selectUnderMineGold(roomId: number, gameSessionId: number, goldCardId: string, requestId: string): Promise<void>
+  startUnderMineNextRound(roomId: number, gameSessionId: number, requestId: string): Promise<void>
   rollPig(roomId: number, gameSessionId: number, requestId: string): Promise<void>
   stopPig(roomId: number, gameSessionId: number, requestId: string): Promise<void>
   selectTooth(roomId: number, gameSessionId: number, toothId: number, requestId: string): Promise<import('../features/games/tooth/types').ToothSelectionResponse>

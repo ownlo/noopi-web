@@ -17,6 +17,8 @@ import { PigGame } from '../features/games/pig/PigGame'
 import { PigGuide } from '../features/games/pig/PigGameGuide'
 import { ToothGame } from '../features/games/tooth/ToothGame'
 import { ToothGameGuide } from '../features/games/tooth/ToothGameGuide'
+import { UnderMineGame } from '../features/games/undermine/UnderMineGame'
+import { UnderMineGameGuide } from '../features/games/undermine/UnderMineGameGuide'
 import pigCharacter from '../assets/characters/noopi-pig-game-choice.png'
 import liarCharacter from '../assets/characters/noopi-liar-cat.png'
 import liarGameChoiceCharacter from '../assets/characters/noopi-liar-cat-game-choice.png'
@@ -24,6 +26,7 @@ import blindGameChoiceCharacter from '../assets/characters/noopi-blind-game-choi
 import mafiaGameChoiceCharacter from '../assets/characters/noopi-mafia-cat-game-choice.png'
 import yutThrowCharacter from '../assets/characters/noopi-yut-throw.png'
 import toothCharacter from '../assets/characters/noopi-tooth-open-mouth.png'
+import underMineCharacter from '../assets/characters/noopi-cat.png'
 
 function isRoomUnavailable(error: unknown): error is { code: 'ROOM_NOT_FOUND' | 'PLAYER_NOT_IN_ROOM' } {
   return typeof error === 'object' && error !== null && 'code' in error && (error.code === 'ROOM_NOT_FOUND' || error.code === 'PLAYER_NOT_IN_ROOM')
@@ -274,6 +277,7 @@ function YutStartingView({ host, pending, onStart }: { host: boolean; pending: b
 function Game({ game, state, pending, act, pigRollEvent }: { pigRollEvent: RealtimeEvent | null; game: GameState; state: State; pending: boolean; act: (type:string,payload?:number|string|'REPLAY'|'OTHER'|{ gameType: GameType; mode?: YutMode }|{ actionType: MafiaNightActionType; targetPlayerId?: number })=>Promise<unknown> }) {
   if (game.type === 'PIG') return <PigGame rollEvent={pigRollEvent} game={game} state={state} pending={pending} onStart={() => void act('START')} onReplay={() => void act('CREATE', { gameType: 'PIG' })} onOther={() => void act('FINISH', 'OTHER')} />
   if (game.type === 'TOOTH') return <ToothGame game={game} state={state} pending={pending} onStart={() => void act('START')} onReplay={() => void act('CREATE', { gameType: 'TOOTH' })} onOther={() => void act('FINISH', 'OTHER')} />
+  if (game.type === 'UNDERMINE') return <UnderMineGame game={game} state={state} pending={pending} onStart={() => void act('START')} onReplay={() => void act('CREATE', { gameType: 'UNDERMINE' })} onOther={() => void act('FINISH', 'OTHER')} />
   if (game.type === 'LIAR') return <LiarGameContent game={game} state={state} pending={pending} act={act} />
   if (game.type === 'BLIND') return <BlindGameContent game={game} state={state} pending={pending} act={act} />
   if (game.type === 'MAFIA') return <MafiaGameContent game={game} state={state} pending={pending} act={act} />
@@ -307,7 +311,7 @@ function GameSelect({ catalog, loading, onSelect }: { catalog: GameCatalog; load
       <span className="gameChoiceCopy" aria-hidden><small>{game.minPlayers === game.maxPlayers ? `${game.minPlayers}명 전용` : `${game.minPlayers}–${game.maxPlayers}명`}</small><strong>{game.gameType === 'PIG' ? '피그 게임' : game.name}</strong><span>{getGameSummary(game.gameType)}</span></span>
     </article>)}
     {loading ? <div className="gameCategoryEmpty" role="status">게임 목록을 불러오고 있어요.</div> : games.length === 0 && <div className="gameCategoryEmpty" role="status">이 카테고리에 준비된 게임이 없어요.</div>}
-    {guideGame && (guideGame.gameType === 'PIG' ? <PigGuide onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : guideGame.gameType === 'TOOTH' ? <ToothGameGuide onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : guideGame.gameType === 'LIAR' ? <LiarGameGuide game={guideGame} actionLabel="시작하기" onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : guideGame.gameType === 'BLIND' ? <BlindGameGuide game={guideGame} actionLabel="시작하기" onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : guideGame.gameType === 'MAFIA' ? <MafiaGameGuide game={guideGame} onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : <YutGameGuide game={guideGame} onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} />)}
+    {guideGame && (guideGame.gameType === 'PIG' ? <PigGuide onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : guideGame.gameType === 'TOOTH' ? <ToothGameGuide onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : guideGame.gameType === 'UNDERMINE' ? <UnderMineGameGuide onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : guideGame.gameType === 'LIAR' ? <LiarGameGuide game={guideGame} actionLabel="시작하기" onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : guideGame.gameType === 'BLIND' ? <BlindGameGuide game={guideGame} actionLabel="시작하기" onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : guideGame.gameType === 'MAFIA' ? <MafiaGameGuide game={guideGame} onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} /> : <YutGameGuide game={guideGame} onClose={() => setGuideGame(null)} onAction={() => { onSelect(guideGame); setGuideGame(null) }} />)}
   </>
 }
 
@@ -317,6 +321,7 @@ function getGameSummary(gameType: GameType) {
   if (gameType === 'BLIND') return '질문하면서 내 제시어를 먼저 맞춰보세요'
   if (gameType === 'MAFIA') return '밤의 단서를 모아 마피아를 찾아보세요'
   if (gameType === 'YUT') return '윷을 던지고 말을 먼저 완주해보세요'
+  if (gameType === 'UNDERMINE') return '길을 잇고 방해하며 숨겨진 금을 찾아보세요'
   return '제시어를 숨긴 라이어를 찾아보세요'
 }
 
@@ -326,6 +331,7 @@ function getGameArtwork(gameType: GameType) {
   if (gameType === 'BLIND') return blindGameChoiceCharacter
   if (gameType === 'MAFIA') return mafiaGameChoiceCharacter
   if (gameType === 'YUT') return yutThrowCharacter
+  if (gameType === 'UNDERMINE') return underMineCharacter
   return liarGameChoiceCharacter
 }
 function Setup({ unavailableReason, categories, category, setCategory, pending, onCreate }: { unavailableReason:string|null;categories:{code:string;name:string;virtual:boolean}[];category:string;setCategory:(v:string)=>void;pending:boolean;onCreate:()=>void }) { return <div className="setupScreen"><div className="liarCharacter setupBackdrop" aria-hidden><img src={liarCharacter} alt="" /></div><div className="gameIntro setupIntro"><p className="eyebrow">라이어 게임</p><h1>카테고리를<br />골라주세요</h1></div><div className="categoryGrid">{categories.map(c=><button key={c.code} className={category===c.code?'selected':''} onClick={()=>setCategory(c.code)}><b>{c.name}</b>{category===c.code&&<i>✓</i>}</button>)}</div><p className="hint" role="status">{unavailableReason}</p><Button disabled={!category||pending||unavailableReason !== null} onClick={onCreate}>{pending?'준비 중...':'이 카테고리로 준비하기'}</Button></div> }
