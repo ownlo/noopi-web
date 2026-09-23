@@ -534,7 +534,7 @@ export const mockApi: NoopiApi = {
     state.room.status = 'ACTIVE'
     if (gameType === 'UNDERMINE') {
       if (state.players.length < 3 || state.players.length > 10) throw { code: 'INVALID_PLAYER_COUNT' }
-      underMineMock = new UnderMineMock(state.players)
+      underMineMock = new UnderMineMock(state.players, state.me.playerId)
       state.gameSession = { gameSessionId, gameType, status: 'READY', gameState: underMineMock.snapshot(state.me.playerId) }
     } else if (gameType === 'PIG') {
       if (state.players.length < 2 || state.players.length > 6) throw { code: 'INVALID_PLAYER_COUNT' }
@@ -868,6 +868,19 @@ export const mockApi: NoopiApi = {
   async playUnderMineCard(_roomId, _sessionId, input) {
     await wait(260); const state = room(); if (!underMineMock || state.gameSession?.gameType !== 'UNDERMINE') throw { code: 'INVALID_GAME_ACTION' }
     const result = underMineMock.play(state.me.playerId, input); publishUnderMine(); emit(input.actionType === 'DESTROY_PATH' ? 'UNDERMINE_PATH_DESTROYED' : 'UNDERMINE_CARD_PLAYED', { playerId: state.me.playerId, actionType: input.actionType })
+    if (result.roundEnded) {
+      window.setTimeout(() => {
+        if (!underMineMock?.startGoldSelection()) return
+        publishUnderMine()
+        emit('UNDERMINE_GOLD_SELECTION_CHANGED')
+        const viewerId = room().me.playerId
+        window.setTimeout(() => {
+          if (!underMineMock?.completeOtherMinerGoldSelection(viewerId)) return
+          publishUnderMine()
+          emit('UNDERMINE_GOLD_SELECTION_CHANGED')
+        }, PHASE_TRANSITION_DELAY_MS)
+      }, PHASE_TRANSITION_DELAY_MS)
+    }
     return result
   },
   async selectUnderMineGold(_roomId, _sessionId, goldCardId) {

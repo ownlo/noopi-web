@@ -91,7 +91,7 @@ export type UnderMineGameState =
   | { type: 'UNDERMINE'; phase: 'READY'; roundNo: 1; maxRounds: 3 }
   | { type: 'UNDERMINE'; phase: 'ROLE_REVEAL'; roundNo: number; maxRounds: 3; myRole: UnderMineRole; roleChecked: boolean; roleCheckedCount: number; participantCount: number; allowedActions: UnderMineAllowedAction[] }
   | (PlayingCommon & { phase: 'PLAYING' })
-  | { type: 'UNDERMINE'; phase: 'ROUND_RESULT'; roundNo: number; maxRounds: 3; result: UnderMineRoundResult; scores: Array<Candidate & { gold: number }>; allowedActions: UnderMineAllowedAction[] }
-  | { type: 'UNDERMINE'; phase: 'GOLD_SELECTION'; roundNo: number; maxRounds: 3; goldCards: { goldCardId: string; value: number; selected: boolean }[]; mySelectionId: string | null; selectedCount: number; requiredCount: number; scores: Array<Candidate & { gold: number }>; allowedActions: UnderMineAllowedAction[] }
+  | { type: 'UNDERMINE'; phase: 'ROUND_RESULT'; roundNo: number; maxRounds: 3; result: UnderMineRoundResult; myGoldTotal: number; scores: Array<Candidate & { gold: number }>; allowedActions: UnderMineAllowedAction[] }
+  | { type: 'UNDERMINE'; phase: 'GOLD_SELECTION'; roundNo: number; maxRounds: 3; goldCards: { goldCardId: string; value: number; selected: boolean }[]; mySelectionId: string | null; myGoldTotal: number; selectedCount: number; requiredCount: number; scores: Array<Candidate & { gold: number }>; allowedActions: UnderMineAllowedAction[] }
   | { type: 'UNDERMINE'; phase: 'FINISHED'; rankings: Array<Candidate & { gold: number; rank: number }>; roundResults: UnderMineRoundResult[] }
   | { type: 'UNDERMINE'; phase: 'CANCELLED'; reason?: string }

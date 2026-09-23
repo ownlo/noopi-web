@@ -3241,6 +3241,10 @@ Idempotency-Key: <unique-request-id>
 }
 ```
 
+`placement.x`는 `0` 이상이어야 한다. 출발점 `(0, 0)`은 보드의 왼쪽
+경계이므로 `x < 0`인 배치는 `cardOptions` 후보에 포함하지 않으며 요청해도
+`INVALID_PATH_PLACEMENT`로 거절한다.
+
 장비 고장:
 
 ``` json
@@ -3287,8 +3291,9 @@ Idempotency-Key: <unique-request-id>
 
 서버는 요청 Player가 현재 턴인지, 카드가 실제 손패에 있는지, `actionType`이
 카드 종류와 일치하는지, 요청 대상이 해당 카드의 `cardOptions` 후보인지 다시
-검증한다. 길 연결, 회전, 인접 면, 출발점 연결, 고장·수리 대상, 파괴 대상과
-지도 대상을 하나의 Room 단위 원자 처리 안에서 확정한다.
+검증한다. 길 좌표의 `x >= 0` 경계, 연결, 회전, 인접 면, 출발점 연결,
+고장·수리 대상, 파괴 대상과 지도 대상을 하나의 Room 단위 원자 처리 안에서
+확정한다.
 
 Response `200 OK`:
 
@@ -3439,8 +3444,10 @@ Response: `204 No Content`
 }
 ```
 
-동점 Player는 같은 `rank`를 가지며 `winnerPlayerIds`에 공동 우승자를 모두
-포함한다. 실제 응답의 `rounds`에는 1~3라운드 전체 결과를 포함한다.
+동점 Player는 같은 `rank`를 가지며 공동 순위 다음 번호는 공동 인원만큼
+건너뛴다. 예를 들어 금점수가 `9, 9, 5`이면 `rank`는 `1, 1, 3`이다.
+`winnerPlayerIds`에는 공동 우승자를 모두 포함한다. 실제 응답의 `rounds`에는
+1~3라운드 전체 결과를 포함한다.
 
 ## 언더마인 WebSocket 이벤트
 

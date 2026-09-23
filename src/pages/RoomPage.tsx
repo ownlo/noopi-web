@@ -26,7 +26,7 @@ import blindGameChoiceCharacter from '../assets/characters/noopi-blind-game-choi
 import mafiaGameChoiceCharacter from '../assets/characters/noopi-mafia-cat-game-choice.png'
 import yutThrowCharacter from '../assets/characters/noopi-yut-throw.png'
 import toothCharacter from '../assets/characters/noopi-tooth-open-mouth.png'
-import underMineCharacter from '../assets/characters/noopi-cat.png'
+import underMineCharacter from '../assets/characters/noopi-undermine-miner.png'
 
 function isRoomUnavailable(error: unknown): error is { code: 'ROOM_NOT_FOUND' | 'PLAYER_NOT_IN_ROOM' } {
   return typeof error === 'object' && error !== null && 'code' in error && (error.code === 'ROOM_NOT_FOUND' || error.code === 'PLAYER_NOT_IN_ROOM')
