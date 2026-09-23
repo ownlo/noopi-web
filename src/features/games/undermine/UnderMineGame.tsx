@@ -11,6 +11,7 @@ import './undermine.css'
 type Props = { game: UnderMineGameState; state: RoomState; pending: boolean; onStart: () => void; onReplay: () => void; onOther: () => void }
 const toolLabel: Record<UnderMineTool, string> = { LANTERN: '랜턴', PICKAXE: '곡괭이', CART: '광차' }
 const toolIcon: Record<UnderMineTool, string> = { LANTERN: '🏮', PICKAXE: '⛏️', CART: '🛒' }
+const allTools: UnderMineTool[] = ['LANTERN', 'PICKAXE', 'CART']
 const cardIcon: Record<UnderMineCard['kind'], string> = { PATH: '╋', BREAK_TOOL: '⚡', REPAIR_TOOL: '✦', MAP: '⌖', DESTROY_PATH: '💥' }
 
 function pathDirections(code: string) {
@@ -60,15 +61,15 @@ function HandCard({ card, selected, rotation, disabled, onClick }: { card: Under
   </button>
 }
 
-function PlayerGrid({ players, meId, currentPlayerId, breakTargets, repairTargets, busy, onBreak, onRepair }: { players: UnderMinePlayer[]; meId: number; currentPlayerId: number; breakTargets: Map<number, UnderMineTool> | null; repairTargets: Set<number> | null; busy: boolean; onBreak: (playerId: number, tool: UnderMineTool) => void; onRepair: (playerId: number) => void }) {
+function PlayerGrid({ players, currentPlayerId, breakTargets, repairTargets, busy, onBreak, onRepair }: { players: UnderMinePlayer[]; currentPlayerId: number; breakTargets: Map<number, UnderMineTool> | null; repairTargets: Set<number> | null; busy: boolean; onBreak: (playerId: number, tool: UnderMineTool) => void; onRepair: (playerId: number) => void }) {
   const selecting = Boolean(breakTargets || repairTargets)
   return <div className={`umPlayers${selecting ? ' selectingTarget' : ''}`} aria-label={breakTargets ? '장비 고장 대상 선택' : repairTargets ? '장비 수리 대상 선택' : '참가자 상태'}>{players.map(player => {
     const breakTool = breakTargets?.get(player.playerId)
     const repairTarget = repairTargets?.has(player.playerId) ?? false
     const targetClass = breakTool ? 'breakTarget' : repairTarget ? 'repairTarget' : ''
-    const equipmentStatus = player.brokenTools.length ? `고장: ${player.brokenTools.map(tool => toolLabel[tool]).join(', ')}` : '장비 정상'
-    return <div key={player.playerId} className={`umPlayerCard ${player.playerId === currentPlayerId ? 'current ' : ''}${targetClass}`} aria-label={`${player.nickname}, ${equipmentStatus}`}>
-      <Avatar name={player.nickname} /><span><b>{player.nickname}{player.playerId === meId && ' · 나'}</b><small>{player.brokenTools.length ? <>고장 {player.brokenTools.map(tool => toolIcon[tool]).join('')}</> : '장비 정상'}</small></span>
+    const equipmentStatus = player.brokenTools.length ? `, 고장: ${player.brokenTools.map(tool => toolLabel[tool]).join(', ')}` : ''
+    return <div key={player.playerId} className={`umPlayerCard ${player.playerId === currentPlayerId ? 'current ' : ''}${targetClass}`} aria-label={`${player.nickname}${equipmentStatus}`}>
+      <Avatar name={player.nickname} /><span><b>{player.nickname}</b><small className="umEquipmentList" aria-hidden>{allTools.map(tool => <span key={tool} className={`umEquipment${player.brokenTools.includes(tool) ? ' broken' : ''}`}>{toolIcon[tool]}</span>)}</small></span>
       {breakTool && <button type="button" className="umPlayerActionOverlay" disabled={busy} onClick={() => onBreak(player.playerId, breakTool)} aria-label={`${player.nickname}의 ${toolLabel[breakTool]} 고장 내기`} />}
       {repairTarget && <button type="button" className="umPlayerActionOverlay repair" disabled={busy} onClick={() => onRepair(player.playerId)} aria-label={`${player.nickname}의 가장 먼저 고장 난 장비 수리`} />}
     </div>
@@ -97,12 +98,11 @@ function Playing({ game, state }: { game: Extract<UnderMineGameState, { phase: '
   return <section className="umPlaying" aria-busy={busy}>
     {mapReveal && <div className="dialogBackdrop umMapBackdrop" role="presentation"><section className="umMapDialog" role="dialog" aria-modal="true" aria-labelledby="um-map-title"><p className="eyebrow">PRIVATE MAP RESULT</p><span aria-hidden>{mapReveal.result === 'TREASURE' ? '💎' : '🪨'}</span><h2 id="um-map-title">{mapReveal.result === 'TREASURE' ? '여기에 금이 있어요!' : '여기는 돌뿐이에요'}</h2><p>{mapReveal.goalId === 'goal--2' ? '위쪽' : mapReveal.goalId === 'goal-0' ? '가운데' : mapReveal.goalId === 'goal-2' ? '아래쪽' : '선택한'} 목적지의 비밀이에요.<br />다른 플레이어에게는 보이지 않아요.</p><Button autoFocus onClick={() => setMapReveal(null)}>확인했어요</Button></section></div>}
     <header className="umStatus"><div><small>ROUND {game.roundNo}/3</small><strong>{isMyTurn ? '내 차례예요!' : `${current?.nickname ?? '다른 광부'}님 차례`}</strong></div><span>남은 카드 <b>{game.drawPileCount}</b></span></header>
-    <PlayerGrid players={game.players} meId={state.me.playerId} currentPlayerId={game.currentPlayerId} breakTargets={breakTargets} repairTargets={repairTargets} busy={busy} onBreak={(playerId, toolType) => { if (selectedOption?.actionType === 'BREAK_TOOL') void submit({ cardId: selectedOption.cardId, actionType: 'BREAK_TOOL', targetPlayerId: playerId, toolType }) }} onRepair={playerId => { if (selectedOption?.actionType === 'REPAIR_TOOL') void submit({ cardId: selectedOption.cardId, actionType: 'REPAIR_TOOL', targetPlayerId: playerId }) }} />
+    <PlayerGrid players={game.players} currentPlayerId={game.currentPlayerId} breakTargets={breakTargets} repairTargets={repairTargets} busy={busy} onBreak={(playerId, toolType) => { if (selectedOption?.actionType === 'BREAK_TOOL') void submit({ cardId: selectedOption.cardId, actionType: 'BREAK_TOOL', targetPlayerId: playerId, toolType }) }} onRepair={playerId => { if (selectedOption?.actionType === 'REPAIR_TOOL') void submit({ cardId: selectedOption.cardId, actionType: 'REPAIR_TOOL', targetPlayerId: playerId }) }} />
     <MineBoard game={game} selectedOption={selectedOption} rotation={rotation} busy={busy} onPlay={submit} />
     {game.mapResult && <div className="umMapResult" role="status"><span>{game.mapResult.result === 'GOLD' ? '💎' : '🪨'}</span><div><b>지도 확인 완료</b><small>이 정보는 나만 볼 수 있어요.</small></div></div>}
     {game.lastAction && <p className="umLastAction">{state.players.find(player => player.playerId === game.lastAction?.playerId)?.nickname}: {game.lastAction.label}</p>}
     {selectedOption?.actionType === 'PLACE_PATH' && <div className="umRotate" aria-label="길 카드 방향"><span>카드 방향</span><button className={rotation === 0 ? 'selected' : ''} onClick={() => setRotation(0)}>0°</button><button className={rotation === 180 ? 'selected' : ''} onClick={() => setRotation(180)}>180°</button></div>}
-    {selectedOption?.actionType === 'USE_MAP' && <p className="umBoardHint">판 위에서 확인할 목적지를 선택하세요</p>}
     <div className="umHandHeader"><div><strong>내 카드</strong><small>{isMyTurn ? '한 장을 골라 행동하세요' : '차례를 기다리는 중이에요'}</small></div>{game.allowedActions.includes('DISCARD_CARD') && <button disabled={!selectedId || busy} onClick={discard}>선택 카드 버리기</button>}</div>
     <div className="umHand">{game.myHand.map(card => <HandCard key={card.cardId} card={card} selected={card.cardId === selectedId} rotation={rotation} disabled={!isMyTurn || busy || !game.cardOptions.some(option => option.cardId === card.cardId) && !game.allowedActions.includes('DISCARD_CARD')} onClick={() => setSelectedId(value => value === card.cardId ? null : card.cardId)} />)}</div>
     {!isMyTurn && <div className="umWaiting"><span className="dots">•••</span> 누피가 광산을 지켜보고 있어요</div>}{error && <p className="umError" role="alert">{error}</p>}

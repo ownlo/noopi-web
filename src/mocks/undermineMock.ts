@@ -44,15 +44,21 @@ export class UnderMineMock {
     return { cardId, kind: 'PATH', name: '길 카드', description: '통로를 연결해요', pathPatternCode: patterns[this.sequence % patterns.length] }
   }
 
-  start() { this.phase = 'ROLE_REVEAL'; this.checked = false }
+  start() {
+    this.phase = 'ROLE_REVEAL'
+    this.checked = false
+    const currentPlayer = this.players[0]
+    if (currentPlayer) this.broken.set(currentPlayer.playerId, ['PICKAXE'])
+  }
   confirmRole() { this.checked = true; this.phase = 'PLAYING' }
 
   private role(playerId: number) { return playerId === this.players[this.players.length - 1].playerId ? 'SABOTEUR' as const : 'MINER' as const }
   private candidates(): UnderMineCardOption[] {
     const nextX = Math.min(7, 1 + this.board.filter(card => card.kind === 'PATH').length)
+    const currentPlayerHasBrokenTool = (this.broken.get(this.players[0].playerId) ?? []).length > 0
     const options: UnderMineCardOption[] = []
     this.hand.forEach(card => {
-      if (card.kind === 'PATH') options.push({ cardId: card.cardId, actionType: 'PLACE_PATH', placements: [{ x: nextX, y: 0, rotations: [0, 180] }] })
+      if (card.kind === 'PATH' && !currentPlayerHasBrokenTool) options.push({ cardId: card.cardId, actionType: 'PLACE_PATH', placements: [{ x: nextX, y: 0, rotations: [0, 180] }] })
       if (card.kind === 'BREAK_TOOL' && card.toolType) {
         const toolType = card.toolType
         const targets = this.players.filter(player => player.playerId !== this.players[0].playerId && !(this.broken.get(player.playerId) ?? []).includes(toolType)).map(player => ({ playerId: player.playerId, toolType }))
